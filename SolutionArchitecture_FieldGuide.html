@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Solution Architect Field Guide — Colaberry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cherry:#FB2832; --berry:#367895; --leaf:#5BA63C; --amber:#E8920C;
+  --text:#1A1A1A; --muted:#6B6B6B; --border:#E4E4E3; --surface:#FFFFFF; --surface2:#F8F8F7;
+  --font-body:'Roboto',system-ui,Arial,sans-serif;
+  --font-mono:'Roboto Mono',ui-monospace,'Courier New',monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --cherry:#FF5960; --berry:#5EA9C4; --leaf:#8AC759; --amber:#E8920C;
+    --text:#F2F2F2; --muted:#B5B5B5; --border:#2A2A2A; --surface:#171717; --surface2:#0F0F0F; }
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:var(--font-body);color:var(--text);background:var(--surface2);line-height:1.55;}
+h1,h2,h3,h4{font-family:var(--font-body);font-weight:700;color:var(--berry);line-height:1.25;}
+code,.mono{font-family:var(--font-mono);}
+a{color:var(--berry);}
+p{margin:.6em 0;}
+img{max-width:100%;}
+
+/* ---------- Header ---------- */
+header.topbar{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:18px;padding:10px 20px;flex-wrap:wrap;}
+header.topbar .brand{display:flex;align-items:center;gap:12px;min-width:220px;}
+header.topbar .brand img{height:38px;display:block;}
+header.topbar .brand .titles{display:flex;flex-direction:column;line-height:1.2;}
+header.topbar .brand .titles strong{font-size:1.02rem;color:var(--berry);}
+header.topbar .brand .titles span{font-size:.72rem;color:var(--muted);letter-spacing:.02em;}
+.search-wrap{position:relative;flex:1 1 340px;max-width:520px;}
+.search-wrap input{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);font-family:var(--font-body);font-size:.92rem;}
+.search-wrap input:focus{outline:2px solid var(--berry);}
+.search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.14);
+  max-height:360px;overflow:auto;display:none;z-index:60;}
+.search-results.open{display:block;}
+.search-results .sr-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;}
+.search-results .sr-item:last-child{border-bottom:none;}
+.search-results .sr-item:hover{background:var(--surface2);}
+.search-results .sr-item .sr-title{font-weight:700;color:var(--text);font-size:.9rem;}
+.search-results .sr-item .sr-tag{font-size:.72rem;color:var(--berry);text-transform:uppercase;letter-spacing:.04em;}
+.search-empty{padding:12px 14px;color:var(--muted);font-size:.85rem;}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-family:var(--font-body);font-weight:700;
+  font-size:.86rem;cursor:pointer;letter-spacing:.01em;display:inline-flex;align-items:center;gap:8px;}
+.btn-primary{background:var(--cherry);color:#fff;}
+.btn-primary:hover{filter:brightness(0.92);}
+.btn-secondary{background:transparent;color:var(--berry);border:1.5px solid var(--berry);}
+.btn-secondary:hover{background:var(--berry);color:#fff;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-ghost:hover{border-color:var(--berry);color:var(--berry);}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 22px;}
+
+/* ---------- Shell / layout ---------- */
+.shell{display:flex;max-width:1500px;margin:0 auto;align-items:flex-start;}
+nav.sidenav{position:sticky;top:66px;width:270px;flex:0 0 270px;max-height:calc(100vh - 66px);overflow-y:auto;
+  padding:22px 14px 60px 20px;font-size:.86rem;}
+nav.sidenav .navgroup{margin-bottom:18px;}
+nav.sidenav .navgroup h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  margin:0 0 8px 8px;font-weight:700;}
+nav.sidenav a{display:block;padding:7px 10px;border-radius:7px;color:var(--text);text-decoration:none;font-size:.86rem;}
+nav.sidenav a:hover{background:var(--surface);color:var(--berry);}
+nav.sidenav a.active{background:var(--surface);color:var(--berry);font-weight:700;border-left:3px solid var(--cherry);padding-left:7px;}
+nav.sidenav .sub a{padding-left:20px;font-size:.8rem;color:var(--muted);}
+main.content{flex:1 1 auto;min-width:0;padding:26px 40px 100px;max-width:1180px;}
+section{scroll-margin-top:80px;}
+section.flash{animation:flashbg 1.6s ease;}
+@keyframes flashbg{0%{background:rgba(54,120,149,.14);}100%{background:transparent;}}
+
+/* ---------- Content elements ---------- */
+.hero{background:linear-gradient(135deg,var(--berry),#274f61);color:#fff;border-radius:16px;padding:34px 38px;margin-bottom:26px;}
+.hero h1{color:#fff;font-size:2rem;margin:0 0 10px;}
+.hero p{color:#e6f0f4;max-width:760px;font-size:1.02rem;}
+.hero .pill{display:inline-block;background:rgba(255,255,255,.16);padding:4px 12px;border-radius:20px;font-size:.75rem;
+  letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin:16px 0;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media (max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr;} .shell{flex-direction:column;} nav.sidenav{position:relative;top:0;width:100%;max-height:none;}}
+h2{font-size:1.5rem;border-bottom:3px solid var(--cherry);padding-bottom:8px;margin-top:2.4em;}
+h3{font-size:1.15rem;color:var(--text);margin-top:1.8em;}
+h3::before{content:"▪";color:var(--cherry);margin-right:8px;font-size:.9em;}
+h4{font-size:1rem;color:var(--berry);margin-top:1.4em;}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.88rem;}
+table caption{text-align:left;font-size:.8rem;color:var(--muted);margin-bottom:6px;}
+th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top;}
+thead th{background:var(--berry);color:#fff;font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;}
+tbody tr:nth-child(even){background:var(--surface2);}
+.callout{border-left:4px solid var(--berry);background:var(--surface);border-radius:0 10px 10px 0;padding:14px 18px;margin:16px 0;font-size:.92rem;}
+.callout strong{display:block;margin-bottom:4px;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;}
+.callout.info{border-color:var(--berry);}
+.callout.warn{border-color:var(--amber);}
+.callout.risk{border-color:var(--cherry);}
+.callout.success{border-color:var(--leaf);}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--berry);border:1px solid var(--border);}
+.tag.cherry{color:var(--cherry);border-color:var(--cherry);}
+.tag.leaf{color:var(--leaf);border-color:var(--leaf);}
+.tag.amber{color:var(--amber);border-color:var(--amber);}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0;}
+@media (max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;border-top:4px solid var(--berry);}
+.kpi-tile .kpi-value{font-family:var(--font-mono);font-size:1.7rem;font-weight:700;color:var(--text);}
+.kpi-tile .kpi-label{font-size:.78rem;color:var(--muted);margin-top:2px;}
+.kpi-tile .kpi-sub{font-size:.74rem;margin-top:6px;font-weight:700;}
+.kpi-tile .kpi-sub.leaf{color:var(--leaf);}
+.kpi-tile .kpi-sub.amber{color:var(--amber);}
+.kpi-tile .kpi-sub.cherry{color:var(--cherry);}
+.diagram-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;overflow-x:auto;}
+.diagram-wrap svg{display:block;margin:0 auto;min-width:640px;}
+.diagram-caption{text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px;}
+.doc-section{border-top:6px solid var(--berry);background:var(--surface);border-radius:14px;padding:30px 34px;margin:30px 0 60px;}
+.doc-section .doc-kicker{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--cherry);font-weight:700;}
+.doc-section h2{margin-top:6px;}
+.doc-meta-strip{display:flex;gap:26px;flex-wrap:wrap;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:12px 18px;margin:14px 0 20px;font-size:.82rem;}
+.doc-meta-strip div span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;}
+footer.sitefoot{text-align:center;color:var(--muted);font-size:.8rem;padding:40px 20px 60px;border-top:1px solid var(--border);margin-top:40px;}
+
+/* ---------- Ask assistant ---------- */
+#askToggle{position:fixed;right:26px;bottom:26px;z-index:70;box-shadow:0 10px 24px rgba(0,0,0,.22);}
+#askPanel{position:fixed;right:26px;bottom:90px;width:380px;max-width:88vw;max-height:70vh;background:var(--surface);
+  border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.28);display:none;flex-direction:column;
+  overflow:hidden;z-index:70;}
+#askPanel.open{display:flex;}
+#askPanel .ask-head{background:var(--berry);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
+#askPanel .ask-head strong{font-size:.92rem;}
+#askPanel .ask-head small{display:block;font-size:.68rem;opacity:.85;}
+#askPanel .ask-close{background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;}
+#askPanel .ask-body{padding:14px 18px;overflow-y:auto;flex:1 1 auto;font-size:.86rem;}
+#askPanel .ask-answer{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:10px;}
+#askPanel .ask-answer a{font-weight:700;font-size:.8rem;}
+#askPanel .ask-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;}
+#askPanel .ask-foot input{flex:1;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font-body);}
+#askPanel .ask-suggest{font-size:.72rem;color:var(--muted);margin-top:10px;}
+#askPanel .ask-suggest button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--berry);
+  padding:4px 0;cursor:pointer;font-size:.78rem;}
+
+/* ---------- SVG diagram base ---------- */
+.dbox rect{stroke-width:1.6;}
+.dbox text{font-family:var(--font-body);}
+.dedge{stroke:var(--muted);stroke-width:1.6;fill:none;}
+.dedge-label{font-family:var(--font-body);font-size:11px;fill:var(--text);}
+.dedge-label-bg{fill:var(--surface);opacity:.92;}
+.lifeline{stroke:var(--border);stroke-width:2;stroke-dasharray:4 4;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<marker id="arrowMuted" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6B6B6B"/></marker>
+<marker id="arrowBerry" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#367895"/></marker>
+<marker id="arrowCherry" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#FB2832"/></marker>
+</defs>
+</svg>
+
+<script type="application/x-doc-css" id="shared-doc-css">
+body{margin:0;font-family:'Roboto',system-ui,Arial,sans-serif;color:#1A1A1A;background:#F8F8F7;}
+.doc-page{max-width:940px;margin:0 auto;background:#FFFFFF;}
+.doc-cover{padding:90px 60px;text-align:center;border-bottom:6px solid #FB2832;}
+.doc-cover-logo{height:46px;margin-bottom:34px;}
+.doc-cover-kicker{color:#FB2832;text-transform:uppercase;letter-spacing:.08em;font-size:.8rem;font-weight:700;margin-bottom:14px;}
+.doc-cover h1{font-size:2.1rem;color:#367895;margin:0 0 16px;}
+.doc-cover-sub{color:#1A1A1A;font-size:1.05rem;max-width:640px;margin:0 auto 18px;}
+.doc-cover-meta{color:#6B6B6B;font-size:.85rem;}
+table.doc-control-strip{width:calc(100% - 120px);margin:34px 60px;border-collapse:collapse;font-size:.85rem;}
+table.doc-control-strip th{background:#367895;color:#fff;padding:8px 14px;text-transform:uppercase;letter-spacing:.03em;font-size:.72rem;}
+table.doc-control-strip td{padding:8px 14px;border:1px solid #E4E4E3;font-family:'Roboto Mono',monospace;}
+.doc-body{padding:0 60px;}
+.doc-body h2{font-size:1.4rem;color:#367895;border-bottom:3px solid #FB2832;padding-bottom:6px;margin-top:2.2em;}
+.doc-body h3{font-size:1.1rem;color:#1A1A1A;margin-top:1.6em;}
+.doc-body h3::before{content:"▪";color:#FB2832;margin-right:8px;}
+.doc-body h4{color:#367895;margin-top:1.3em;}
+.doc-body table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.85rem;}
+.doc-body thead th{background:#367895;color:#fff;padding:8px 12px;text-transform:uppercase;font-size:.7rem;letter-spacing:.03em;}
+.doc-body td,.doc-body th{border:1px solid #E4E4E3;padding:8px 12px;text-align:left;}
+.doc-body tbody tr:nth-child(even){background:#F8F8F7;}
+.doc-body .callout{border-left:4px solid #367895;background:#F8F8F7;border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:.9rem;}
+.doc-body .callout strong{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.doc-body .callout.warn{border-color:#E8920C;}
+.doc-body .callout.risk{border-color:#FB2832;}
+.doc-body .callout.success{border-color:#5BA63C;}
+.doc-body .tag{display:inline-block;font-size:.68rem;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:20px;border:1px solid #E4E4E3;color:#367895;}
+.doc-body .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;}
+.doc-body .kpi-tile{border:1px solid #E4E4E3;border-radius:10px;padding:12px 14px;border-top:4px solid #367895;}
+.doc-body .kpi-tile .kpi-value{font-family:'Roboto Mono',monospace;font-size:1.4rem;font-weight:700;}
+.doc-body .kpi-tile .kpi-label{font-size:.7rem;color:#6B6B6B;}
+.doc-body .diagram-wrap{border:1px solid #E4E4E3;border-radius:10px;padding:12px;margin:14px 0;overflow-x:auto;}
+.doc-body .diagram-wrap svg{display:block;margin:0 auto;min-width:600px;}
+.doc-body .diagram-caption{text-align:center;color:#6B6B6B;font-size:.78rem;margin-top:6px;}
+table.doc-signoff{width:calc(100% - 120px);margin:40px 60px;border-collapse:collapse;font-size:.85rem;}
+table.doc-signoff th{background:#1A1A1A;color:#fff;padding:8px 14px;font-size:.72rem;text-transform:uppercase;}
+table.doc-signoff td{border:1px solid #E4E4E3;padding:18px 14px;}
+.doc-footer{text-align:center;color:#6B6B6B;font-size:.75rem;padding:24px 20px 50px;border-top:1px solid #E4E4E3;margin-top:20px;}
+@media print{
+  .doc-cover{page-break-after:always;}
+  a{color:#1A1A1A !important;text-decoration:none;}
+}
+</script>
+
+<header class="topbar">
+  <div class="brand">
+    <img id="headerLogo" alt="Colaberry"/>
+    <div class="titles"><strong>Solution Architect Field Guide</strong><span>Colaberry Enterprise AI Leadership Accelerator</span></div>
+  </div>
+  <div class="search-wrap">
+    <input id="searchInput" type="text" placeholder="Search the guide — e.g. &quot;event bus&quot;, &quot;C4 model&quot;, &quot;availability target&quot;" autocomplete="off"/>
+    <div id="searchResults" class="search-results"></div>
+  </div>
+  <button class="btn btn-secondary" onclick="toggleAsk(true)">Ask the Guide</button>
+</header>
+
+<div class="shell">
+<nav class="sidenav" id="sidenav">
+  <div class="navgroup">
+    <h4>Start Here</h4>
+    <a href="#top" class="nl">Overview &amp; Scenario</a>
+  </div>
+  <div class="navgroup">
+    <h4>Foundations — The 20%</h4>
+    <a href="#found-why" class="nl">Why Solution Architecture Exists</a>
+    <a href="#found-quality" class="nl">Quality Attributes (NFRs)</a>
+    <a href="#found-styles" class="nl">Architecture Styles</a>
+    <a href="#found-c4model" class="nl">The C4 Model</a>
+    <a href="#found-adr" class="nl">Architecture Decision Records</a>
+    <a href="#found-tradeoff" class="nl">Trade-off Analysis</a>
+    <a href="#found-patterns" class="nl">Key Patterns</a>
+    <a href="#found-fitness" class="nl">Fitness Functions</a>
+    <a href="#found-buildbuy" class="nl">Build vs. Buy</a>
+    <a href="#found-goodbad" class="nl">Good vs. Bad Architecture</a>
+    <a href="#found-kpis" class="nl">Architecture KPIs</a>
+    <a href="#found-lens" class="nl">The Architect's Review Lens</a>
+  </div>
+  <div class="navgroup">
+    <h4>Documents — SKU Sentinel</h4>
+    <a href="#doc-sad" class="nl">1. Solution Architecture Document</a>
+    <a href="#doc-c4" class="nl">2. C4 Diagrams</a>
+    <a href="#doc-adr" class="nl">3. Architecture Decision Records</a>
+    <a href="#doc-nfr" class="nl">4. NFR Specification</a>
+    <a href="#doc-tradeoff" class="nl">5. Trade-off Matrix</a>
+    <a href="#doc-sequence" class="nl">6. Sequence &amp; Data-Flow</a>
+    <a href="#doc-risk" class="nl">7. Risk Register</a>
+    <a href="#doc-onepager" class="nl">8. Sign-Off Summary</a>
+  </div>
+  <div class="navgroup">
+    <h4>Appendix</h4>
+    <a href="#appendix" class="nl">About &amp; Metadata</a>
+  </div>
+</nav>
+
+<main class="content" id="mainContent">
+
+<section id="top">
+  <div class="hero">
+    <div class="pill">Week 2 Deep Dive · Solution Architect Track</div>
+    <h1>Direct. Evaluate. Approve.</h1>
+    <p>This field guide gives you the ~20% of solution architecture knowledge that lets you direct an AI system toward a sound design, evaluate what it proposes, and approve it with confidence — without needing to be a 20-year infrastructure veteran. It is built around one running example so every concept lands on a concrete, defensible artifact instead of an abstraction.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">The Scenario Used Throughout This Guide</h3>
+    <p><strong>Company:</strong> Meridian Retail Group — a 240-store U.S. grocery &amp; general-merchandise chain, ~$3.8B annual revenue, ~38,000 active SKUs per store banner.</p>
+    <p><strong>Initiative:</strong> <strong>SKU Sentinel</strong> — an AI-powered, real-time inventory intelligence and demand-forecasting platform. Requirements are treated as already approved by the business; this guide picks up at the point where a Solution Architect turns approved requirements into an architecture, and where an AI coding/design agent is asked to draft the supporting documents.</p>
+    <p><strong>Business driver:</strong> Meridian loses an estimated <strong>$42M/year</strong> in lost sales to stockouts and <strong>$27M/year</strong> in markdowns from overstock, both traced to slow, spreadsheet-driven replenishment decisions running 24–48 hours behind actual store demand.</p>
+    <div class="kpi-grid">
+      <div class="kpi-tile"><div class="kpi-value">240</div><div class="kpi-label">Stores in scope</div></div>
+      <div class="kpi-tile"><div class="kpi-value">~38,000</div><div class="kpi-label">Active SKUs / store</div></div>
+      <div class="kpi-tile"><div class="kpi-value">$42M</div><div class="kpi-label">Annual stockout cost</div></div>
+      <div class="kpi-tile"><div class="kpi-value">$27M</div><div class="kpi-label">Annual overstock markdown cost</div></div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>How to use this guide</strong>
+    Use the <strong>search box</strong> at the top to jump straight to a concept or a document. Use <strong>Ask the Guide</strong> (bottom-right) to ask a plain-language question — it matches your question against this guide's own content and answers offline, with no external service involved. Every document in the "Documents" section is a real, complete deliverable: use its toolbar to download a styled standalone HTML copy, save it as a PDF, or export its tables to CSV.
+  </div>
+</section>
+
+<section id="found-why">
+  <h2>Why Solution Architecture Exists</h2>
+  <p>Left alone, an AI coding agent (or a fast-moving engineering team) optimizes for the request in front of it: make this endpoint work, make this feature ship. Solution architecture exists to hold the <em>system-level</em> concerns that no single feature request will ever surface on its own — will this still work at 10x load, can two teams ship to it without blocking each other, what happens when a dependency is down at 2 a.m., and can a new engineer explain it in a sitting. A solution architect's job is not to write more code than anyone else; it is to make the handful of decisions that are expensive to reverse, and to make them <em>before</em> they get baked into hundreds of files.</p>
+  <p>In an AI-assisted delivery model, this role becomes more important, not less. An AI agent will happily generate a technically-working monolith, a technically-working microservice mesh, or a technically-working event-driven system for the same requirements — it has no opinion on which one your team can actually operate. The architect supplies the judgment: which trade-offs matter for <em>this</em> system, at <em>this</em> scale, with <em>this</em> team. That judgment is what you are here to build.</p>
+
+  <h2 id="found-quality">The 20%, Part 1: Quality Attributes (Non-Functional Requirements)</h2>
+  <p>Functional requirements describe what the system does. Quality attributes describe how well it keeps doing it — and they are the requirements most likely to be silently dropped by an AI-generated design unless someone with your role insists on them being explicit and measurable.</p>
+  <table>
+    <thead><tr><th>Attribute</th><th>The question it answers</th><th>Typical measure</th></tr></thead>
+    <tbody>
+      <tr><td>Availability</td><td>How much downtime can the business tolerate?</td><td>% uptime (e.g. 99.9%), error budget</td></tr>
+      <tr><td>Latency / Performance</td><td>How fast must a response be, under load?</td><td>P50 / P95 / P99 response time</td></tr>
+      <tr><td>Throughput</td><td>How much volume must the system absorb at peak?</td><td>Requests/sec, events/sec</td></tr>
+      <tr><td>Scalability</td><td>How does the system grow with load — and how fast?</td><td>Horizontal scale-out time, cost curve</td></tr>
+      <tr><td>Durability</td><td>Can data survive a failure without loss?</td><td>Replication factor, backup RPO</td></tr>
+      <tr><td>Security</td><td>Who can do what, and how is that enforced?</td><td>AuthN/AuthZ model, encryption standard</td></tr>
+      <tr><td>Observability</td><td>Can you tell what the system is doing right now?</td><td>Logging/tracing coverage %</td></tr>
+      <tr><td>Maintainability</td><td>How fast and safely can it change?</td><td>Deployment lead time, test coverage</td></tr>
+      <tr><td>Cost / Efficiency</td><td>What does it cost to run at scale?</td><td>$ per transaction, infra cost ratio</td></tr>
+      <tr><td>Disaster Recovery</td><td>How fast can service resume after a major failure?</td><td>RTO (time to restore), RPO (data loss window)</td></tr>
+    </tbody>
+  </table>
+  <div class="callout info"><strong>The rule that matters most</strong>Every quality attribute must have a <strong>measurable target</strong>, not an adjective. "Highly available" is not a requirement. "99.9% monthly uptime, measured by synthetic probe every 60s" is. If an AI-generated NFR spec uses words like "fast," "robust," or "scalable" without a number attached, send it back — see Document 4 for what a complete version looks like.</div>
+
+  <h2 id="found-styles">The 20%, Part 2: Architecture Styles</h2>
+  <p>Three styles cover the large majority of real decisions you will evaluate. None is universally "better" — each is a different way of trading coupling for coordination cost.</p>
+  <table>
+    <thead><tr><th>Style</th><th>Coupling</th><th>Deployment</th><th>Failure blast radius</th><th>Best for</th><th>Watch-outs</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Monolith</strong></td><td>High (shared process, shared DB)</td><td>Single unit, all-or-nothing</td><td>One bug can take down everything</td><td>Small teams, early-stage products, low operational maturity</td><td>Becomes a bottleneck as team &amp; codebase grow; slow deploys</td></tr>
+      <tr><td><strong>Service-Oriented / Microservices</strong></td><td>Medium — services own their data, coordinate via APIs</td><td>Independent per service</td><td>Contained to the failing service (if isolated well)</td><td>Multiple teams, independently-scaling domains, differing tech needs</td><td>Distributed-systems tax: network calls, data consistency, more infra to operate</td></tr>
+      <tr><td><strong>Event-Driven</strong></td><td>Low — producers and consumers don't know about each other</td><td>Independent, asynchronous</td><td>Isolated; backpressure instead of cascading failure</td><td>High-volume streams, real-time reactions, decoupled domains</td><td>Harder to trace a single request end-to-end; eventual consistency must be designed for, not assumed</td></tr>
+    </tbody>
+  </table>
+  <p>These are not mutually exclusive — most real systems, including the one in this guide, are <strong>event-driven microservices</strong>: independently deployable services that communicate primarily through an event bus, with synchronous REST reserved for request/response paths a user is actively waiting on. See <a href="#doc-adr">ADR-001</a> for how this choice was justified against Meridian's actual load, not against a trend.</p>
+
+  <h2 id="found-c4model">The 20%, Part 3: The C4 Model</h2>
+  <p>The C4 model gives you four zoom levels for describing a system, so a design can be reviewed by the right audience at the right altitude instead of one overloaded diagram trying to serve everyone.</p>
+  <table>
+    <thead><tr><th>Level</th><th>Shows</th><th>Audience</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1. Context</strong></td><td>The system as one box, its users, and the external systems it talks to</td><td>Executives, product, anyone needing the 30-second picture</td></tr>
+      <tr><td><strong>2. Container</strong></td><td>The deployable units inside the system (services, apps, data stores, queues) and how they connect</td><td>Architects, tech leads, ops</td></tr>
+      <tr><td><strong>3. Component</strong></td><td>The internal building blocks of one container and their responsibilities</td><td>Engineers building or reviewing that container</td></tr>
+      <tr><td><strong>4. Code</strong></td><td>Classes / modules — usually left to IDE-generated diagrams, rarely hand-drawn</td><td>Engineers actively coding</td></tr>
+    </tbody>
+  </table>
+  <p>Document 2 in this guide provides Levels 1–3 for SKU Sentinel. As a reviewer, your job is to confirm each level is internally consistent with the others — every box named in the Container diagram should trace back to a line in the Context diagram's system boundary, and every arrow should have a direction and a purpose, not just a line.</p>
+
+  <h2 id="found-adr">The 20%, Part 4: Architecture Decision Records (ADRs)</h2>
+  <p>An ADR captures one significant, hard-to-reverse decision: what was decided, what else was considered, why it lost, and what it costs us going forward. ADRs are the single highest-leverage artifact for an AI-assisted architecture process, because they force the "why," not just the "what" — which is exactly the part an AI agent will skip unless explicitly asked for it.</p>
+  <table>
+    <thead><tr><th>Field</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Status</td><td>Proposed / Accepted / Superseded / Deprecated — decisions have a lifecycle</td></tr>
+      <tr><td>Context</td><td>The forces at play: load, team, constraints, deadline pressure</td></tr>
+      <tr><td>Decision</td><td>The one sentence that states what was chosen</td></tr>
+      <tr><td>Rejected Options</td><td>What else was seriously considered, and specifically why it lost</td></tr>
+      <tr><td>Consequences</td><td>What this decision makes easier, and what it makes harder — every decision has both</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><strong>Reviewer red flag</strong>An ADR with no rejected options is not a decision record — it's a decision announcement. If the AI-generated ADR only describes the winning option, ask it to regenerate with at least two genuine alternatives and their honest trade-offs. Document 3 gives you six worked examples.</div>
+
+  <h2 id="found-tradeoff">The 20%, Part 5: Trade-off Analysis</h2>
+  <p>Most technology choices are not "correct vs. incorrect" — they're a weighted balance across criteria that matter differently to different systems. A simple, defensible method:</p>
+  <ol>
+    <li><strong>Pick criteria that matter for this system</strong> (not a generic checklist) — e.g. cost, operational burden, latency, team familiarity, vendor lock-in.</li>
+    <li><strong>Weight each criterion</strong> so the weights sum to 1.0, reflecting what actually matters for this decision.</li>
+    <li><strong>Score each option 0–10 per criterion</strong>, honestly — including the option your team is emotionally attached to.</li>
+    <li><strong>Multiply and sum</strong> to get a weighted total per option.</li>
+    <li><strong>Sanity-check the winner against the numbers you didn't put in the model</strong> — a spreadsheet does not know about your team's on-call fatigue.</li>
+  </ol>
+  <p>Document 5 applies this method to two real SKU Sentinel decisions: the event bus platform, and build-vs-buy for demand forecasting.</p>
+
+  <h2 id="found-patterns">The 20%, Part 6: Key Patterns</h2>
+  <table>
+    <thead><tr><th>Pattern</th><th>Problem it solves</th><th>Cost of using it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>API Gateway</strong></td><td>Single entry point for auth, rate-limiting, routing to many services</td><td>Another hop; can become a bottleneck or a monolith of its own if over-loaded with logic</td></tr>
+      <tr><td><strong>CQRS</strong> (Command Query Responsibility Segregation)</td><td>Read and write workloads have very different shapes — separate models let each scale independently</td><td>Two models to keep consistent; eventual consistency on the read side</td></tr>
+      <tr><td><strong>Event Sourcing</strong></td><td>Need a full audit trail / ability to replay history, not just current state</td><td>Higher storage &amp; complexity; replaying/rebuilding projections takes real engineering</td></tr>
+      <tr><td><strong>Circuit Breaker</strong></td><td>Stop hammering a failing dependency; fail fast instead of cascading</td><td>Requires tuned thresholds; wrong tuning masks real outages or trips too eagerly</td></tr>
+      <tr><td><strong>Saga</strong></td><td>Coordinate a multi-step transaction across services without a distributed lock</td><td>Compensating actions must be designed for every step; harder to reason about than a DB transaction</td></tr>
+      <tr><td><strong>Strangler Fig</strong></td><td>Incrementally replace a legacy system instead of a risky big-bang rewrite</td><td>Runs two systems in parallel for a period — real, temporary operational overhead</td></tr>
+      <tr><td><strong>Backend-for-Frontend (BFF)</strong></td><td>Different clients (mobile, web, store kiosk) need different response shapes</td><td>One more service per client type to build and maintain</td></tr>
+      <tr><td><strong>Outbox Pattern</strong></td><td>Guarantee a DB write and an event publish happen atomically, without 2-phase commit</td><td>Requires a relay process and idempotent consumers</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="found-fitness">The 20%, Part 7: Fitness Functions</h2>
+  <p>A fitness function is an automated, repeatable test that checks whether the architecture still holds its intended shape — not whether the code compiles, but whether it still <em>looks like</em> the architecture you approved. Examples: a dependency-direction check that fails the build if a "core" module imports from an "adapter" module; a latency budget test that fails CI if P95 exceeds target under synthetic load; a coupling metric that flags a module importing from more than N others. Fitness functions turn "please don't do that" into something CI enforces automatically — the deterministic-execution principle applied to architecture itself.</p>
+
+  <h2 id="found-buildbuy">The 20%, Part 8: Build vs. Buy</h2>
+  <table>
+    <thead><tr><th>Lean Build when…</th><th>Lean Buy when…</th></tr></thead>
+    <tbody>
+      <tr><td>The capability is close to your core differentiator</td><td>It's undifferentiated — the business doesn't win by having a better version of it</td></tr>
+      <tr><td>You need deep control over behavior or data</td><td>A mature vendor already solves it at a quality you can't beat cost-effectively</td></tr>
+      <tr><td>Your team has (or can build) the specific expertise</td><td>The expertise required is scarce and expensive to hire for a one-time need</td></tr>
+      <tr><td>Long-term total cost of ownership favors owning it</td><td>Time-to-market matters more than long-term unit economics right now</td></tr>
+    </tbody>
+  </table>
+  <p>See <a href="#doc-adr">ADR-004</a> for how this framework was applied to the demand-forecasting model itself — a case where the answer was neither a clean "build" nor a clean "buy," but a documented hybrid.</p>
+
+  <h2 id="found-goodbad">Good vs. Bad Architecture</h2>
+  <table>
+    <thead><tr><th>Good architecture</th><th>Bad architecture</th></tr></thead>
+    <tbody>
+      <tr><td>Every significant decision has a written reason</td><td>Decisions exist only in one person's head, or a chat thread</td></tr>
+      <tr><td>Quality attributes have numbers attached</td><td>Quality attributes are adjectives ("fast," "scalable")</td></tr>
+      <tr><td>Failure paths are designed before the happy path ships</td><td>Failure handling is "we'll add try/catch later"</td></tr>
+      <tr><td>Complexity is proportional to actual load and team size</td><td>Twelve microservices for a system with 40 requests/day</td></tr>
+      <tr><td>A new engineer can explain the system from the diagrams alone</td><td>Understanding the system requires tribal knowledge</td></tr>
+      <tr><td>Trade-offs are stated honestly, including the downside of the chosen option</td><td>The chosen option is described as having no downsides</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="found-kpis">Architecture KPIs</h2>
+  <p>Borrowed and adapted from DORA (DevOps Research and Assessment), plus architecture-specific measures:</p>
+  <table>
+    <thead><tr><th>KPI</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr><td>Deployment frequency</td><td>How safely small the units of change are</td></tr>
+      <tr><td>Lead time for change</td><td>How much friction the architecture imposes on delivering value</td></tr>
+      <tr><td>Change failure rate</td><td>How often a deploy causes an incident — a direct signal of design and test quality</td></tr>
+      <tr><td>Mean time to recovery (MTTR)</td><td>How observable and decoupled the system really is when something breaks</td></tr>
+      <tr><td>Fitness function pass rate</td><td>Whether the built system still matches the approved architecture</td></tr>
+      <tr><td>NFR compliance rate</td><td>% of quality-attribute targets currently being met in production</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="found-lens">The Architect's Review Lens</h2>
+  <p>When an AI agent hands you a design, this is the checklist that turns you from a passive recipient into the accountable approver:</p>
+  <ol>
+    <li>Does every quality attribute have a <strong>number</strong>, not an adjective?</li>
+    <li>Is the architecture style justified against <strong>this system's actual load and team</strong>, or is it just the trendy default?</li>
+    <li>Does every significant decision have an ADR with genuine rejected alternatives?</li>
+    <li>Are the C4 diagrams internally consistent — does every container trace back to the context diagram?</li>
+    <li>Does the design state what happens when each external dependency fails?</li>
+    <li>Is there an idempotency story for every side-effecting operation (see this repo's non-negotiable rule on this)?</li>
+    <li>Are trade-offs stated with real costs, not just the winning option's benefits?</li>
+    <li>Is the complexity proportional to the load — no microservice sprawl for a low-volume system, no fragile monolith for a high-volume one?</li>
+    <li>Is there a named owner and a review cadence for this architecture going forward?</li>
+    <li>Could a competent engineer who wasn't in the room rebuild this system's intent from the documents alone?</li>
+  </ol>
+  <div class="callout success"><strong>This is the discipline in one sentence</strong>You are not being asked to out-engineer the AI. You are being asked to know which ten questions to ask it — and to recognize a bad answer when you hear one.</div>
+</section>
+
+<section id="doc-sad">
+<div class="doc-section">
+  <div class="doc-kicker">Document 1 of 8</div>
+  <h2>Solution Architecture Document (SAD)</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.2</div>
+    <div><span>Owner</span>Solution Architecture Practice, Colaberry AI</div>
+    <div><span>Status</span>Approved for Build</div>
+    <div><span>Date</span>2026-07-20</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('sad')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('sad')">Save as PDF</button>
+  </div>
+
+  <div id="doc-content-sad">
+  <h3>1. Executive Summary</h3>
+  <p>SKU Sentinel is a real-time inventory intelligence and demand-forecasting platform for Meridian Retail Group's 240-store network. It replaces a nightly-batch, spreadsheet-assisted replenishment process with an event-driven system that ingests point-of-sale, ERP, warehouse, and e-commerce activity as it happens, maintains a continuously updated view of on-hand inventory per SKU per store, and runs short-horizon demand forecasts that drive automated stockout and overstock alerts to store managers and category analysts. The platform is expected to reduce stockout-driven lost sales by 30% and overstock markdown cost by 20% within twelve months of full rollout, against a $42M and $27M annual baseline respectively.</p>
+
+  <h3>2. Business Context &amp; Problem Statement</h3>
+  <p>Meridian's current replenishment workflow reconciles POS sell-through against ERP stock levels once nightly, with store managers manually reviewing exception reports each morning. By the time a stockout risk is visible, it is frequently already a stockout — Meridian's own analysis attributes roughly 60% of stockout incidents to detection lag rather than to genuine unpredictable demand. The reverse problem, overstock, is driven by conservative manual reorder padding that is never revisited as sell-through patterns shift. Business requirements for SKU Sentinel are treated as approved inputs to this document; this SAD addresses <em>how</em> the system is built, not whether it should be.</p>
+
+  <h3>3. Scope</h3>
+  <table>
+    <thead><tr><th>In Scope</th><th>Out of Scope (this release)</th></tr></thead>
+    <tbody>
+      <tr><td>Real-time inventory position tracking across 240 stores</td><td>Automated purchase-order generation to suppliers (Phase 2)</td></tr>
+      <tr><td>Short-horizon (7–14 day) SKU/store demand forecasting</td><td>Long-horizon (seasonal, 6–12 month) demand planning</td></tr>
+      <tr><td>Stockout &amp; overstock risk alerting to store managers</td><td>Dynamic/algorithmic pricing or markdown automation</td></tr>
+      <tr><td>Category-analyst dashboards via Power BI</td><td>Supplier-facing portal or EDI renegotiation</td></tr>
+      <tr><td>Integration with POS, SAP ERP, WMS, e-commerce platform</td><td>In-store computer-vision shelf sensing (evaluated, deferred)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4. Architecture Style &amp; Justification</h3>
+  <p>SKU Sentinel is built as an <strong>event-driven microservices architecture</strong>. The decision was scored against Meridian's actual constraints, not chosen by default — full reasoning and rejected alternatives are recorded in <a href="#doc-adr">ADR-001</a>. Summary of the comparison:</p>
+  <table>
+    <thead><tr><th>Option</th><th>Fit against SKU Sentinel's load &amp; team</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Modular monolith</td><td>Cannot isolate the forecasting workload (bursty, CPU/GPU-bound) from the transactional inventory-write path; one deploy pipeline for two very different change cadences</td><td>Rejected</td></tr>
+      <tr><td>Synchronous microservices (REST-to-REST)</td><td>240 stores × ~38,000 SKUs generates a high-volume, bursty event stream (POS sales, ERP postings); synchronous chains would require services to be up simultaneously and would not tolerate Meridian's known store-network connectivity gaps</td><td>Rejected</td></tr>
+      <tr><td><strong>Event-driven microservices with CQRS on the read path</strong></td><td>Decouples high-volume ingestion from downstream processing; tolerates store connectivity gaps via buffering and replay; read-heavy dashboard/alert queries scale independently from the write path</td><td><strong>Selected</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5. System Context</h3>
+  <p>See <a href="#doc-c4">Document 2 — C4 Diagrams</a> for the full Context, Container, and Component views. At the highest level: two human roles (Store Manager, Category Demand Analyst) interact with the system; four external systems feed it (POS, SAP ERP, WMS, E-commerce Platform); one external system consumes curated output (Power BI).</p>
+
+  <h3>6. Logical Architecture — Services</h3>
+  <table>
+    <thead><tr><th>Service</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td>API Gateway (Azure API Management)</td><td>Single authenticated entry point; routing, rate-limiting, request validation</td></tr>
+      <tr><td>Ingestion Service</td><td>Normalizes inbound POS/ERP/WMS/e-commerce events into a common schema and publishes to the event bus</td></tr>
+      <tr><td>Event Bus (Azure Event Hubs, Kafka-protocol compatible)</td><td>Durable, ordered, replayable backbone for all domain events</td></tr>
+      <tr><td>Inventory Command Service</td><td>Owns the write model for inventory positions; validates and applies state changes</td></tr>
+      <tr><td>Inventory Query Service</td><td>CQRS read model, denormalized into Cosmos DB for low-latency dashboard/alert queries</td></tr>
+      <tr><td>Forecasting Service</td><td>Serves short-horizon demand forecasts via an Azure ML managed endpoint</td></tr>
+      <tr><td>Alert &amp; Recommendation Service</td><td>Evaluates forecast + inventory signals against thresholds and pushes alerts</td></tr>
+      <tr><td>Data Lake &amp; Feature Store (ADLS Gen2 + Databricks)</td><td>Bronze/Silver/Gold pipeline; trains and refreshes the forecasting model</td></tr>
+      <tr><td>Store Manager Web App</td><td>React SPA; store-level inventory view, alerts, manual override actions</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7. Data Architecture</h3>
+  <p>Core entities and their relationships are shown below. <code>InventoryPosition</code> is the system's write-path source of truth; <code>ForecastResult</code> and <code>Alert</code> are derived, append-mostly records that feed the read path.</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1100 420" role="img" aria-label="Entity relationship diagram for SKU Sentinel core data model">
+    <g class="dedge">
+      <line x1="140" y1="100" x2="350" y2="290" marker-end="url(#arrowMuted)"/>
+      <line x1="520" y1="100" x2="350" y2="290" marker-end="url(#arrowMuted)"/>
+      <line x1="470" y1="290" x2="560" y2="290" marker-end="url(#arrowMuted)"/>
+      <line x1="800" y1="290" x2="930" y2="140" marker-end="url(#arrowMuted)"/>
+    </g>
+    <g class="dedge-label">
+      <rect class="dedge-label-bg" x="185" y="180" width="70" height="16"/><text x="190" y="192">1..* has</text>
+      <rect class="dedge-label-bg" x="400" y="180" width="70" height="16"/><text x="405" y="192">1..* for</text>
+      <rect class="dedge-label-bg" x="485" y="282" width="80" height="16"/><text x="490" y="294">generates</text>
+      <rect class="dedge-label-bg" x="820" y="200" width="80" height="16"/><text x="825" y="212">triggers</text>
+    </g>
+    <g class="dbox">
+      <rect x="40" y="40" width="200" height="120" rx="8" fill="#367895" stroke="#274f61"/>
+      <text x="140" y="64" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Store</text>
+      <text x="52" y="86" fill="#fff" font-size="10">PK store_id</text>
+      <text x="52" y="102" fill="#fff" font-size="10">banner, region</text>
+      <text x="52" y="118" fill="#fff" font-size="10">timezone</text>
+      <text x="52" y="134" fill="#fff" font-size="10">connectivity_tier</text>
+    </g>
+    <g class="dbox">
+      <rect x="420" y="40" width="200" height="120" rx="8" fill="#367895" stroke="#274f61"/>
+      <text x="520" y="64" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">SKU</text>
+      <text x="432" y="86" fill="#fff" font-size="10">PK sku_id</text>
+      <text x="432" y="102" fill="#fff" font-size="10">category, unit_cost</text>
+      <text x="432" y="118" fill="#fff" font-size="10">shelf_life_days</text>
+      <text x="432" y="134" fill="#fff" font-size="10">supplier_lead_days</text>
+    </g>
+    <g class="dbox">
+      <rect x="230" y="230" width="240" height="120" rx="8" fill="#1A1A1A" stroke="#000"/>
+      <text x="350" y="254" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">InventoryPosition</text>
+      <text x="242" y="276" fill="#fff" font-size="10">PK position_id</text>
+      <text x="242" y="292" fill="#fff" font-size="10">FK store_id, FK sku_id</text>
+      <text x="242" y="308" fill="#fff" font-size="10">on_hand_qty, updated_at</text>
+      <text x="242" y="324" fill="#fff" font-size="10">source_event_id (idempotency)</text>
+      <text x="242" y="340" fill="#fff" font-size="10">version (optimistic lock)</text>
+    </g>
+    <g class="dbox">
+      <rect x="560" y="230" width="240" height="120" rx="8" fill="#5BA63C" stroke="#3f7429"/>
+      <text x="680" y="254" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">ForecastResult</text>
+      <text x="572" y="276" fill="#fff" font-size="10">PK forecast_id</text>
+      <text x="572" y="292" fill="#fff" font-size="10">FK store_id, FK sku_id</text>
+      <text x="572" y="308" fill="#fff" font-size="10">horizon_days, predicted_units</text>
+      <text x="572" y="324" fill="#fff" font-size="10">confidence, mape_est</text>
+      <text x="572" y="340" fill="#fff" font-size="10">model_version</text>
+    </g>
+    <g class="dbox">
+      <rect x="820" y="80" width="220" height="120" rx="8" fill="#FB2832" stroke="#a10e16"/>
+      <text x="930" y="104" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Alert</text>
+      <text x="832" y="126" fill="#fff" font-size="10">PK alert_id</text>
+      <text x="832" y="142" fill="#fff" font-size="10">FK forecast_id, FK store_id</text>
+      <text x="832" y="158" fill="#fff" font-size="10">type (stockout/overstock)</text>
+      <text x="832" y="174" fill="#fff" font-size="10">status, acknowledged_by</text>
+    </g>
+  </svg>
+  <div class="diagram-caption">Figure 1 — Core entity relationships. Full field-level schema is maintained in Sequelize models, not duplicated here.</div>
+  </div>
+
+  <h3>8. Integration Points</h3>
+  <table>
+    <thead><tr><th>System</th><th>Direction</th><th>Protocol</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>POS System (240 stores)</td><td>Inbound</td><td>Event stream (near-real-time)</td><td>Sale transactions, voids, returns</td></tr>
+      <tr><td>SAP ERP</td><td>Inbound / Outbound</td><td>IDoc + REST</td><td>SKU master data, purchase orders, cost updates</td></tr>
+      <tr><td>Warehouse Management System (WMS)</td><td>Inbound</td><td>Event stream</td><td>Receipts, transfers, cycle-count adjustments</td></tr>
+      <tr><td>E-commerce Platform</td><td>Inbound</td><td>Event stream</td><td>Online order &amp; fulfillment events (ship-from-store impact)</td></tr>
+      <tr><td>Power BI Service</td><td>Outbound</td><td>Data export / DirectQuery</td><td>Curated forecast &amp; KPI datasets from the Gold feature layer</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9. Security Architecture</h3>
+  <p>Authentication is OIDC/OAuth2 via Meridian's existing Azure AD tenant; the Store Manager Web App and API Gateway both validate JWTs and enforce role-based access (store-scoped for Store Managers, region/category-scoped for Analysts). Service-to-service calls inside the platform boundary use mTLS. Data at rest is encrypted (Azure-managed keys); data in transit is TLS 1.2+ throughout. <strong>SKU Sentinel does not process, store, or transmit cardholder data</strong> — POS integration carries SKU/quantity/timestamp only, not payment instrument data — and is therefore out of PCI-DSS scope. All secrets (SAP service account, Azure ML keys) are held in Azure Key Vault; no secret is ever logged, consistent with the repository's secrets-management rules.</p>
+
+  <h3>10. Technology Stack</h3>
+  <table>
+    <thead><tr><th>Layer</th><th>Technology</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td>Compute</td><td>Azure Kubernetes Service (AKS)</td><td>Existing Meridian Azure footprint; team AKS experience from prior projects</td></tr>
+      <tr><td>Event Backbone</td><td>Azure Event Hubs (Kafka protocol)</td><td>See <a href="#doc-tradeoff">Trade-off Matrix</a> and <a href="#doc-adr">ADR-002</a></td></tr>
+      <tr><td>Write Store</td><td>Azure Database for PostgreSQL</td><td>Strong consistency for inventory command path; team SQL familiarity</td></tr>
+      <tr><td>Read Store</td><td>Azure Cosmos DB</td><td>Low-latency denormalized reads at store-network scale; see ADR-003</td></tr>
+      <tr><td>ML Platform</td><td>Azure Machine Learning (managed endpoints)</td><td>Native integration with ADLS/Databricks pipeline already in use</td></tr>
+      <tr><td>Data Lake</td><td>Azure Data Lake Storage Gen2 + Databricks</td><td>Existing Meridian analytics platform, avoids a second data stack</td></tr>
+      <tr><td>Frontend</td><td>React (Store Manager Web App)</td><td>Consistent with Meridian's existing internal tooling stack</td></tr>
+      <tr><td>BI / Reporting</td><td>Power BI</td><td>Meridian's standing enterprise BI tool for category analysts</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11. Constraints &amp; Assumptions</h3>
+  <ul>
+    <li>Requirements for SKU Sentinel are approved inputs; this document does not revisit business justification.</li>
+    <li>Meridian's Azure Enterprise Agreement is the assumed cloud platform; no multi-cloud requirement exists.</li>
+    <li>~15% of stores operate on constrained/unreliable connectivity ("Tier 3" per Store entity's <code>connectivity_tier</code>) and require store-local buffering with replay-on-reconnect.</li>
+    <li>SAP ERP is treated as the system of record for SKU master data; SKU Sentinel does not duplicate ownership of that data.</li>
+    <li>Forecasting model retraining cadence (weekly) is an initial assumption, to be tuned once production drift metrics are available.</li>
+  </ul>
+
+  <h3>12. Related Documents</h3>
+  <p>This SAD is the top-level reference; supporting detail lives in the remaining seven documents in this guide — <a href="#doc-c4">C4 Diagrams</a>, <a href="#doc-adr">ADRs</a>, <a href="#doc-nfr">NFR Specification</a>, <a href="#doc-tradeoff">Trade-off Matrix</a>, <a href="#doc-sequence">Sequence &amp; Data-Flow Diagrams</a>, <a href="#doc-risk">Risk Register</a>, and the <a href="#doc-onepager">Sign-Off Summary</a>.</p>
+  </div>
+</div>
+</section>
+
+<section id="doc-c4">
+<div class="doc-section">
+  <div class="doc-kicker">Document 2 of 8</div>
+  <h2>C4 Diagrams — Context, Container &amp; Component</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.1</div>
+    <div><span>Owner</span>Solution Architecture Practice</div>
+    <div><span>Status</span>Approved</div>
+    <div><span>Date</span>2026-07-18</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('c4')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('c4')">Save as PDF</button>
+  </div>
+
+  <div id="doc-content-c4">
+  <h3>1. Level 1 — System Context</h3>
+  <p>SKU Sentinel as a single box: who uses it, and what it exchanges with the outside world.</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1000 480" role="img" aria-label="C4 context diagram for SKU Sentinel">
+    <g class="dedge">
+      <line x1="140" y1="60" x2="500" y2="240" marker-end="url(#arrowBerry)"/>
+      <line x1="860" y1="60" x2="500" y2="240" marker-end="url(#arrowBerry)"/>
+      <line x1="140" y1="405" x2="500" y2="240" marker-end="url(#arrowMuted)"/>
+      <line x1="380" y1="405" x2="500" y2="240" marker-end="url(#arrowMuted)"/>
+      <line x1="620" y1="405" x2="500" y2="240" marker-end="url(#arrowMuted)"/>
+      <line x1="860" y1="405" x2="500" y2="240" marker-end="url(#arrowMuted)"/>
+    </g>
+    <rect x="300" y="170" width="400" height="140" rx="10" fill="#367895" stroke="#FB2832" stroke-width="3"/>
+    <text x="500" y="230" text-anchor="middle" fill="#fff" font-weight="700" font-size="16">SKU Sentinel Platform</text>
+    <text x="500" y="252" text-anchor="middle" fill="#e6f0f4" font-size="11">[Software System]</text>
+    <text x="500" y="270" text-anchor="middle" fill="#e6f0f4" font-size="10">Real-time inventory intelligence &amp;</text>
+    <text x="500" y="284" text-anchor="middle" fill="#e6f0f4" font-size="10">demand forecasting for 240 stores</text>
+    <g class="dbox">
+      <rect x="40" y="20" width="200" height="80" rx="40" fill="#1A1A1A"/>
+      <text x="140" y="52" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Store Manager</text>
+      <text x="140" y="70" text-anchor="middle" fill="#ccc" font-size="10">[Person]</text>
+    </g>
+    <g class="dbox">
+      <rect x="760" y="20" width="200" height="80" rx="40" fill="#1A1A1A"/>
+      <text x="860" y="52" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Category Demand Analyst</text>
+      <text x="860" y="70" text-anchor="middle" fill="#ccc" font-size="10">[Person]</text>
+    </g>
+    <g class="dbox">
+      <rect x="40" y="360" width="200" height="90" rx="8" fill="#6B6B6B"/>
+      <text x="140" y="392" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">POS System</text>
+      <text x="140" y="408" text-anchor="middle" fill="#eee" font-size="9">[External System]</text>
+      <text x="140" y="424" text-anchor="middle" fill="#eee" font-size="9">240 store terminals</text>
+    </g>
+    <g class="dbox">
+      <rect x="280" y="360" width="200" height="90" rx="8" fill="#6B6B6B"/>
+      <text x="380" y="392" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">SAP ERP</text>
+      <text x="380" y="408" text-anchor="middle" fill="#eee" font-size="9">[External System]</text>
+      <text x="380" y="424" text-anchor="middle" fill="#eee" font-size="9">SKU master, purchase orders</text>
+    </g>
+    <g class="dbox">
+      <rect x="520" y="360" width="200" height="90" rx="8" fill="#6B6B6B"/>
+      <text x="620" y="392" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Warehouse Mgmt System</text>
+      <text x="620" y="408" text-anchor="middle" fill="#eee" font-size="9">[External System]</text>
+      <text x="620" y="424" text-anchor="middle" fill="#eee" font-size="9">Receipts, transfers</text>
+    </g>
+    <g class="dbox">
+      <rect x="760" y="360" width="200" height="90" rx="8" fill="#6B6B6B"/>
+      <text x="860" y="392" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">E-commerce Platform</text>
+      <text x="860" y="408" text-anchor="middle" fill="#eee" font-size="9">[External System]</text>
+      <text x="860" y="424" text-anchor="middle" fill="#eee" font-size="9">Online orders</text>
+    </g>
+    <g class="dedge-label">
+      <rect class="dedge-label-bg" x="250" y="130" width="130" height="14"/><text x="253" y="141">manages inventory via</text>
+      <rect class="dedge-label-bg" x="620" y="130" width="140" height="14"/><text x="623" y="141">reviews forecasts via</text>
+      <rect class="dedge-label-bg" x="180" y="320" width="130" height="14"/><text x="183" y="331">sale transactions</text>
+      <rect class="dedge-label-bg" x="380" y="320" width="110" height="14"/><text x="383" y="331">SKU master &amp; POs</text>
+      <rect class="dedge-label-bg" x="560" y="320" width="130" height="14"/><text x="563" y="331">receipts &amp; transfers</text>
+      <rect class="dedge-label-bg" x="700" y="320" width="110" height="14"/><text x="703" y="331">order events</text>
+    </g>
+  </svg>
+  <div class="diagram-caption">Figure 2 — C4 Level 1: System Context.</div>
+  </div>
+
+  <h3>2. Level 2 — Container Diagram</h3>
+  <p>The deployable units inside the SKU Sentinel boundary. All internal edges are asynchronous via the event bus unless labeled REST.</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1280 620" role="img" aria-label="C4 container diagram for SKU Sentinel">
+    <g class="dedge">
+      <path d="M110,100 L1030,215" marker-end="url(#arrowBerry)"/>
+      <path d="M310,100 L230,215" marker-end="url(#arrowMuted)"/>
+      <path d="M510,100 L230,215" marker-end="url(#arrowMuted)"/>
+      <path d="M710,100 L230,215" marker-end="url(#arrowMuted)"/>
+      <path d="M910,100 L230,215" marker-end="url(#arrowMuted)"/>
+      <path d="M1030,215 L630,215" marker-end="url(#arrowBerry)"/>
+      <path d="M630,215 L230,345" marker-end="url(#arrowBerry)"/>
+      <path d="M630,215 L1030,345" marker-end="url(#arrowBerry)"/>
+      <path d="M230,215 L630,338" marker-end="url(#arrowMuted)"/>
+      <path d="M230,338 L630,338" marker-end="url(#arrowMuted)" transform="translate(0,-30)"/>
+      <path d="M630,338 L230,338" marker-end="url(#arrowMuted)"/>
+      <path d="M230,352 L630,352" marker-end="url(#arrowMuted)"/>
+      <path d="M630,352 L230,475" marker-end="url(#arrowMuted)"/>
+      <path d="M230,459 L630,338" marker-end="url(#arrowMuted)"/>
+      <path d="M630,345 L630,475" marker-end="url(#arrowBerry)"/>
+      <path d="M630,475 L1030,215" marker-end="url(#arrowCherry)"/>
+      <path d="M1030,475 Q 630,590 230,475" marker-end="url(#arrowMuted)"/>
+      <path d="M230,215 Q 630,255 1030,475" marker-end="url(#arrowMuted)"/>
+      <path d="M1030,475 Q 1240,270 1110,100" marker-end="url(#arrowBerry)"/>
+    </g>
+    <rect x="20" y="130" width="1200" height="430" rx="12" fill="none" stroke="#367895" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="40" y="152" fill="#367895" font-weight="700" font-size="12">SKU Sentinel Platform [Software System — Azure]</text>
+    <g class="dbox">
+      <rect x="20" y="20" width="180" height="80" rx="40" fill="#1A1A1A"/>
+      <text x="110" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Store Manager</text>
+      <text x="110" y="72" text-anchor="middle" fill="#ccc" font-size="9">[Person]</text>
+    </g>
+    <rect x="220" y="20" width="180" height="80" rx="8" fill="#6B6B6B"/><text x="310" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">POS System</text><text x="310" y="72" text-anchor="middle" fill="#eee" font-size="9">[External]</text>
+    <rect x="420" y="20" width="180" height="80" rx="8" fill="#6B6B6B"/><text x="510" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">SAP ERP</text><text x="510" y="72" text-anchor="middle" fill="#eee" font-size="9">[External]</text>
+    <rect x="620" y="20" width="180" height="80" rx="8" fill="#6B6B6B"/><text x="710" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">WMS</text><text x="710" y="72" text-anchor="middle" fill="#eee" font-size="9">[External]</text>
+    <rect x="820" y="20" width="180" height="80" rx="8" fill="#6B6B6B"/><text x="910" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">E-commerce</text><text x="910" y="72" text-anchor="middle" fill="#eee" font-size="9">[External]</text>
+    <g class="dbox">
+      <rect x="1020" y="20" width="180" height="80" rx="40" fill="#1A1A1A"/>
+      <text x="1110" y="50" text-anchor="middle" fill="#fff" font-weight="700" font-size="10">Category Demand</text>
+      <text x="1110" y="63" text-anchor="middle" fill="#fff" font-weight="700" font-size="10">Analyst</text>
+      <text x="1110" y="78" text-anchor="middle" fill="#ccc" font-size="9">[Person]</text>
+    </g>
+    <rect x="60" y="160" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="230" y="205" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Ingestion Service</text><text x="230" y="222" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: Node.js]</text><text x="230" y="238" text-anchor="middle" fill="#e6f0f4" font-size="9">Normalizes source events</text>
+    <rect x="460" y="160" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="630" y="205" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">API Gateway</text><text x="630" y="222" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: Azure APIM]</text><text x="630" y="238" text-anchor="middle" fill="#e6f0f4" font-size="9">AuthN, routing, rate limits</text>
+    <rect x="860" y="160" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="1030" y="205" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Store Manager Web App</text><text x="1030" y="222" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: React SPA]</text><text x="1030" y="238" text-anchor="middle" fill="#e6f0f4" font-size="9">Inventory view, alerts, overrides</text>
+    <rect x="60" y="290" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="230" y="335" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Inventory Command Service</text><text x="230" y="352" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: Node.js + PostgreSQL]</text><text x="230" y="368" text-anchor="middle" fill="#e6f0f4" font-size="9">Write model, validation</text>
+    <rect x="460" y="290" width="340" height="110" rx="8" fill="#FB2832" stroke="#a10e16"/><text x="630" y="335" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Event Bus</text><text x="630" y="352" text-anchor="middle" fill="#ffe3e4" font-size="9">[Container: Azure Event Hubs]</text><text x="630" y="368" text-anchor="middle" fill="#ffe3e4" font-size="9">Durable, replayable backbone</text>
+    <rect x="860" y="290" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="1030" y="335" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Inventory Query Service</text><text x="1030" y="352" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: Node.js + Cosmos DB]</text><text x="1030" y="368" text-anchor="middle" fill="#e6f0f4" font-size="9">CQRS read model</text>
+    <rect x="60" y="420" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="230" y="465" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Forecasting Service</text><text x="230" y="482" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: Azure ML endpoint]</text><text x="230" y="498" text-anchor="middle" fill="#e6f0f4" font-size="9">Short-horizon demand forecasts</text>
+    <rect x="460" y="420" width="340" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="630" y="465" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Alert &amp; Recommendation Svc</text><text x="630" y="482" text-anchor="middle" fill="#e6f0f4" font-size="9">[Container: Node.js]</text><text x="630" y="498" text-anchor="middle" fill="#e6f0f4" font-size="9">Threshold evaluation, push alerts</text>
+    <rect x="860" y="420" width="340" height="110" rx="8" fill="#5BA63C" stroke="#3f7429"/><text x="1030" y="465" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">Data Lake &amp; Feature Store</text><text x="1030" y="482" text-anchor="middle" fill="#eafbe1" font-size="9">[Container: ADLS Gen2 + Databricks]</text><text x="1030" y="498" text-anchor="middle" fill="#eafbe1" font-size="9">Bronze/Silver/Gold pipeline</text>
+    <g class="dedge-label">
+      <rect class="dedge-label-bg" x="290" y="150" width="150" height="13"/><text x="293" y="160" font-size="10">source events → Ingestion</text>
+      <rect class="dedge-label-bg" x="800" y="205" width="150" height="13"/><text x="803" y="215" font-size="10">REST/JSON via OAuth2</text>
+      <rect class="dedge-label-bg" x="380" y="270" width="150" height="13"/><text x="383" y="280" font-size="10">writes overrides (REST)</text>
+      <rect class="dedge-label-bg" x="780" y="270" width="150" height="13"/><text x="783" y="280" font-size="10">reads positions (REST)</text>
+      <rect class="dedge-label-bg" x="330" y="360" width="170" height="13"/><text x="333" y="370" font-size="10">publish / consume InventoryPositionChanged</text>
+      <rect class="dedge-label-bg" x="290" y="405" width="180" height="13"/><text x="293" y="415" font-size="10">publish / consume ForecastUpdated</text>
+      <rect class="dedge-label-bg" x="640" y="400" width="180" height="13"/><text x="643" y="410" font-size="10">consumes Forecast + Inventory events</text>
+      <rect class="dedge-label-bg" x="780" y="330" width="160" height="13"/><text x="783" y="340" font-size="10">push alerts (WebSocket)</text>
+      <rect class="dedge-label-bg" x="560" y="530" width="130" height="13"/><text x="563" y="540" font-size="10">serves features</text>
+      <rect class="dedge-label-bg" x="1150" y="180" width="120" height="13"/><text x="1153" y="190" font-size="10">Power BI dashboards</text>
+    </g>
+  </svg>
+  <div class="diagram-caption">Figure 3 — C4 Level 2: Container diagram. Boxes in leaf green are analytics/data containers; the event bus (cherry) is the central integration hub.</div>
+  </div>
+
+  <h3>3. Level 3 — Component Diagram: Forecasting Service</h3>
+  <p>Zooming into the Forecasting Service container, the highest-risk container in the platform because it sits on the critical path between raw signals and a store manager's trust in the system.</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1200 380" role="img" aria-label="C4 component diagram for the Forecasting Service">
+    <g class="dedge">
+      <line x1="140" y1="115" x2="380" y2="115" marker-end="url(#arrowBerry)"/>
+      <line x1="380" y1="115" x2="620" y2="115" marker-end="url(#arrowBerry)"/>
+      <line x1="620" y1="115" x2="860" y2="115" marker-end="url(#arrowBerry)"/>
+      <line x1="860" y1="115" x2="1100" y2="115" marker-end="url(#arrowBerry)"/>
+      <line x1="380" y1="115" x2="150" y2="275" marker-end="url(#arrowMuted)"/>
+      <line x1="620" y1="115" x2="440" y2="275" marker-end="url(#arrowMuted)"/>
+      <line x1="620" y1="115" x2="730" y2="275" marker-end="url(#arrowMuted)"/>
+      <line x1="1100" y1="115" x2="1000" y2="275" marker-end="url(#arrowCherry)"/>
+    </g>
+    <rect x="40" y="60" width="200" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="140" y="108" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">API Controller</text><text x="140" y="126" text-anchor="middle" fill="#e6f0f4" font-size="9">[Component]</text>
+    <rect x="280" y="60" width="200" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="380" y="108" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Feature Fetcher</text><text x="380" y="126" text-anchor="middle" fill="#e6f0f4" font-size="9">[Component]</text>
+    <rect x="520" y="60" width="200" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="620" y="100" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Model Inference</text><text x="620" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Client</text><text x="620" y="132" text-anchor="middle" fill="#e6f0f4" font-size="9">[Component]</text>
+    <rect x="760" y="60" width="200" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="860" y="100" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Confidence</text><text x="860" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Scorer</text><text x="860" y="132" text-anchor="middle" fill="#e6f0f4" font-size="9">[Component]</text>
+    <rect x="1000" y="60" width="200" height="110" rx="8" fill="#367895" stroke="#274f61"/><text x="1100" y="108" text-anchor="middle" fill="#fff" font-weight="700" font-size="12">Event Publisher</text><text x="1100" y="126" text-anchor="middle" fill="#e6f0f4" font-size="9">[Component]</text>
+    <rect x="40" y="230" width="220" height="90" rx="8" fill="#6B6B6B"/><text x="150" y="270" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Forecast Cache</text><text x="150" y="286" text-anchor="middle" fill="#eee" font-size="9">[Redis]</text>
+    <rect x="310" y="230" width="260" height="90" rx="8" fill="#6B6B6B"/><text x="440" y="270" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Azure ML Endpoint</text><text x="440" y="286" text-anchor="middle" fill="#eee" font-size="9">[Managed Inference]</text>
+    <rect x="620" y="230" width="220" height="90" rx="8" fill="#6B6B6B"/><text x="730" y="270" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Model Registry</text><text x="730" y="286" text-anchor="middle" fill="#eee" font-size="9">[Azure ML]</text>
+    <rect x="890" y="230" width="220" height="90" rx="8" fill="#FB2832"/><text x="1000" y="270" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Event Bus</text><text x="1000" y="286" text-anchor="middle" fill="#ffe3e4" font-size="9">[Azure Event Hubs]</text>
+    <g class="dedge-label">
+      <rect class="dedge-label-bg" x="170" y="98" width="140" height="12"/><text x="173" y="107" font-size="9">forecast(sku,store)</text>
+      <rect class="dedge-label-bg" x="415" y="98" width="140" height="12"/><text x="418" y="107" font-size="9">feature vector</text>
+      <rect class="dedge-label-bg" x="655" y="98" width="140" height="12"/><text x="658" y="107" font-size="9">raw prediction + interval</text>
+      <rect class="dedge-label-bg" x="895" y="98" width="150" height="12"/><text x="898" y="107" font-size="9">confidence-scored forecast</text>
+      <rect class="dedge-label-bg" x="200" y="200" width="90" height="12"/><text x="203" y="209" font-size="9">cache lookup</text>
+      <rect class="dedge-label-bg" x="480" y="200" width="90" height="12"/><text x="483" y="209" font-size="9">invoke scoring</text>
+      <rect class="dedge-label-bg" x="640" y="200" width="120" height="12"/><text x="643" y="209" font-size="9">load model version</text>
+      <rect class="dedge-label-bg" x="960" y="200" width="130" height="12"/><text x="963" y="209" font-size="9">publish ForecastUpdated</text>
+    </g>
+  </svg>
+  <div class="diagram-caption">Figure 4 — C4 Level 3: Component diagram for the Forecasting Service container.</div>
+  </div>
+  <div class="callout info"><strong>How to review a C4 set</strong>Confirm every container named here appears in the Container diagram, and that the two containers referenced as "external" here (Event Bus, Azure ML Endpoint) match the same names used at Level 2. Naming drift between levels is the single most common defect in AI-generated C4 sets.</div>
+  </div>
+</div>
+</section>
+
+<section id="doc-adr">
+<div class="doc-section">
+  <div class="doc-kicker">Document 3 of 8</div>
+  <h2>Architecture Decision Records</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.3</div>
+    <div><span>Owner</span>Architecture Review Board</div>
+    <div><span>Status</span>Living Document</div>
+    <div><span>Date</span>2026-07-22</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('adr')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('adr')">Save as PDF</button>
+  </div>
+
+  <div id="doc-content-adr">
+  <p>Each record below follows the same structure deliberately: Context, Decision, Rejected Options (with the specific reason each lost), and Consequences (including what the winning option costs us). An ADR without a rejected option is not a decision record — see <a href="#found-adr">Foundations, Part 4</a>.</p>
+
+  <h3>ADR-001 — Event-Driven Microservices over a Modular Monolith</h3>
+  <p><span class="tag leaf">Status: Accepted</span></p>
+  <p><strong>Context.</strong> SKU Sentinel must ingest a high-volume, bursty stream from 240 stores (POS, ERP, WMS, e-commerce), keep a near-real-time inventory position, and run a compute-intensive forecasting workload — three workloads with very different scaling and change-cadence profiles. Roughly 15% of stores run on constrained connectivity and need to buffer-and-replay rather than block on a live call.</p>
+  <p><strong>Decision.</strong> Build SKU Sentinel as event-driven microservices, with an event bus as the primary integration mechanism and REST reserved for synchronous, user-initiated request/response paths (dashboard reads, manual overrides).</p>
+  <p><strong>Rejected Options.</strong></p>
+  <table><thead><tr><th>Option</th><th>Why it lost</th></tr></thead><tbody>
+    <tr><td>Modular monolith</td><td>Cannot scale the forecasting workload (GPU/CPU-bound, bursty) independently of the transactional inventory-write path; one deploy pipeline forces every change through the same release cadence and blast radius</td></tr>
+    <tr><td>Synchronous microservices only</td><td>Would require every service to be reachable in real time; incompatible with known store-network connectivity gaps and would create cascading timeouts under POS burst load (Black Friday)</td></tr>
+  </tbody></table>
+  <p><strong>Consequences.</strong> Gains: independent scaling per workload, tolerance for store connectivity gaps via replay, natural audit trail of domain events. Costs: eventual consistency on the read path must be designed for (not assumed away), and the team takes on operational responsibility for a distributed event backbone it has less experience running than a single database.</p>
+
+  <h3>ADR-002 — Azure Event Hubs as the Event Backbone</h3>
+  <p><span class="tag leaf">Status: Accepted</span></p>
+  <p><strong>Context.</strong> ADR-001 requires a durable, replayable, high-throughput event bus. Candidates evaluated: self-managed Apache Kafka, Confluent Cloud, AWS Kinesis, and Azure Event Hubs (Kafka-protocol compatible). Full scoring is in <a href="#doc-tradeoff">Document 5</a>.</p>
+  <p><strong>Decision.</strong> Use Azure Event Hubs in Kafka-compatible mode.</p>
+  <p><strong>Rejected Options.</strong></p>
+  <table><thead><tr><th>Option</th><th>Why it lost</th></tr></thead><tbody>
+    <tr><td>Self-managed Kafka</td><td>Lowest weighted score — highest operational burden for a team with no existing Kafka SRE bench, and no cost advantage once cluster operations staffing is priced in</td></tr>
+    <tr><td>AWS Kinesis</td><td>Would require a second cloud provider relationship for a single component; Meridian's Enterprise Agreement and existing identity/networking are entirely Azure</td></tr>
+    <tr><td>Confluent Cloud</td><td>Close second place; more Kafka-native tooling, but materially higher run-rate cost than a native Azure service for the same throughput, and one more vendor relationship to manage</td></tr>
+  </tbody></table>
+  <p><strong>Consequences.</strong> Gains: managed durability/replay, native Azure IAM integration, Kafka-protocol compatibility keeps consumer code portable if we outgrow it. Costs: a soft dependency on Azure-specific quota and throughput-unit tuning; some Kafka ecosystem tooling (e.g. certain Kafka Connect connectors) is not directly usable and needs an Azure-native equivalent.</p>
+
+  <h3>ADR-003 — CQRS with a Denormalized Read Model for Inventory Queries</h3>
+  <p><span class="tag leaf">Status: Accepted</span></p>
+  <p><strong>Context.</strong> The inventory write path (POS/ERP/WMS events changing on-hand quantity) and the read path (dashboards, alert evaluation, store manager app polling) have opposite shapes: writes are narrow and consistency-sensitive; reads are wide, high-volume, and latency-sensitive (P95 target &lt;250ms — see <a href="#doc-nfr">NFR Spec</a>).</p>
+  <p><strong>Decision.</strong> Split into a command model (PostgreSQL, strongly consistent, owns validation) and a query model (Cosmos DB, denormalized per store/SKU, updated asynchronously from the same domain events).</p>
+  <p><strong>Rejected Options.</strong></p>
+  <table><thead><tr><th>Option</th><th>Why it lost</th></tr></thead><tbody>
+    <tr><td>Single shared relational model for both reads and writes</td><td>Read-heavy dashboard queries at 240-store scale would contend with write-path transactions and force read replicas anyway — CQRS makes that split explicit rather than accidental</td></tr>
+    <tr><td>Full event sourcing (rebuild all state from event log)</td><td>Rejected as over-engineering for this release: no current requirement for point-in-time state replay beyond the 7-day event retention window already provided by the event bus</td></tr>
+  </tbody></table>
+  <p><strong>Consequences.</strong> Gains: read and write paths scale independently; query latency is decoupled from write-path load. Costs: the read model is eventually consistent — a store manager can, for a small window (target &lt;5s), see a stale on-hand quantity after a sale; the UI must communicate "as of" freshness rather than imply real-time truth.</p>
+
+  <h3>ADR-004 — Hybrid Build/Buy for the Demand Forecasting Model</h3>
+  <p><span class="tag leaf">Status: Accepted</span></p>
+  <p><strong>Context.</strong> Demand forecasting is close to SKU Sentinel's core differentiator, but general-purpose forecasting is a mature, well-solved problem with credible SaaS vendors (Blue Yonder, o9). Full scoring in <a href="#doc-tradeoff">Document 5</a>.</p>
+  <p><strong>Decision.</strong> Build the forecasting service and feature pipeline in-house on Azure ML (AutoML + custom Meridian-specific features: local events, weather, historical markdown cadence), rather than adopting a third-party forecasting SaaS wholesale.</p>
+  <p><strong>Rejected Options.</strong></p>
+  <table><thead><tr><th>Option</th><th>Why it lost</th></tr></thead><tbody>
+    <tr><td>Buy — full third-party forecasting SaaS (Blue Yonder / o9)</td><td>Strong general accuracy, but weak on Meridian-specific signals (hyper-local promotions, store-level substitution behavior) that materially affect this use case, and would durably lock forecasting logic and its economics outside Meridian's control</td></tr>
+    <tr><td>Build fully from scratch (custom models, no managed ML platform)</td><td>Would duplicate MLOps capability (experiment tracking, endpoint hosting, drift monitoring) Azure ML already provides; slower time-to-first-forecast with no offsetting long-term advantage</td></tr>
+  </tbody></table>
+  <p><strong>Consequences.</strong> Gains: forecasting logic and its data stay a Meridian-owned asset; team builds durable ML operations capability. Costs: Meridian owns model quality and drift monitoring long-term (see <a href="#doc-risk">Risk R7</a>); slower initial time-to-value than a SaaS "turn it on" path — mitigated by scoping v1 to a narrower SKU set (top 60% of volume) before full rollout.</p>
+
+  <h3>ADR-005 — API Gateway with a Single Web BFF, No Separate Mobile BFF (Yet)</h3>
+  <p><span class="tag leaf">Status: Accepted</span></p>
+  <p><strong>Context.</strong> Store managers access SKU Sentinel exclusively through the in-store Store Manager Web App today; there is no approved mobile client requirement in this release.</p>
+  <p><strong>Decision.</strong> Route all client traffic through a single Azure API Management gateway; do not introduce a Backend-for-Frontend layer until a second client shape (e.g., a mobile app) is actually approved.</p>
+  <p><strong>Rejected Options.</strong></p>
+  <table><thead><tr><th>Option</th><th>Why it lost</th></tr></thead><tbody>
+    <tr><td>Build a BFF now, speculatively, for a future mobile client</td><td>No approved mobile requirement exists; this repo's operating principle is explicit that we do not design for hypothetical future requirements</td></tr>
+  </tbody></table>
+  <p><strong>Consequences.</strong> Gains: one less container to build, deploy, and secure today. Costs: if a mobile client is approved later, introducing a BFF at that point is a scoped, known piece of follow-on work, not a redesign — the API Gateway boundary already isolates clients from internal service topology.</p>
+
+  <h3>ADR-006 — Asynchronous Events, Not Synchronous REST, for Inventory-to-Alert Propagation</h3>
+  <p><span class="tag leaf">Status: Accepted</span></p>
+  <p><strong>Context.</strong> A naive design would have the Inventory Command Service call the Forecasting Service directly (REST) whenever a position changes, which then calls the Alert Service directly. This chains three services' availability together for every single POS transaction.</p>
+  <p><strong>Decision.</strong> Inventory Command Service publishes <code>InventoryPositionChanged</code> to the event bus using the transactional outbox pattern (DB write and event publish are atomic); Forecasting and Alert services consume independently and idempotently, keyed on event ID.</p>
+  <p><strong>Rejected Options.</strong></p>
+  <table><thead><tr><th>Option</th><th>Why it lost</th></tr></thead><tbody>
+    <tr><td>Direct synchronous REST chain (Command → Forecasting → Alert)</td><td>Ties the availability of three services together for every transaction; a slow or down Forecasting Service would directly block inventory writes, violating the availability target in the <a href="#doc-nfr">NFR Spec</a></td></tr>
+    <tr><td>Dual-write (write to DB, then separately publish event, no outbox)</td><td>Not idempotent/safe under partial failure — a crash between the DB write and the publish silently drops the event, violating this repo's non-negotiable idempotency rules</td></tr>
+  </tbody></table>
+  <p><strong>Consequences.</strong> Gains: services fail independently; a Forecasting Service outage delays forecasts, not inventory writes. Costs: requires an outbox relay process and consumer-side idempotency keys on every downstream handler — real, necessary engineering, not optional polish.</p>
+  </div>
+</div>
+</section>
+
+<section id="doc-nfr">
+<div class="doc-section">
+  <div class="doc-kicker">Document 4 of 8</div>
+  <h2>Non-Functional Requirements Specification</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.1</div>
+    <div><span>Owner</span>Solution Architecture Practice</div>
+    <div><span>Status</span>Approved</div>
+    <div><span>Date</span>2026-07-19</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('nfr')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('nfr')">Save as PDF</button>
+    <button class="btn btn-ghost" onclick="exportCSV('nfr-table','NFR_Spec_SKUSentinel.csv')">Export CSV</button>
+  </div>
+
+  <div id="doc-content-nfr">
+  <p>Every row below carries a measurable target and a verification method — an NFR without both is treated as incomplete per the <a href="#found-quality">Foundations</a> section of this guide.</p>
+  <table id="nfr-table">
+    <thead><tr><th>Category</th><th>Requirement</th><th>Measurable Target</th><th>Verification Method</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td>Availability</td><td>Platform must remain available during store operating hours across all time zones</td><td>99.9% monthly uptime (platform); 99.95% for the inventory read path</td><td>Synthetic uptime probe every 60s; monthly SLA report</td><td>Must-have</td></tr>
+      <tr><td>Latency</td><td>Dashboard and alert-evaluation reads must feel instant to store managers</td><td>P95 API read latency &lt; 250ms; P99 &lt; 600ms</td><td>Load test (k6) against staging; production APM dashboards</td><td>Must-have</td></tr>
+      <tr><td>Latency (event path)</td><td>A POS sale must be reflected in inventory position and forecast within a bounded window</td><td>P95 end-to-end (sale → updated inventory position) &lt; 5 minutes</td><td>Correlation-ID traced synthetic transaction, hourly</td><td>Must-have</td></tr>
+      <tr><td>Throughput</td><td>System must absorb peak event volume without backpressure failure</td><td>3,200 events/sec sustained (Black Friday peak, ~4x baseline)</td><td>Load test against Event Hubs throughput-unit ceiling before each peak season</td><td>Must-have</td></tr>
+      <tr><td>Scalability</td><td>Compute must autoscale ahead of demand, not behind it</td><td>AKS node pool scales to 3x baseline within 5 minutes of sustained load trigger</td><td>Chaos/load test with simulated traffic ramp</td><td>Should-have</td></tr>
+      <tr><td>Durability</td><td>No inventory-affecting event may be silently lost</td><td>Event Hubs retention ≥ 7 days (replay window); write-path data durability 99.999999%</td><td>Configuration audit; quarterly replay drill</td><td>Must-have</td></tr>
+      <tr><td>Security</td><td>All access authenticated and least-privilege scoped</td><td>100% of routes behind OAuth2/OIDC; zero standing admin credentials; TLS 1.2+ everywhere</td><td>Automated route audit in CI; quarterly access review</td><td>Must-have</td></tr>
+      <tr><td>Compliance</td><td>Data handling aligned to enterprise security posture</td><td>SOC 2 Type II control alignment; US-only data residency</td><td>Annual third-party audit</td><td>Must-have</td></tr>
+      <tr><td>Observability</td><td>Every failure must be traceable from symptom to root cause</td><td>100% of services emit structured JSON logs with correlation ID; distributed tracing coverage ≥ 95% of inter-service calls</td><td>Log schema linter in CI; tracing coverage dashboard</td><td>Must-have</td></tr>
+      <tr><td>Maintainability</td><td>Changes must ship safely and quickly</td><td>Deployment lead time &lt; 1 business day; automated test coverage ≥ 80% for services/</td><td>CI pipeline metrics; coverage report per build</td><td>Should-have</td></tr>
+      <tr><td>Cost Efficiency</td><td>Infrastructure spend must stay proportionate to business value delivered</td><td>Platform infra cost &lt; 0.15% of the incremental sales lift it produces</td><td>Monthly Azure cost report reconciled against sales-lift tracking</td><td>Should-have</td></tr>
+      <tr><td>Usability</td><td>Store Manager Web App must load fast on in-store hardware/network</td><td>P95 initial page load &lt; 2s on Tier 2 store connectivity</td><td>Synthetic browser test (Lighthouse CI) per release</td><td>Should-have</td></tr>
+      <tr><td>Disaster Recovery</td><td>Platform must recover from a regional Azure incident within a defined window</td><td>RPO ≤ 15 minutes; RTO ≤ 4 hours</td><td>Semi-annual DR failover drill</td><td>Must-have</td></tr>
+      <tr><td>Data Quality (Forecast)</td><td>Forecasts must be accurate enough to drive automated alerts without excessive false positives</td><td>MAPE ≤ 18% for top-60%-volume SKUs at 7-day horizon</td><td>Weekly backtest against actuals; tracked in model registry</td><td>Must-have</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><strong>Reviewer note</strong>Three targets above (Availability, Latency event path, Data Quality) directly gate go-live per the Sign-Off Summary. If an AI-generated NFR spec is missing a verification method for any row, treat the row as not yet a requirement — an unverifiable target cannot be enforced by a fitness function.</div>
+  </div>
+</div>
+</section>
+
+<section id="doc-tradeoff">
+<div class="doc-section">
+  <div class="doc-kicker">Document 5 of 8</div>
+  <h2>Technology Selection &amp; Trade-off Matrix</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.0</div>
+    <div><span>Owner</span>Architecture Review Board</div>
+    <div><span>Status</span>Approved</div>
+    <div><span>Date</span>2026-07-15</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('tradeoff')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('tradeoff')">Save as PDF</button>
+  </div>
+
+  <div id="doc-content-tradeoff">
+  <p>Method: criteria are weighted to sum to 1.0, each option is scored 0–10 per criterion, and weighted scores are summed. The winner is sanity-checked against the ADR narrative in <a href="#doc-adr">Document 3</a> — a spreadsheet total is an input to the decision, not a substitute for it.</p>
+
+  <h3>1. Event Bus Platform (supports ADR-002)</h3>
+  <div class="toolbar">
+    <button class="btn btn-ghost" onclick="exportCSV('tradeoff-table-eventbus','TradeOff_EventBus_SKUSentinel.csv')">Export CSV</button>
+  </div>
+  <table id="tradeoff-table-eventbus">
+    <thead><tr><th>Criterion</th><th>Weight</th><th>Azure Event Hubs</th><th>Confluent Cloud</th><th>Self-Managed Kafka</th><th>AWS Kinesis</th></tr></thead>
+    <tbody>
+      <tr><td>Cost (run-rate at 3,200 events/sec peak)</td><td>0.20</td><td>8</td><td>5</td><td>7</td><td>6</td></tr>
+      <tr><td>Operational burden</td><td>0.25</td><td>9</td><td>8</td><td>3</td><td>7</td></tr>
+      <tr><td>Team familiarity</td><td>0.15</td><td>7</td><td>8</td><td>4</td><td>3</td></tr>
+      <tr><td>Latency</td><td>0.15</td><td>9</td><td>9</td><td>9</td><td>7</td></tr>
+      <tr><td>Scalability headroom</td><td>0.15</td><td>9</td><td>9</td><td>8</td><td>8</td></tr>
+      <tr><td>Vendor lock-in (higher = less locked-in)</td><td>0.10</td><td>6</td><td>5</td><td>10</td><td>4</td></tr>
+      <tr><td><strong>Weighted Total</strong></td><td>1.00</td><td><strong>8.20</strong></td><td><strong>7.40</strong></td><td><strong>6.30</strong></td><td><strong>6.05</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 620 300" role="img" aria-label="Bar chart of weighted trade-off scores for event bus options">
+    <line x1="60" y1="250" x2="580" y2="250" stroke="#E4E4E3" stroke-width="1"/>
+    <line x1="60" y1="150" x2="580" y2="150" stroke="#E4E4E3" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="60" y1="50" x2="580" y2="50" stroke="#E4E4E3" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="45" y="254" text-anchor="end" font-size="10" fill="#6B6B6B">0</text>
+    <text x="45" y="154" text-anchor="end" font-size="10" fill="#6B6B6B">5</text>
+    <text x="45" y="54" text-anchor="end" font-size="10" fill="#6B6B6B">10</text>
+    <rect x="90" y="86" width="90" height="164" fill="#5BA63C"/>
+    <text x="135" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">8.20</text>
+    <text x="135" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">Azure Event</text>
+    <text x="135" y="283" text-anchor="middle" font-size="11" fill="#1A1A1A">Hubs (selected)</text>
+    <rect x="240" y="102" width="90" height="148" fill="#367895"/>
+    <text x="285" y="92" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">7.40</text>
+    <text x="285" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">Confluent Cloud</text>
+    <rect x="390" y="124" width="90" height="126" fill="#367895"/>
+    <text x="435" y="114" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">6.30</text>
+    <text x="435" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">Self-Managed</text>
+    <text x="435" y="283" text-anchor="middle" font-size="11" fill="#1A1A1A">Kafka</text>
+    <rect x="500" y="129" width="80" height="121" fill="#367895"/>
+    <text x="540" y="119" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">6.05</text>
+    <text x="540" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">AWS Kinesis</text>
+  </svg>
+  <div class="diagram-caption">Figure 5 — Weighted trade-off scores, event bus platform (max 10). Selected option in leaf green.</div>
+  </div>
+
+  <h3>2. Demand Forecasting: Build vs. Buy (supports ADR-004)</h3>
+  <div class="toolbar">
+    <button class="btn btn-ghost" onclick="exportCSV('tradeoff-table-forecast','TradeOff_Forecasting_SKUSentinel.csv')">Export CSV</button>
+  </div>
+  <table id="tradeoff-table-forecast">
+    <thead><tr><th>Criterion</th><th>Weight</th><th>Buy — Third-Party SaaS</th><th>Build — Fully Custom</th><th>Build — Azure ML AutoML</th></tr></thead>
+    <tbody>
+      <tr><td>Domain fit (Meridian-specific signals)</td><td>0.30</td><td>4</td><td>8</td><td>8</td></tr>
+      <tr><td>Time-to-value</td><td>0.15</td><td>9</td><td>3</td><td>6</td></tr>
+      <tr><td>Total cost of ownership (3-yr)</td><td>0.20</td><td>5</td><td>5</td><td>7</td></tr>
+      <tr><td>Control / IP ownership</td><td>0.15</td><td>2</td><td>9</td><td>8</td></tr>
+      <tr><td>Vendor risk (higher = lower risk)</td><td>0.10</td><td>4</td><td>8</td><td>7</td></tr>
+      <tr><td>MLOps ease (lower burden = higher score)</td><td>0.10</td><td>9</td><td>3</td><td>7</td></tr>
+      <tr><td><strong>Weighted Total</strong></td><td>1.00</td><td><strong>5.15</strong></td><td><strong>6.30</strong></td><td><strong>7.30</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 520 300" role="img" aria-label="Bar chart of weighted trade-off scores for demand forecasting build vs buy">
+    <line x1="60" y1="250" x2="480" y2="250" stroke="#E4E4E3" stroke-width="1"/>
+    <line x1="60" y1="150" x2="480" y2="150" stroke="#E4E4E3" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="60" y1="50" x2="480" y2="50" stroke="#E4E4E3" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="45" y="254" text-anchor="end" font-size="10" fill="#6B6B6B">0</text>
+    <text x="45" y="154" text-anchor="end" font-size="10" fill="#6B6B6B">5</text>
+    <text x="45" y="54" text-anchor="end" font-size="10" fill="#6B6B6B">10</text>
+    <rect x="90" y="147" width="100" height="103" fill="#367895"/>
+    <text x="140" y="137" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">5.15</text>
+    <text x="140" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">Buy — SaaS</text>
+    <rect x="230" y="124" width="100" height="126" fill="#367895"/>
+    <text x="280" y="114" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">6.30</text>
+    <text x="280" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">Build — Custom</text>
+    <rect x="370" y="104" width="100" height="146" fill="#5BA63C"/>
+    <text x="420" y="94" text-anchor="middle" font-size="13" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">7.30</text>
+    <text x="420" y="270" text-anchor="middle" font-size="11" fill="#1A1A1A">Build — Azure ML</text>
+    <text x="420" y="283" text-anchor="middle" font-size="11" fill="#1A1A1A">(selected)</text>
+  </svg>
+  <div class="diagram-caption">Figure 6 — Weighted trade-off scores, forecasting build-vs-buy (max 10). Selected option in leaf green.</div>
+  </div>
+
+  <div class="callout risk"><strong>What the scores don't capture</strong>Weighted totals hide binary constraints. Even if AWS Kinesis had scored highest, it would still be disqualified on the multi-cloud governance boundary this repo's Autonomy Model requires escalating, not deciding by spreadsheet. Always check a winning score against hard constraints before treating it as final.</div>
+  </div>
+</div>
+</section>
+
+<section id="doc-sequence">
+<div class="doc-section">
+  <div class="doc-kicker">Document 6 of 8</div>
+  <h2>Sequence &amp; Data-Flow Diagrams</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.0</div>
+    <div><span>Owner</span>Solution Architecture Practice</div>
+    <div><span>Status</span>Approved</div>
+    <div><span>Date</span>2026-07-21</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('sequence')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('sequence')">Save as PDF</button>
+  </div>
+
+  <div id="doc-content-sequence">
+  <h3>1. Sequence Diagram — Stockout Risk Alert (End-to-End)</h3>
+  <p>The critical path from a single POS sale to a store manager receiving a stockout-risk alert. This is the sequence the <a href="#doc-nfr">P95 &lt; 5 minute</a> NFR is measured against.</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1300 620" role="img" aria-label="Sequence diagram for the stockout risk alert flow">
+    <g class="lifeline">
+      <line x1="90" y1="60" x2="90" y2="580"/><line x1="270" y1="60" x2="270" y2="580"/>
+      <line x1="450" y1="60" x2="450" y2="580"/><line x1="630" y1="60" x2="630" y2="580"/>
+      <line x1="810" y1="60" x2="810" y2="580"/><line x1="990" y1="60" x2="990" y2="580"/>
+      <line x1="1170" y1="60" x2="1170" y2="580"/>
+    </g>
+    <g class="dbox">
+      <rect x="20" y="10" width="140" height="50" rx="6" fill="#367895"/><text x="90" y="40" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">POS Terminal</text>
+      <rect x="200" y="10" width="140" height="50" rx="6" fill="#367895"/><text x="270" y="34" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Ingestion</text><text x="270" y="48" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Service</text>
+      <rect x="380" y="10" width="140" height="50" rx="6" fill="#FB2832"/><text x="450" y="40" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Event Bus</text>
+      <rect x="560" y="10" width="140" height="50" rx="6" fill="#367895"/><text x="630" y="34" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Inventory</text><text x="630" y="48" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Command Svc</text>
+      <rect x="740" y="10" width="140" height="50" rx="6" fill="#367895"/><text x="810" y="34" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Forecasting</text><text x="810" y="48" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Service</text>
+      <rect x="920" y="10" width="140" height="50" rx="6" fill="#367895"/><text x="990" y="34" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Alert &amp;</text><text x="990" y="48" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Recommendation</text>
+      <rect x="1100" y="10" width="140" height="50" rx="6" fill="#1A1A1A"/><text x="1170" y="34" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Store Manager</text><text x="1170" y="48" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">App</text>
+    </g>
+    <g class="dedge">
+      <line x1="90" y1="90" x2="270" y2="90" marker-end="url(#arrowBerry)"/>
+      <line x1="270" y1="140" x2="450" y2="140" marker-end="url(#arrowBerry)"/>
+      <line x1="450" y1="190" x2="630" y2="190" marker-end="url(#arrowBerry)"/>
+      <path d="M630,230 L720,230 L720,250 L630,250" marker-end="url(#arrowMuted)" fill="none"/>
+      <line x1="630" y1="285" x2="450" y2="285" marker-end="url(#arrowCherry)"/>
+      <line x1="450" y1="325" x2="810" y2="325" marker-end="url(#arrowBerry)"/>
+      <path d="M810,365 L900,365 L900,385 L810,385" marker-end="url(#arrowMuted)" fill="none"/>
+      <line x1="810" y1="415" x2="450" y2="415" marker-end="url(#arrowCherry)"/>
+      <line x1="450" y1="455" x2="990" y2="455" marker-end="url(#arrowBerry)"/>
+      <path d="M990,485 L1080,485 L1080,505 L990,505" marker-end="url(#arrowMuted)" fill="none"/>
+      <line x1="990" y1="535" x2="1170" y2="535" marker-end="url(#arrowCherry)"/>
+      <line x1="1170" y1="565" x2="990" y2="565" stroke-dasharray="5 4" marker-end="url(#arrowMuted)"/>
+    </g>
+    <g class="dedge-label">
+      <rect class="dedge-label-bg" x="95" y="78" width="220" height="12"/><text x="98" y="88" font-size="10">1. Sale completed (SKU, qty, store, ts)</text>
+      <rect class="dedge-label-bg" x="275" y="128" width="200" height="12"/><text x="278" y="138" font-size="10">2. publish SaleRecorded</text>
+      <rect class="dedge-label-bg" x="455" y="178" width="200" height="12"/><text x="458" y="188" font-size="10">3. consume SaleRecorded</text>
+      <rect class="dedge-label-bg" x="725" y="222" width="220" height="12"/><text x="728" y="232" font-size="10">4. decrement on-hand qty (self)</text>
+      <rect class="dedge-label-bg" x="475" y="273" width="230" height="12"/><text x="478" y="283" font-size="10">5. publish InventoryPositionChanged (outbox)</text>
+      <rect class="dedge-label-bg" x="470" y="313" width="230" height="12"/><text x="473" y="323" font-size="10">6. consume InventoryPositionChanged</text>
+      <rect class="dedge-label-bg" x="905" y="357" width="240" height="12"/><text x="908" y="367" font-size="10">7. recompute short-horizon forecast (self)</text>
+      <rect class="dedge-label-bg" x="480" y="403" width="330" height="12"/><text x="483" y="413" font-size="10">8. publish ForecastUpdated (risk=stockout, confidence=0.86)</text>
+      <rect class="dedge-label-bg" x="660" y="443" width="230" height="12"/><text x="663" y="453" font-size="10">9. consume ForecastUpdated</text>
+      <rect class="dedge-label-bg" x="1085" y="477" width="220" height="12"/><text x="1088" y="487" font-size="10">10. evaluate vs. thresholds (self)</text>
+      <rect class="dedge-label-bg" x="995" y="523" width="290" height="12"/><text x="998" y="533" font-size="10">11. push notification — SKU 48213, Store 214, ETA 6h</text>
+      <rect class="dedge-label-bg" x="1000" y="553" width="150" height="12"/><text x="1003" y="563" font-size="10">12. ack (delivered)</text>
+    </g>
+  </svg>
+  <div class="diagram-caption">Figure 7 — Sequence: a single POS sale propagating to a stockout-risk alert. Cherry arrows are event-bus publishes; self-loops represent internal processing time.</div>
+  </div>
+
+  <h3>2. Data-Flow Diagram — Batch Training Pipeline</h3>
+  <p>The pipeline that trains and refreshes the forecasting model consumed by the sequence above. This is a separate, lower-frequency flow from the real-time path — conflating the two is a common design error this diagram exists to prevent.</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 1350 260" role="img" aria-label="Data flow diagram for the batch training pipeline">
+    <g class="dedge">
+      <line x1="100" y1="135" x2="290" y2="135" marker-end="url(#arrowBerry)"/>
+      <line x1="290" y1="135" x2="480" y2="135" marker-end="url(#arrowBerry)"/>
+      <line x1="480" y1="135" x2="670" y2="135" marker-end="url(#arrowBerry)"/>
+      <line x1="670" y1="135" x2="860" y2="135" marker-end="url(#arrowBerry)"/>
+      <line x1="860" y1="135" x2="1050" y2="135" marker-end="url(#arrowBerry)"/>
+      <line x1="1050" y1="135" x2="1240" y2="135" marker-end="url(#arrowCherry)"/>
+    </g>
+    <rect x="20" y="80" width="160" height="110" rx="8" fill="#6B6B6B"/><text x="100" y="120" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Source Systems</text><text x="100" y="136" text-anchor="middle" fill="#eee" font-size="9">POS · SAP · WMS</text><text x="100" y="150" text-anchor="middle" fill="#eee" font-size="9">E-commerce</text>
+    <rect x="210" y="80" width="160" height="110" rx="8" fill="#367895"/><text x="290" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Bronze</text><text x="290" y="131" text-anchor="middle" fill="#e6f0f4" font-size="9">Raw landing</text><text x="290" y="145" text-anchor="middle" fill="#e6f0f4" font-size="9">ADLS Gen2</text>
+    <rect x="400" y="80" width="160" height="110" rx="8" fill="#367895"/><text x="480" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Silver</text><text x="480" y="131" text-anchor="middle" fill="#e6f0f4" font-size="9">Cleansed &amp; conformed</text><text x="480" y="145" text-anchor="middle" fill="#e6f0f4" font-size="9">Databricks</text>
+    <rect x="590" y="80" width="160" height="110" rx="8" fill="#367895"/><text x="670" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Gold</text><text x="670" y="131" text-anchor="middle" fill="#e6f0f4" font-size="9">Feature Store</text>
+    <rect x="780" y="80" width="160" height="110" rx="8" fill="#5BA63C"/><text x="860" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Model Training</text><text x="860" y="131" text-anchor="middle" fill="#eafbe1" font-size="9">Azure ML AutoML</text><text x="860" y="145" text-anchor="middle" fill="#eafbe1" font-size="9">+ custom features</text>
+    <rect x="970" y="80" width="160" height="110" rx="8" fill="#5BA63C"/><text x="1050" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Model Registry</text><text x="1050" y="131" text-anchor="middle" fill="#eafbe1" font-size="9">Versioned, approved</text>
+    <rect x="1160" y="80" width="160" height="110" rx="8" fill="#FB2832"/><text x="1240" y="115" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Forecasting</text><text x="1240" y="131" text-anchor="middle" fill="#ffe3e4" font-size="9">Service</text><text x="1240" y="145" text-anchor="middle" fill="#ffe3e4" font-size="9">online inference</text>
+    <text x="100" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">streamed, real-time</text>
+    <text x="290" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">continuous append</text>
+    <text x="480" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">nightly batch</text>
+    <text x="670" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">nightly batch</text>
+    <text x="860" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">weekly retrain</text>
+    <text x="1050" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">on approval</text>
+    <text x="1240" y="215" text-anchor="middle" font-size="9" fill="#6B6B6B">online, &lt;150ms</text>
+  </svg>
+  <div class="diagram-caption">Figure 8 — Data flow: bronze/silver/gold training pipeline feeding the online Forecasting Service.</div>
+  </div>
+  <div class="callout info"><strong>Reviewer note</strong>Notice the cadence label under each stage. A design that cannot state how fresh each stage is (real-time vs. nightly vs. weekly) has not actually thought through its data pipeline — it has only drawn boxes.</div>
+  </div>
+</div>
+</section>
+
+<section id="doc-risk">
+<div class="doc-section">
+  <div class="doc-kicker">Document 7 of 8</div>
+  <h2>Architecture Risk Register</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.4</div>
+    <div><span>Owner</span>Architecture Review Board</div>
+    <div><span>Status</span>Active — Reviewed Monthly</div>
+    <div><span>Date</span>2026-07-24</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('risk')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('risk')">Save as PDF</button>
+    <button class="btn btn-ghost" onclick="exportCSV('risk-table','Risk_Register_SKUSentinel.csv')">Export CSV</button>
+  </div>
+
+  <div id="doc-content-risk">
+  <p>Score = Likelihood × Impact, banded High / Medium / Low. Risks are living entries — status changes as mitigations land; nothing is deleted, only superseded, so the register stays an honest history.</p>
+  <table id="risk-table">
+    <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Likelihood</th><th>Impact</th><th>Score</th><th>Mitigation</th><th>Owner</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>R1</td><td>Event bus backpressure during Black Friday peak delays alerts beyond the 5-minute NFR</td><td>Technical</td><td>Medium</td><td>High</td><td>High</td><td>Pre-provisioned throughput-unit autoscale; full-volume load test before each peak season</td><td>Platform Engineering Lead</td><td>Mitigating</td></tr>
+      <tr><td>R2</td><td>SAP IDoc schema drift breaks the ingestion adapter without warning</td><td>Technical</td><td>Medium</td><td>Medium</td><td>Medium</td><td>Contract tests in CI against a SAP sandbox; alert on schema validation failure</td><td>Integration Lead</td><td>Open</td></tr>
+      <tr><td>R3</td><td>Forecast model exhibits cold-start bias for new or seasonal SKUs with thin history</td><td>Data &amp; ML</td><td>High</td><td>Medium</td><td>High</td><td>Category-average heuristic fallback until 8 weeks of SKU-level history accrues</td><td>ML Lead</td><td>Mitigating</td></tr>
+      <tr><td>R4</td><td>Vendor lock-in to Azure Event Hubs constrains future platform choices</td><td>Vendor</td><td>Low</td><td>Medium</td><td>Low</td><td>Kafka-protocol compatibility preserved at the consumer layer (see ADR-002)</td><td>Solution Architect</td><td>Accepted</td></tr>
+      <tr><td>R5</td><td>Unstable store network connectivity delays POS event delivery at Tier 3 stores</td><td>Operational</td><td>Medium</td><td>Medium</td><td>Medium</td><td>Store-local buffering with replay-on-reconnect for affected stores</td><td>Store Systems Lead</td><td>Mitigating</td></tr>
+      <tr><td>R6</td><td>Loyalty-linked purchase data introduces a PII exposure surface in the event stream</td><td>Security</td><td>Low</td><td>High</td><td>Medium</td><td>Loyalty ID tokenized before entering the event stream; field-level access control</td><td>Security Lead</td><td>Mitigating</td></tr>
+      <tr><td>R7</td><td>Model drift goes undetected without active monitoring, silently degrading forecast quality</td><td>Data &amp; ML</td><td>Medium</td><td>High</td><td>High</td><td>Weekly backtest against actuals; automated alert on MAPE threshold breach</td><td>ML Lead</td><td>Open</td></tr>
+      <tr><td>R8</td><td>On-call team lacks deep Event Hubs/Kafka operational experience at go-live</td><td>Operational</td><td>Medium</td><td>Medium</td><td>Medium</td><td>Managed service reduces required depth; runbook plus on-call training before go-live</td><td>Platform Engineering Lead</td><td>Mitigating</td></tr>
+      <tr><td>R9</td><td>Always-on AKS node pools drive infrastructure cost above the NFR cost-efficiency target</td><td>Technical</td><td>Low</td><td>Low</td><td>Low</td><td>Autoscale-to-zero for non-critical pools; monthly cost review against the NFR target</td><td>FinOps</td><td>Accepted</td></tr>
+      <tr><td>R10</td><td>Third-party WMS API rate limits throttle warehouse-event synchronization</td><td>Vendor</td><td>Medium</td><td>Low</td><td>Low</td><td>Exponential backoff with batched polling within published vendor rate limits</td><td>Integration Lead</td><td>Open</td></tr>
+    </tbody>
+  </table>
+
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 620 330" role="img" aria-label="Donut chart of risk distribution by category">
+    <g transform="rotate(-90 160 165)">
+      <circle cx="160" cy="165" r="90" fill="none" stroke="#367895" stroke-width="40" stroke-dasharray="169.6 395.9" stroke-dashoffset="0"/>
+      <circle cx="160" cy="165" r="90" fill="none" stroke="#E8920C" stroke-width="40" stroke-dasharray="113.1 452.4" stroke-dashoffset="-169.6"/>
+      <circle cx="160" cy="165" r="90" fill="none" stroke="#6B6B6B" stroke-width="40" stroke-dasharray="113.1 452.4" stroke-dashoffset="-282.7"/>
+      <circle cx="160" cy="165" r="90" fill="none" stroke="#FB2832" stroke-width="40" stroke-dasharray="113.1 452.4" stroke-dashoffset="-395.8"/>
+      <circle cx="160" cy="165" r="90" fill="none" stroke="#5BA63C" stroke-width="40" stroke-dasharray="56.5 509" stroke-dashoffset="-508.9"/>
+    </g>
+    <text x="160" y="160" text-anchor="middle" font-size="26" font-weight="700" fill="#1A1A1A" font-family="Roboto Mono">10</text>
+    <text x="160" y="180" text-anchor="middle" font-size="11" fill="#6B6B6B">risks tracked</text>
+    <g font-size="13" fill="#1A1A1A">
+      <rect x="360" y="30" width="16" height="16" fill="#367895"/><text x="384" y="43">Technical — 3</text>
+      <rect x="360" y="60" width="16" height="16" fill="#E8920C"/><text x="384" y="73">Data &amp; ML — 2</text>
+      <rect x="360" y="90" width="16" height="16" fill="#6B6B6B"/><text x="384" y="103">Vendor — 2</text>
+      <rect x="360" y="120" width="16" height="16" fill="#FB2832"/><text x="384" y="133">Operational — 2</text>
+      <rect x="360" y="150" width="16" height="16" fill="#5BA63C"/><text x="384" y="163">Security — 1</text>
+    </g>
+    <text x="360" y="200" font-size="11" fill="#6B6B6B">3 High-scored risks (R1, R3, R7) are</text>
+    <text x="360" y="216" font-size="11" fill="#6B6B6B">reviewed at every sprint boundary;</text>
+    <text x="360" y="232" font-size="11" fill="#6B6B6B">all others reviewed monthly.</text>
+  </svg>
+  <div class="diagram-caption">Figure 9 — Risk distribution by category, 10 tracked risks.</div>
+  </div>
+  <div class="callout risk"><strong>Highest-priority open item</strong>R7 (undetected model drift) is scored High and currently Open, not yet Mitigating — it has no automated control in production today. This is the single item most likely to block full go-live sign-off; see <a href="#doc-onepager">Document 8</a>.</div>
+  </div>
+</div>
+</section>
+
+<section id="doc-onepager">
+<div class="doc-section">
+  <div class="doc-kicker">Document 8 of 8</div>
+  <h2>Architecture Package — Sign-Off Summary</h2>
+  <div class="doc-meta-strip">
+    <div><span>Version</span>1.0</div>
+    <div><span>Owner</span>Solution Architecture Practice</div>
+    <div><span>Status</span>Pending Final Sign-Off</div>
+    <div><span>Date</span>2026-07-25</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="downloadDoc('onepager')">Download HTML</button>
+    <button class="btn btn-secondary" onclick="printDoc('onepager')">Save as PDF</button>
+  </div>
+
+  <div id="doc-content-onepager">
+  <p><strong>SKU Sentinel</strong> — real-time inventory intelligence and demand forecasting for Meridian Retail Group's 240-store network. Event-driven microservices on Azure, with CQRS on the inventory read path. Full detail in Documents 1–7 of this guide; this page is the condensed record for sign-off.</p>
+
+  <h3>Target Outcomes</h3>
+  <div class="kpi-grid">
+    <div class="kpi-tile"><div class="kpi-value">99.9%</div><div class="kpi-label">Platform availability target</div><div class="kpi-sub leaf">NFR — Must-have</div></div>
+    <div class="kpi-tile"><div class="kpi-value">&lt;250ms</div><div class="kpi-label">P95 read latency target</div><div class="kpi-sub leaf">NFR — Must-have</div></div>
+    <div class="kpi-tile"><div class="kpi-value">≤18%</div><div class="kpi-label">Forecast MAPE target (top-60% SKUs)</div><div class="kpi-sub amber">NFR — Must-have, gates go-live</div></div>
+    <div class="kpi-tile"><div class="kpi-value">30%</div><div class="kpi-label">Stockout reduction target, Month 12</div><div class="kpi-sub leaf">Business outcome</div></div>
+  </div>
+
+  <h3>Projected Ramp — Stockout Reduction</h3>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 840 280" role="img" aria-label="Line chart of projected stockout reduction ramp over 12 months">
+    <line x1="60" y1="220" x2="800" y2="220" stroke="#E4E4E3"/>
+    <line x1="60" y1="153" x2="800" y2="153" stroke="#E4E4E3" stroke-dasharray="3 3"/>
+    <line x1="60" y1="87" x2="800" y2="87" stroke="#E4E4E3" stroke-dasharray="3 3"/>
+    <line x1="60" y1="20" x2="800" y2="20" stroke="#E8920C" stroke-dasharray="5 4"/>
+    <text x="805" y="24" font-size="10" fill="#E8920C">Target: 30% by Month 12</text>
+    <text x="45" y="224" text-anchor="end" font-size="10" fill="#6B6B6B">0%</text>
+    <text x="45" y="157" text-anchor="end" font-size="10" fill="#6B6B6B">10%</text>
+    <text x="45" y="91" text-anchor="end" font-size="10" fill="#6B6B6B">20%</text>
+    <text x="45" y="24" text-anchor="end" font-size="10" fill="#6B6B6B">30%</text>
+    <path d="M60,220 L124,200 L188,173 L252,140 L316,113 L380,93 L444,73 L508,53 L572,40 L636,33 L700,27 L764,20 L764,220 L60,220 Z" fill="#5BA63C" opacity="0.12" stroke="none"/>
+    <polyline points="60,220 124,200 188,173 252,140 316,113 380,93 444,73 508,53 572,40 636,33 700,27 764,20" fill="none" stroke="#5BA63C" stroke-width="3"/>
+    <g fill="#367895">
+      <circle cx="60" cy="220" r="4"/><circle cx="124" cy="200" r="4"/><circle cx="188" cy="173" r="4"/><circle cx="252" cy="140" r="4"/>
+      <circle cx="316" cy="113" r="4"/><circle cx="380" cy="93" r="4"/><circle cx="444" cy="73" r="4"/><circle cx="508" cy="53" r="4"/>
+      <circle cx="572" cy="40" r="4"/><circle cx="636" cy="33" r="4"/><circle cx="700" cy="27" r="4"/><circle cx="764" cy="20" r="4"/>
+    </g>
+    <g font-size="9" fill="#6B6B6B">
+      <text x="60" y="238" text-anchor="middle">M1</text><text x="124" y="238" text-anchor="middle">M2</text><text x="188" y="238" text-anchor="middle">M3</text><text x="252" y="238" text-anchor="middle">M4</text>
+      <text x="316" y="238" text-anchor="middle">M5</text><text x="380" y="238" text-anchor="middle">M6</text><text x="444" y="238" text-anchor="middle">M7</text><text x="508" y="238" text-anchor="middle">M8</text>
+      <text x="572" y="238" text-anchor="middle">M9</text><text x="636" y="238" text-anchor="middle">M10</text><text x="700" y="238" text-anchor="middle">M11</text><text x="764" y="238" text-anchor="middle">M12</text>
+    </g>
+  </svg>
+  <div class="diagram-caption">Figure 10 — Projected stockout-reduction ramp post-launch, reaching the 30% target by Month 12 as the forecasting model accrues history and store adoption matures.</div>
+  </div>
+
+  <h3>Key Architectural Decisions</h3>
+  <ul>
+    <li>Event-driven microservices with CQRS on the inventory read path — <a href="#doc-adr">ADR-001, ADR-003</a></li>
+    <li>Azure Event Hubs (Kafka-compatible) as the event backbone — <a href="#doc-adr">ADR-002</a></li>
+    <li>Forecasting built in-house on Azure ML AutoML, not bought as a full SaaS platform — <a href="#doc-adr">ADR-004</a></li>
+    <li>Asynchronous, outbox-guaranteed event propagation from inventory writes to alerts — <a href="#doc-adr">ADR-006</a></li>
+  </ul>
+
+  <h3>Top Open Risks</h3>
+  <ul>
+    <li><strong>R7 — High, Open:</strong> Model drift monitoring not yet in production; automated MAPE-threshold alerting required before go-live.</li>
+    <li><strong>R1 — High, Mitigating:</strong> Event bus backpressure under Black Friday peak load; full-volume load test scheduled pre-season.</li>
+    <li><strong>R3 — High, Mitigating:</strong> Cold-start forecast bias for new/seasonal SKUs; category-average fallback in place.</li>
+  </ul>
+  <p>Full register: <a href="#doc-risk">Document 7</a>.</p>
+
+  <table class="doc-signoff">
+    <thead><tr><th>Role</th><th>Name</th><th>Signature</th><th>Date</th></tr></thead>
+    <tbody>
+      <tr><td>Prepared By</td><td>Solution Architecture Practice, Colaberry AI</td><td></td><td>2026-07-25</td></tr>
+      <tr><td>Reviewed By</td><td>Architecture Review Board</td><td></td><td></td></tr>
+      <tr><td>Approved By</td><td>VP Engineering / Product Sponsor</td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><strong>Condition of sign-off</strong>This package is recommended for approval <em>conditional on</em> R7's mitigation (automated model-drift monitoring) landing before general rollout beyond the pilot store group. This is a strategic go/no-go call for the sponsor, not an implementation detail — flagged here per this guide's escalation discipline, not resolved by the architect unilaterally.</div>
+  </div>
+</div>
+</section>
+
+<section id="appendix">
+  <h2>Appendix — About This Guide &amp; Metadata</h2>
+  <div class="card">
+    <h3 style="margin-top:0">About</h3>
+    <p>This field guide was generated as a Week 2 deep-dive deliverable for the Colaberry Enterprise AI Leadership Accelerator, Solution Architect discipline track. It is a single self-contained HTML file — no external services are called at runtime except the optional Roboto web font; the search index and Ask assistant run entirely client-side against this document's own content.</p>
+    <p>The scenario (Meridian Retail Group / SKU Sentinel) is illustrative, built to let every concept in the Foundations section land on a concrete, internally-consistent example rather than an abstraction. The architecture decisions, NFR targets, and risk scores are realistic in shape and method, not drawn from a real engagement.</p>
+    <h3>Guide Metadata</h3>
+    <pre id="metadataDisplay" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:var(--font-mono);font-size:.8rem;overflow-x:auto;"></pre>
+  </div>
+</section>
+
+<script type="application/json" id="deepdive-metadata">
+{
+  "guide_type": "Solution Architect Field Guide",
+  "curriculum_type": "deep_dive",
+  "week": 2,
+  "discipline": "Solution Architect",
+  "student_id": "colaberry-accelerator-learner",
+  "project_id": "meridian-retail-sku-sentinel",
+  "repository": "local-standalone-deliverable",
+  "generated_by": "Claude Code",
+  "generated_date": "2026-07-26",
+  "version": "1.0.0",
+  "build_number": "1"
+}
+</script>
+
+<footer class="sitefoot">
+  Colaberry — Enterprise AI Leadership Accelerator &nbsp;|&nbsp; Solution Architect Field Guide &nbsp;|&nbsp; Confidential — prepared for internal learner use &nbsp;|&nbsp; v1.0.0
+</footer>
+
+</main>
+</div>
+
+<button id="askToggle" class="btn btn-primary" onclick="toggleAsk()">Ask the Guide</button>
+<div id="askPanel">
+  <div class="ask-head">
+    <div><strong>Ask the Guide</strong><small>Offline — answers come from this guide's own content</small></div>
+    <button class="ask-close" onclick="toggleAsk(false)">&times;</button>
+  </div>
+  <div class="ask-body">
+    <div id="askAnswerArea"></div>
+    <div class="ask-suggest" id="askSuggest"></div>
+  </div>
+  <div class="ask-foot">
+    <input id="askInput" type="text" placeholder="e.g. what event bus did we choose?" onkeydown="if(event.key==='Enter'){askQuestion();}"/>
+    <button class="btn btn-primary" onclick="askQuestion()">Ask</button>
+  </div>
+</div>
+
+<script>
+const LOGO_SRC = "data:image/png;base64,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";
+
+const DOC_META = {
+  sad: {title:"Solution Architecture Document", file:"SAD_SKUSentinel_MeridianRetail", version:"1.2", owner:"Solution Architecture Practice, Colaberry AI", status:"Approved for Build", date:"2026-07-20"},
+  c4: {title:"C4 Model Diagrams — Context, Container, Component", file:"C4_Diagrams_SKUSentinel", version:"1.1", owner:"Solution Architecture Practice", status:"Approved", date:"2026-07-18"},
+  adr: {title:"Architecture Decision Records", file:"ADR_Log_SKUSentinel", version:"1.3", owner:"Architecture Review Board", status:"Living Document", date:"2026-07-22"},
+  nfr: {title:"Non-Functional Requirements Specification", file:"NFR_Spec_SKUSentinel", version:"1.1", owner:"Solution Architecture Practice", status:"Approved", date:"2026-07-19"},
+  tradeoff: {title:"Technology Selection &amp; Trade-off Matrix", file:"TradeOff_Matrix_SKUSentinel", version:"1.0", owner:"Architecture Review Board", status:"Approved", date:"2026-07-15"},
+  sequence: {title:"Sequence &amp; Data-Flow Diagrams", file:"Sequence_DataFlow_SKUSentinel", version:"1.0", owner:"Solution Architecture Practice", status:"Approved", date:"2026-07-21"},
+  risk: {title:"Architecture Risk Register", file:"Risk_Register_SKUSentinel", version:"1.4", owner:"Architecture Review Board", status:"Active — Reviewed Monthly", date:"2026-07-24"},
+  onepager: {title:"Architecture Package — Sign-Off Summary", file:"Architecture_SignOff_Summary_SKUSentinel", version:"1.0", owner:"Solution Architecture Practice", status:"Pending Final Sign-Off", date:"2026-07-25"}
+};
+
+function buildStandaloneHTML(id){
+  const meta = DOC_META[id];
+  const contentEl = document.getElementById('doc-content-'+id);
+  const content = contentEl ? contentEl.innerHTML : '';
+  const css = document.getElementById('shared-doc-css').textContent;
+  return '<!doctype html><html><head><meta charset="utf-8"><title>'+meta.title+' — Meridian Retail</title><style>'+css+'</style></head><body>'
+    + '<div class="doc-page">'
+    + '<section class="doc-cover"><img src="'+LOGO_SRC+'" alt="Colaberry" class="doc-cover-logo"/>'
+    + '<div class="doc-cover-kicker">Solution Architecture Deliverable</div>'
+    + '<h1>'+meta.title+'</h1>'
+    + '<div class="doc-cover-sub">Meridian Retail Group — SKU Sentinel: AI-Powered Real-Time Inventory Intelligence &amp; Demand Forecasting Platform</div>'
+    + '<div class="doc-cover-meta">Version '+meta.version+' &middot; '+meta.date+' &middot; '+meta.status+'</div>'
+    + '</section>'
+    + '<table class="doc-control-strip"><tr><th>Version</th><th>Owner</th><th>Status</th><th>Date</th></tr>'
+    + '<tr><td>'+meta.version+'</td><td>'+meta.owner+'</td><td>'+meta.status+'</td><td>'+meta.date+'</td></tr></table>'
+    + '<div class="doc-body">'+content+'</div>'
+    + '<table class="doc-signoff"><tr><th>Role</th><th>Name</th><th>Signature</th><th>Date</th></tr>'
+    + '<tr><td>Prepared By</td><td>Solution Architecture Practice</td><td></td><td>'+meta.date+'</td></tr>'
+    + '<tr><td>Reviewed By</td><td>Architecture Review Board</td><td></td><td></td></tr>'
+    + '<tr><td>Approved By</td><td>VP Engineering / Product Sponsor</td><td></td><td></td></tr></table>'
+    + '<div class="doc-footer">Colaberry — Enterprise AI Leadership Accelerator | Confidential — prepared for internal use | '+meta.file+'</div>'
+    + '</div></body></html>';
+}
+
+function downloadDoc(id){
+  const html = buildStandaloneHTML(id);
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = DOC_META[id].file + '.html';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+
+function printDoc(id){
+  const html = buildStandaloneHTML(id);
+  const w = window.open('', '_blank');
+  if(!w){ alert('Please allow pop-ups to save this document as a PDF.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  w.onload = function(){ w.focus(); w.print(); };
+}
+
+function exportCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const rows = Array.from(table.querySelectorAll('tr'));
+  const csv = rows.map(function(r){
+    return Array.from(r.querySelectorAll('th,td')).map(function(c){
+      let t = c.textContent.trim().replace(/\s+/g,' ');
+      if(t.indexOf(',')>-1 || t.indexOf('"')>-1){ t = '"'+t.replace(/"/g,'""')+'"'; }
+      return t;
+    }).join(',');
+  }).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+</script>
+
+<script>
+const FAQ_INDEX = [
+  {q:"What is solution architecture and why does it exist?", keywords:["why","solution architecture","exist","purpose"], section:"found-why",
+   answer:"Solution architecture exists to hold system-level concerns (scale, coupling, failure, operability) that no single feature request surfaces on its own. The architect's job is to make the few expensive-to-reverse decisions before they're baked into the codebase."},
+  {q:"What are quality attributes or non-functional requirements?", keywords:["quality attributes","nfr","non-functional","availability","latency"], section:"found-quality",
+   answer:"Quality attributes describe how well a system keeps doing what it does — availability, latency, throughput, scalability, durability, security, observability, maintainability, cost, and disaster recovery. Every one needs a measurable target, not an adjective."},
+  {q:"Monolith vs microservices vs event-driven — which is best?", keywords:["monolith","microservices","event-driven","architecture style","compare"], section:"found-styles",
+   answer:"None is universally better — each trades coupling for coordination cost differently. SKU Sentinel uses event-driven microservices because of its bursty, high-volume, decoupled load profile. See the comparison table in Foundations, Part 2, and ADR-001 for the worked example."},
+  {q:"What is the C4 model?", keywords:["c4 model","context","container","component","code","diagram levels"], section:"found-c4model",
+   answer:"C4 gives four zoom levels for describing a system: Context (the system as one box), Container (deployable units inside it), Component (internals of one container), and Code. Document 2 provides Levels 1-3 for SKU Sentinel."},
+  {q:"What is an Architecture Decision Record (ADR)?", keywords:["adr","architecture decision record","decision log"], section:"found-adr",
+   answer:"An ADR captures one significant, hard-to-reverse decision: status, context, the decision itself, genuinely rejected alternatives, and consequences (including costs). An ADR with no rejected options is a decision announcement, not a decision record. See Document 3 for six worked examples."},
+  {q:"How do you do trade-off analysis for technology choices?", keywords:["trade-off analysis","weighted scoring","decision matrix"], section:"found-tradeoff",
+   answer:"Pick criteria that matter for this system, weight them to sum to 1.0, score each option 0-10 per criterion honestly, multiply and sum, then sanity-check the winner against anything the spreadsheet didn't capture. Document 5 applies this to two real SKU Sentinel decisions."},
+  {q:"What is CQRS?", keywords:["cqrs","command query responsibility segregation","read model","write model"], section:"found-patterns",
+   answer:"CQRS separates the read model from the write model so each can scale and evolve independently. SKU Sentinel uses it for the inventory read path — see ADR-003."},
+  {q:"What is event sourcing?", keywords:["event sourcing","replay","audit trail"], section:"found-patterns",
+   answer:"Event sourcing stores every state change as an event so state can be rebuilt or replayed, giving a full audit trail at the cost of storage and rebuild complexity. SKU Sentinel considered and rejected full event sourcing for v1 — see ADR-003."},
+  {q:"What is a circuit breaker?", keywords:["circuit breaker","fail fast","cascading failure"], section:"found-patterns",
+   answer:"A circuit breaker stops calling a failing dependency and fails fast instead of cascading the failure upstream. It requires tuned thresholds — wrong tuning either masks real outages or trips too eagerly."},
+  {q:"What is the saga pattern?", keywords:["saga pattern","distributed transaction","compensating action"], section:"found-patterns",
+   answer:"A saga coordinates a multi-step transaction across services without a distributed lock, using compensating actions if a step fails. It requires designing a compensating action for every step."},
+  {q:"What is the strangler fig pattern?", keywords:["strangler fig","legacy migration","incremental replace"], section:"found-patterns",
+   answer:"The strangler fig pattern incrementally replaces a legacy system instead of a risky big-bang rewrite, at the cost of running two systems in parallel for a period."},
+  {q:"What is a fitness function in architecture?", keywords:["fitness function","automated architecture test","dependency check"], section:"found-fitness",
+   answer:"A fitness function is an automated, repeatable test that checks whether the built system still matches the approved architecture — e.g. a dependency-direction check or a latency budget test that fails CI on regression."},
+  {q:"How do you decide build vs buy?", keywords:["build vs buy","buy vs build","vendor decision"], section:"found-buildbuy",
+   answer:"Lean build when the capability is close to your core differentiator and you need deep control; lean buy when it's undifferentiated and a mature vendor already solves it well. ADR-004 applies this to SKU Sentinel's forecasting model and lands on a documented hybrid."},
+  {q:"What distinguishes good architecture from bad architecture?", keywords:["good architecture","bad architecture","checklist"], section:"found-goodbad",
+   answer:"Good architecture has written reasons for every significant decision, numbered quality attributes, failure paths designed up front, and complexity proportional to actual load. See the comparison table in Foundations."},
+  {q:"What KPIs measure architecture health?", keywords:["architecture kpis","dora metrics","mttr","deployment frequency"], section:"found-kpis",
+   answer:"Deployment frequency, lead time for change, change failure rate, MTTR, fitness function pass rate, and NFR compliance rate — borrowed and adapted from DORA."},
+  {q:"What should I check when reviewing an AI-generated architecture design?", keywords:["review lens","evaluate ai design","checklist","approve"], section:"found-lens",
+   answer:"Use the ten-question Architect's Review Lens: measurable NFRs, justified style, ADRs with rejected options, consistent C4 diagrams, failure paths, idempotency, honest trade-offs, proportional complexity, a named owner, and whether an outsider could rebuild the system's intent from the docs alone."},
+  {q:"What is the SKU Sentinel initiative?", keywords:["sku sentinel","meridian retail","what is this project"], section:"doc-sad",
+   answer:"SKU Sentinel is Meridian Retail Group's real-time inventory intelligence and demand-forecasting platform for its 240-store network, targeting a 30% reduction in stockout losses and 20% reduction in overstock markdowns. Full detail in Document 1, the Solution Architecture Document."},
+  {q:"What architecture style was chosen for SKU Sentinel and why?", keywords:["sku sentinel architecture style","why event-driven"], section:"doc-sad",
+   answer:"Event-driven microservices with CQRS on the read path — chosen because the load is high-volume and bursty across 240 stores, and ~15% of stores have unreliable connectivity requiring buffer-and-replay rather than synchronous calls. See Document 1, Section 4, and ADR-001."},
+  {q:"What is the target platform availability?", keywords:["availability target","uptime","99.9"], section:"doc-nfr",
+   answer:"99.9% monthly platform uptime, with 99.95% for the inventory read path specifically. See Document 4, NFR Specification."},
+  {q:"What is the P95 latency target?", keywords:["p95 latency","response time target","250ms"], section:"doc-nfr",
+   answer:"P95 API read latency under 250ms, and P95 end-to-end from a POS sale to an updated inventory position under 5 minutes. See Document 4."},
+  {q:"What is the forecast accuracy target?", keywords:["forecast accuracy","mape","model quality target"], section:"doc-nfr",
+   answer:"MAPE (mean absolute percentage error) of 18% or better for the top 60% of SKUs by volume at a 7-day horizon. This target gates go-live per the Sign-Off Summary. See Document 4."},
+  {q:"What event bus was selected and why?", keywords:["event bus choice","kafka","azure event hubs","confluent","kinesis"], section:"doc-tradeoff",
+   answer:"Azure Event Hubs in Kafka-compatible mode, scoring 8.20/10 weighted against self-managed Kafka (6.30), Confluent Cloud (7.40), and AWS Kinesis (6.05) — mainly on lower operational burden and native Azure integration. See Document 5 and ADR-002."},
+  {q:"Why event-driven microservices over a monolith for this project?", keywords:["why not monolith","event-driven vs monolith reasoning"], section:"doc-adr",
+   answer:"A modular monolith couldn't isolate the bursty, GPU-bound forecasting workload from the transactional inventory-write path, and would force every change through one release cadence. See ADR-001 for the full comparison table."},
+  {q:"What is the biggest architecture risk right now?", keywords:["biggest risk","top risk","open risk"], section:"doc-risk",
+   answer:"R7 — undetected model drift — is scored High and currently Open, with no automated control in production yet. It is the condition attached to the Sign-Off Summary's recommendation. See Document 7 and Document 8."},
+  {q:"What is the RTO and RPO for disaster recovery?", keywords:["rto","rpo","disaster recovery target"], section:"doc-nfr",
+   answer:"RPO (recovery point objective) of 15 minutes or less, RTO (recovery time objective) of 4 hours or less, verified via a semi-annual DR failover drill. See Document 4."},
+  {q:"Is SKU Sentinel in PCI scope?", keywords:["pci scope","cardholder data","payment data"], section:"doc-sad",
+   answer:"No. SKU Sentinel's POS integration carries SKU, quantity, and timestamp only — never payment instrument data — so it is out of PCI-DSS scope. See Document 1, Section 9, Security Architecture."},
+  {q:"What is CQRS used for in SKU Sentinel specifically?", keywords:["cqrs sku sentinel","inventory query service","cosmos db"], section:"doc-adr",
+   answer:"The inventory write path (PostgreSQL, strongly consistent) is split from the read path (Cosmos DB, denormalized per store/SKU) so read-heavy dashboard and alert queries don't contend with transactional writes at 240-store scale. See ADR-003."},
+  {q:"Did SKU Sentinel build or buy the forecasting model?", keywords:["build or buy forecasting","blue yonder","o9","azure ml"], section:"doc-adr",
+   answer:"Built in-house on Azure ML AutoML with Meridian-specific custom features, scoring 7.30/10 versus 5.15 for a full third-party SaaS and 6.30 for a fully custom build with no managed platform. See ADR-004 and Document 5."},
+  {q:"What happens during Black Friday peak load?", keywords:["black friday","peak load","throughput target"], section:"doc-nfr",
+   answer:"The platform must sustain 3,200 events/sec, roughly 4x baseline. This drives Risk R1 (event bus backpressure) and is verified by a full-volume load test before each peak season. See Document 4 and Document 7."},
+  {q:"Where can I find the sign-off summary?", keywords:["sign off","sign-off summary","approval package"], section:"doc-onepager",
+   answer:"Document 8 is the one-page Architecture Package summary — condensed decisions, KPIs, top risks, and the Prepared/Reviewed/Approved sign-off block."},
+  {q:"What does the guide's metadata look like?", keywords:["metadata","deepdive metadata","json"], section:"appendix",
+   answer:"See the Appendix — this guide embeds a deepdive-metadata JSON script tag with guide type, week, discipline, and generation details, rendered as read-only reference at the bottom of the page."}
+];
+
+function normalize(s){ return (s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim(); }
+
+function flashSection(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------------- Search box ---------------- */
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+searchInput.addEventListener('input', function(){
+  const q = normalize(this.value);
+  if(!q){ searchResults.classList.remove('open'); searchResults.innerHTML=''; return; }
+  const matches = FAQ_INDEX.filter(function(item){
+    const hay = normalize(item.q + ' ' + item.keywords.join(' '));
+    return hay.indexOf(q) > -1 || q.split(' ').some(function(w){ return w.length>2 && hay.indexOf(w)>-1; });
+  }).slice(0,8);
+  if(matches.length===0){
+    searchResults.innerHTML = '<div class="search-empty">No matches. Try a shorter term, or ask the Guide directly.</div>';
+  } else {
+    searchResults.innerHTML = matches.map(function(m){
+      return '<div class="sr-item" data-section="'+m.section+'"><div class="sr-title">'+m.q+'</div><div class="sr-tag">'+m.section.replace(/^found-|^doc-/,'').replace(/-/g,' ')+'</div></div>';
+    }).join('');
+  }
+  searchResults.classList.add('open');
+});
+searchResults.addEventListener('click', function(e){
+  const item = e.target.closest('.sr-item');
+  if(!item || !item.dataset.section) return;
+  flashSection(item.dataset.section);
+  searchResults.classList.remove('open');
+  searchInput.value=''; searchInput.blur();
+});
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.search-wrap')){ searchResults.classList.remove('open'); }
+});
+
+/* ---------------- Ask assistant ---------------- */
+function toggleAsk(force){
+  const panel = document.getElementById('askPanel');
+  const open = typeof force==='boolean' ? force : !panel.classList.contains('open');
+  panel.classList.toggle('open', open);
+  if(open){
+    document.getElementById('askInput').focus();
+    if(!document.getElementById('askAnswerArea').innerHTML){
+      renderAskSuggestions();
+    }
+  }
+}
+function renderAskSuggestions(){
+  const picks = [FAQ_INDEX[2], FAQ_INDEX[16], FAQ_INDEX[21], FAQ_INDEX[23]];
+  document.getElementById('askSuggest').innerHTML = '<div style="margin-bottom:4px;font-weight:700;color:var(--muted);">Try asking:</div>'
+    + picks.map(function(p){ return '<button onclick="document.getElementById(\'askInput\').value='+JSON.stringify(p.q)+'; askQuestion();">'+p.q+'</button>'; }).join('');
+}
+function scoreItem(item, words){
+  const hayQ = normalize(item.q);
+  const hayK = normalize(item.keywords.join(' '));
+  let score = 0;
+  words.forEach(function(w){
+    if(w.length<3) return;
+    if(hayQ.indexOf(w)>-1) score += 2;
+    if(hayK.indexOf(w)>-1) score += 3;
+  });
+  return score;
+}
+function askQuestion(){
+  const raw = document.getElementById('askInput').value;
+  const q = normalize(raw);
+  const area = document.getElementById('askAnswerArea');
+  if(!q){ return; }
+  const words = q.split(' ');
+  let best = null, bestScore = 0;
+  FAQ_INDEX.forEach(function(item){
+    const s = scoreItem(item, words);
+    if(s > bestScore){ bestScore = s; best = item; }
+  });
+  if(!best || bestScore===0){
+    area.innerHTML = '<div class="ask-answer"><strong>Not found in this guide.</strong> Try rephrasing, or browse the left navigation — the Foundations section covers core concepts and the Documents section covers SKU Sentinel specifics.</div>';
+  } else {
+    area.innerHTML = '<div class="ask-answer"><strong>'+best.q+'</strong><p style="margin:6px 0 8px;">'+best.answer+'</p><a href="#'+best.section+'" onclick="toggleAsk(false)">Open full section &rarr;</a></div>';
+  }
+  renderAskSuggestions();
+}
+
+/* ---------------- Nav active-state highlighting ---------------- */
+(function(){
+  const navLinks = Array.from(document.querySelectorAll('nav.sidenav a.nl'));
+  const targets = navLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  if(!('IntersectionObserver' in window) || targets.length===0) return;
+  const obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        const id = entry.target.id;
+        navLinks.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href')==='#'+id); });
+      }
+    });
+  }, {rootMargin:'-72px 0px -70% 0px', threshold:0});
+  targets.forEach(function(t){ obs.observe(t); });
+})();
+
+/* ---------------- Boot ---------------- */
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('headerLogo').src = LOGO_SRC;
+  const metaEl = document.getElementById('deepdive-metadata');
+  const displayEl = document.getElementById('metadataDisplay');
+  if(metaEl && displayEl){
+    try{ displayEl.textContent = JSON.stringify(JSON.parse(metaEl.textContent), null, 2); }
+    catch(e){ displayEl.textContent = metaEl.textContent; }
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment variables and secrets - NEVER commit these
+.env
+.env.*
+!.env.example
+
+# OS junk files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE files
+.vscode/*
+!.vscode/settings.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+build/
+
+# Temporary files
+tmp/
+*.tmp
