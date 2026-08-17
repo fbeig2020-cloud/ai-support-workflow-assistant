@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Command Center — AI Support Workflow Assistant</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-mode="real">
+  <div id="sample-banner">SAMPLE DATA — nothing on this screen has actually happened yet</div>
+
+  <header class="cc-header">
+    <div class="cc-title">
+      <h1>AI Support Workflow Assistant — Command Center</h1>
+      <p>What this system does, which release it's in, and what's actually built versus planned.</p>
+    </div>
+    <div class="cc-toggle">
+      <span class="mode-opt" data-mode-opt="real">Real</span>
+      <button id="mode-switch" class="cc-switch" aria-label="Toggle sample data"></button>
+      <span class="mode-opt" data-mode-opt="sample">Sample</span>
+    </div>
+  </header>
+
+  <nav class="cc-tabs"></nav>
+
+  <main>
+    <div id="tab-content"></div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

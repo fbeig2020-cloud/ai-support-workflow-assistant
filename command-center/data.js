@@ -1,0 +1,125 @@
+/**
+ * Command Center — single data source.
+ *
+ * Everything every tab renders comes from this file (or, later, from a real
+ * system this points at). REAL is fact derived from this repo: PROGRESS.md,
+ * CLAUDE.md requirements/stories, and the test suite in /tests. SAMPLE is
+ * believable made-up data used only to preview shape — it is never mixed
+ * into REAL and every value that comes from it is tagged `sample: true` so
+ * the UI can label it.
+ *
+ * Colour palette lives in styles.css :root — this file has no hex codes.
+ */
+
+const TODAY = '2026-08-17'; // Set from CLAUDE.md system context at last build. Update when re-generating.
+
+const REAL_DATA = {
+  meta: {
+    name: 'AI-Powered Business Support Workflow Assistant',
+    tagline: 'A small AI-powered assistant to streamline support request handling for support staff, ensuring human oversight and control.',
+    today: TODAY,
+    demoDay: '2026-10-08',
+    buildEnds: '2026-10-01',
+  },
+
+  // Every promise this system makes (SAFE-type requirements). Guardrails tab
+  // will render these; Overview shows a one-line rollup.
+  guardrails: [
+    {
+      reqId: 'REQ-008',
+      text: 'The assistant must not send messages, close or resolve tickets, change ticket priority, change permissions or user access, modify data, delete information, or escalate a case automatically.',
+      enforced: true,
+      mechanism: 'src/guardrail.js (validateAssistantOutput) + src/presentToAgent.js (the sanctioned boundary that calls it before any output reaches an agent)',
+      evidence: '17/17 tests passing across tests/guardrail.test.js and tests/presentToAgent.test.js',
+      lastVerified: '2026-08-17',
+    },
+    {
+      reqId: 'REQ-010',
+      text: 'The system must keep an audit trail of AI recommendations and human approvals or rejections.',
+      enforced: false,
+      mechanism: null,
+      evidence: 'Not built yet — scoped as STORY-003, due 2026-08-29',
+      lastVerified: null,
+    },
+  ],
+
+  // All 10 requirements, used to compute "what's live and what's not" on Overview.
+  requirements: [
+    { id: 'REQ-001', type: 'FUNC', priority: 'must', text: 'Classify support requests into predefined categories.', builtBy: 'STORY-001', built: false },
+    { id: 'REQ-002', type: 'FUNC', priority: 'must', text: 'Determine urgency/priority and produce a short summary.', builtBy: 'STORY-001', built: false },
+    { id: 'REQ-003', type: 'FUNC', priority: 'must', text: 'Search the knowledge base for approved troubleshooting instructions and recommend next steps.', builtBy: 'STORY-004', built: false },
+    { id: 'REQ-004', type: 'FUNC', priority: 'must', text: 'Generate a professional draft response for agent review.', builtBy: 'STORY-005', built: false },
+    { id: 'REQ-005', type: 'FUNC', priority: 'must', text: 'Let a support agent review, approve, edit, or reject classification, solution, and draft response.', builtBy: 'STORY-002', built: false },
+    { id: 'REQ-006', type: 'FUNC', priority: 'must', text: 'Recommend escalation, with reasoning, when the knowledge base can’t resolve an issue.', builtBy: 'STORY-006', built: false },
+    { id: 'REQ-007', type: 'FUNC', priority: 'must', text: 'Produce a final support summary once the workflow completes.', builtBy: 'STORY-007', built: false },
+    { id: 'REQ-008', type: 'SAFE', priority: 'must', text: 'Never act on tickets/data/permissions automatically — recommend only.', builtBy: 'R4 (foundational, pre-r0)', built: true },
+    { id: 'REQ-009', type: 'CONSTRAINT', priority: 'must', text: 'Read from a small knowledge base of approved instructions and sample tickets.', builtBy: 'STORY-004', built: false },
+    { id: 'REQ-010', type: 'SAFE', priority: 'must', text: 'Keep an audit trail of AI recommendations and human approvals/rejections.', builtBy: 'STORY-003', built: false },
+  ],
+
+  releases: [
+    { id: 'r0', name: 'Initial Workflow Skeleton', storyCount: 3, start: '2026-08-18', end: '2026-08-29' },
+    { id: 'r1', name: 'Knowledge Base Integration and Response Drafting', storyCount: 2, start: '2026-09-07', end: '2026-09-15' },
+    { id: 'r2', name: 'Escalation and Final Summary', storyCount: 2, start: '2026-09-23', end: '2026-10-01' },
+  ],
+
+  stories: [
+    { id: 'STORY-001', title: 'Classify and Prioritize Support Requests', release: 'r0', due: '2026-08-18', owner: 'Support Agent', status: 'not_started' },
+    { id: 'STORY-002', title: 'Human Approval of Classification and Priority', release: 'r0', due: '2026-08-24', owner: 'support_agent', status: 'not_started' },
+    { id: 'STORY-003', title: 'Audit Trail Logging', release: 'r0', due: '2026-08-29', owner: 'system_auditor', status: 'not_started' },
+    { id: 'STORY-004', title: 'Search Knowledge Base for Troubleshooting Steps', release: 'r1', due: '2026-09-07', owner: 'Support Agent', status: 'not_started' },
+    { id: 'STORY-005', title: 'Generate Draft Response for Agent Review', release: 'r1', due: '2026-09-15', owner: 'Support Agent', status: 'not_started' },
+    { id: 'STORY-006', title: 'Recommend Escalation with Explanation', release: 'r2', due: '2026-09-23', owner: 'Support Agent', status: 'not_started' },
+    { id: 'STORY-007', title: 'Generate Final Support Summary', release: 'r2', due: '2026-10-01', owner: 'Support Agent', status: 'not_started' },
+  ],
+
+  // Foundational work already shipped, ahead of and outside the STORY-00x
+  // numbering (it's infrastructure the stories will build on top of).
+  foundationalWork: [
+    {
+      title: 'R4 Safety Guardrail wired into the agent boundary',
+      date: '2026-08-12',
+      detail: 'validateAssistantOutput() + presentToAgent() — the only sanctioned path from assistant output to a support agent. Fails closed; blocks anything that skips human approval or claims to have already acted.',
+      files: ['src/guardrail.js', 'src/presentToAgent.js'],
+      verification: '17/17 tests passing (re-run 2026-08-17)',
+    },
+  ],
+
+  // No external system has been named in the plan yet.
+  systems: [],
+
+  // Owners pulled straight from story ownership. These are not scoped AI
+  // agents (no skills, no runtime) — just who's on the hook for each story.
+  owners: [
+    { name: 'Support Agent', stories: ['STORY-001', 'STORY-004', 'STORY-005', 'STORY-006', 'STORY-007'], skills: [] },
+    { name: 'support_agent', stories: ['STORY-002'], skills: [] },
+    { name: 'system_auditor', stories: ['STORY-003'], skills: [] },
+  ],
+
+  users: [
+    { role: 'support agent', wants: 'review, approve, edit, or reject what the assistant classifies, recommends, and drafts — never have it act on its own.' },
+    { role: 'system auditor', wants: 'a complete, trustworthy trail of every AI recommendation and every human approval or rejection.' },
+  ],
+
+  // Nothing that can be "connected" exists yet — see systems above.
+  // Overview shows one honest grey indicator rather than inventing per-system dots.
+  connections: [],
+};
+
+// Believable, clearly-fake data for SAMPLE mode. Every value here is tagged
+// so the UI never lets it pass as real.
+const SAMPLE_OVERLAY = {
+  stats: [
+    { label: 'Tickets triaged this week', value: 42, sample: true },
+    { label: 'Draft responses generated', value: 18, sample: true },
+    { label: 'Escalations flagged', value: 3, sample: true },
+    { label: 'Agent approval rate', value: '91%', sample: true },
+  ],
+  connections: [
+    { name: 'Ticketing System', status: 'up', lastChecked: '2026-08-17T09:00:00Z', sample: true },
+    { name: 'Knowledge Base', status: 'up', lastChecked: '2026-08-17T09:00:00Z', sample: true },
+    { name: 'Identity / Access Directory', status: 'down', lastChecked: '2026-08-17T08:45:00Z', sample: true },
+  ],
+};
+
+window.COMMAND_CENTER_DATA = { real: REAL_DATA, sample: SAMPLE_OVERLAY };
