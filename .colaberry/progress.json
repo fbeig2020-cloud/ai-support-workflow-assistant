@@ -1,27 +1,15 @@
 {
-  "foundationalWork": [
+  "schema_version": 2,
+  "stories": [
     {
-      "title": "R4 Safety Guardrail wired into the agent boundary",
-      "date": "2026-08-12",
-      "detail": "validateAssistantOutput() + presentToAgent() — the only sanctioned path from assistant output to a support agent. Fails closed; blocks anything that skips human approval or claims to have already acted.",
-      "files": ["src/guardrail.js", "src/presentToAgent.js"],
-      "verification": "17/17 tests passing (re-run 2026-08-17)"
+      "id": "STORY-000",
+      "criteria": [
+        { "text": "Given the Command Center, when it is opened, then every tab is reachable and every card drills down one level.", "passed": true },
+        { "text": "Given sample mode, when any tab is shown, then the sample data is visibly labelled as sample.", "passed": true },
+        { "text": "Given the data files, when any tab renders, then its content comes from .colaberry/plan.json and .colaberry/progress.json read at runtime rather than from hard-coded values.", "passed": true },
+        { "text": "Given .colaberry/manifest.json, when any tab is shown, then it displays how old the data is and warns when that age exceeds a week.", "passed": true },
+        { "text": "Trust - no tab shows a number, a connection or a result the project has not actually produced.", "passed": true }
+      ]
     }
-  ],
-
-  "owners": [
-    { "name": "Support Agent", "stories": ["STORY-001", "STORY-004", "STORY-005", "STORY-006", "STORY-007"], "skills": [] },
-    { "name": "support_agent", "stories": ["STORY-002"], "skills": [] },
-    { "name": "system_auditor", "stories": ["STORY-003"], "skills": [] }
-  ],
-
-  "connections": [],
-
-  "storyVerifications": [
-    { "story": "STORY-000", "item": "Every tab reachable and every card drills down one level", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
-    { "story": "STORY-000", "item": "Sample data is visibly labelled as sample", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
-    { "story": "STORY-000", "item": "Data comes from .colaberry/plan.json and .colaberry/progress.json read at runtime", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
-    { "story": "STORY-000", "item": ".colaberry/manifest.json is shown with a data-age warning", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
-    { "story": "STORY-000", "item": "No tab shows a number/connection/result the project hasn't actually produced", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" }
   ]
 }

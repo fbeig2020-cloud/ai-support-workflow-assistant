@@ -60,9 +60,13 @@
       stories: plan.stories,
       systems: plan.systems,
       users: plan.users,
-      foundationalWork: progress.foundationalWork,
-      owners: progress.owners,
-      connections: progress.connections,
+      // progress.json's schema is owned by the Colaberry platform (schema_version 2,
+      // { stories: [{ id, criteria }] }) and no longer carries these three arrays.
+      // Default to empty so a missing key degrades to an empty state instead of
+      // crashing render (real.foundationalWork.map(...) etc. in app.js).
+      foundationalWork: progress.foundationalWork || [],
+      owners: progress.owners || [],
+      connections: progress.connections || [],
     };
 
     return {
