@@ -15,5 +15,13 @@
     { "name": "system_auditor", "stories": ["STORY-003"], "skills": [] }
   ],
 
-  "connections": []
+  "connections": [],
+
+  "storyVerifications": [
+    { "story": "STORY-000", "item": "Every tab reachable and every card drills down one level", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
+    { "story": "STORY-000", "item": "Sample data is visibly labelled as sample", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
+    { "story": "STORY-000", "item": "Data comes from .colaberry/plan.json and .colaberry/progress.json read at runtime", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
+    { "story": "STORY-000", "item": ".colaberry/manifest.json is shown with a data-age warning", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" },
+    { "story": "STORY-000", "item": "No tab shows a number/connection/result the project hasn't actually produced", "confirmed": true, "confirmedBy": "user", "confirmedDate": "2026-08-17", "method": "manual verification in browser" }
+  ]
 }
