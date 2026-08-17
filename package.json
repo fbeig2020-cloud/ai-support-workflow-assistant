@@ -4,6 +4,7 @@
   "description": "AI Support Workflow Assistant — helps support staff triage tickets. Recommends actions; humans approve.",
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "serve:command-center": "node scripts/serveCommandCenter.js"
   }
 }

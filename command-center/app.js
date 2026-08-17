@@ -1,11 +1,13 @@
 /**
  * Command Center — rendering.
- * Reads everything from window.COMMAND_CENTER_DATA (data.js). No tab
- * hard-codes a fact; they all pull from the same object so pointing the
- * Command Center at a real backend later means changing data.js, not the tabs.
+ * Real data is fetched at runtime by data-loader.js from .colaberry/plan.json
+ * and .colaberry/progress.json — nothing here hard-codes a fact. Sample data
+ * comes from sample-data.js. Every .cc-card is clickable and opens a
+ * one-level-down detail view via modal.js.
  */
 (function () {
-  const DATA = window.COMMAND_CENTER_DATA;
+  let DATA = null;
+  let MANIFEST = null;
 
   const TABS = [
     { id: 'overview', label: 'Overview' },
@@ -18,9 +20,10 @@
     { id: 'kb', label: 'Knowledge Base' },
     { id: 'datamodel', label: 'Data Model' },
   ];
+  const TAB_LABEL = Object.fromEntries(TABS.map((t) => [t.id, t.label]));
 
   // What each not-yet-built tab will hold, and what has to happen first.
-  // Used only for the placeholder page — no invented data.
+  // Used for the placeholder page and as a fallback in its detail modal.
   const STUB_INFO = {
     outcomes: {
       will: 'One card per measure this system has to move.',
@@ -28,7 +31,7 @@
     },
     users: {
       will: 'The roles this is built for and what they’re trying to get done, taken from the story roles.',
-      first: 'Straightforward to build from the two roles already in data.js (support agent, system auditor) — next in line after Overview.',
+      first: 'Straightforward to build from the two roles already in plan.json (support agent, system auditor) — next in line after Overview.',
     },
     guardrails: {
       will: 'REQ-008 and REQ-010 in full, each showing whether anything in the build currently enforces it.',
@@ -40,7 +43,7 @@
     },
     pm: {
       will: 'A Gantt of r0/r1/r2 and every story underneath, each clickable to its own detail.',
-      first: 'Release and story dates already exist in data.js — needs a Gantt view built on top.',
+      first: 'Release and story dates already exist in plan.json — needs a Gantt view built on top.',
     },
     agents: {
       will: 'One card per owner (Support Agent, support_agent, system_auditor) and the stories they’re on the hook for.',
@@ -69,6 +72,10 @@
     return Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
   }
 
+  function nowISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
   function releaseStatus(release, today) {
     if (today < release.start) {
       const n = daysBetween(today, release.start);
@@ -91,10 +98,197 @@
     return `<span class="cc-pill ${cls}">${text}</span>`;
   }
 
+  // ---------- drill-down detail content (one level down per card) ----------
+
+  function detailSummary() {
+    const real = DATA.real;
+    const usersHtml = real.users.map((u) => `<li><strong>${u.role}</strong> — ${u.wants}</li>`).join('');
+    return {
+      title: real.meta.name,
+      body: `<p>${real.meta.tagline}</p>
+        <ul class="cc-detail-list">${usersHtml}</ul>
+        <table class="cc-detail-table">
+          <tr><th>Demo day</th><td>${fmtDate(real.meta.demoDay)}</td></tr>
+          <tr><th>Build ends</th><td>${fmtDate(real.meta.buildEnds)}</td></tr>
+          <tr><th>Requirements tracked</th><td>${real.requirements.length}</td></tr>
+          <tr><th>Stories tracked</th><td>${real.stories.length}</td></tr>
+        </table>`,
+    };
+  }
+
+  function detailRelease() {
+    const real = DATA.real;
+    const today = nowISO();
+    const body = real.releases
+      .map((r) => {
+        const st = releaseStatus(r, today);
+        const stories = real.stories
+          .filter((s) => s.release === r.id)
+          .map(
+            (s) => `<li><span class="req-id">${s.id}</span> ${s.title} — <em>${s.owner}</em> ${pill(
+              s.status.replace('_', ' '),
+              s.status === 'done' ? 'built' : 'not-built'
+            )} <span class="cc-sub">due ${fmtDate(s.due)}</span></li>`
+          )
+          .join('');
+        return `<div style="margin-bottom:14px">
+          <div style="font-weight:600">${r.id} — ${r.name} ${pill(st.label, st.cls)}</div>
+          <div class="cc-sub">${fmtDate(r.start)} → ${fmtDate(r.end)}</div>
+          <ul class="cc-detail-list">${stories}</ul>
+        </div>`;
+      })
+      .join('');
+    return { title: 'Release you are in — full schedule', body };
+  }
+
+  function detailRequirements() {
+    const real = DATA.real;
+    const guardById = Object.fromEntries(real.guardrails.map((g) => [g.reqId, g]));
+    const rows = real.requirements
+      .map((r) => {
+        const g = guardById[r.id];
+        const extra = g
+          ? `<div class="cc-sub">${g.mechanism ? 'Mechanism: ' + g.mechanism : 'No mechanism yet'}<br/>Evidence: ${g.evidence}</div>`
+          : '';
+        return `<li>
+          <span class="req-id">${r.id}</span>
+          <span class="req-text">[${r.type}] ${r.text} — ${r.builtBy}</span>
+          ${pill(r.built ? 'built' : 'not built', r.built ? 'built' : 'not-built')}
+          ${extra}
+        </li>`;
+      })
+      .join('');
+    return { title: 'All requirements — full detail', body: `<ul class="cc-req-list">${rows}</ul>` };
+  }
+
+  function detailFoundational() {
+    const real = DATA.real;
+    const work = real.foundationalWork
+      .map(
+        (w) => `<div style="margin-bottom:14px">
+          <div style="font-weight:600">${w.title}</div>
+          <div class="cc-sub">${w.detail}</div>
+          <div class="cc-sub">Files: ${w.files.join(', ')}</div>
+          <div class="cc-sub">${w.verification} · shipped ${fmtDate(w.date)}</div>
+        </div>`
+      )
+      .join('');
+    const guardrails = real.guardrails
+      .map(
+        (g) => `<div style="margin-bottom:10px">
+          <div><span class="req-id">${g.reqId}</span> ${pill(g.enforced ? 'enforced' : 'not enforced', g.enforced ? 'built' : 'not-built')}</div>
+          <div class="cc-sub">${g.text}</div>
+          <div class="cc-sub">${g.evidence}</div>
+        </div>`
+      )
+      .join('');
+    return {
+      title: 'Foundational work — full detail',
+      body: `${work}<h4 style="margin:12px 0 6px">Guardrails this work backs</h4>${guardrails}`,
+    };
+  }
+
+  function detailConnections() {
+    const real = DATA.real;
+    const sample = DATA.sample;
+    if (mode === 'sample') {
+      const rows = sample.connections
+        .map(
+          (c) => `<li><span class="cc-dot ${c.status}"></span> ${c.name} ${pill('sample', 'sample')} — checked ${new Date(c.lastChecked).toLocaleString()}</li>`
+        )
+        .join('');
+      return {
+        title: 'System connections (sample)',
+        body: `<ul class="cc-detail-list">${rows}</ul><p class="cc-sub">Fabricated for preview only — no real connection has been made.</p>`,
+      };
+    }
+    const count = real.systems.length;
+    return {
+      title: 'System connections',
+      body: `<p>${count === 0 ? 'The plan names no external system yet, so there is nothing to connect to or check.' : real.systems.join(', ')}</p>
+        <p class="cc-sub">Real connections will appear here, each with a live status dot, once a system is scoped in the plan.</p>`,
+    };
+  }
+
+  function detailStats() {
+    const rows = DATA.sample.stats.map((s) => `<li>${s.label}: <strong>${s.value}</strong> ${pill('sample', 'sample')}</li>`).join('');
+    return {
+      title: 'Illustrative volume — sample detail',
+      body: `<ul class="cc-detail-list">${rows}</ul><p class="cc-sub">Made up, to preview shape. No workflow has run yet, so no real counts exist.</p>`,
+    };
+  }
+
+  function detailStub(tabId) {
+    const info = STUB_INFO[tabId];
+    const real = DATA.real;
+    let extra = '';
+    if (tabId === 'guardrails') {
+      extra = real.guardrails
+        .map(
+          (g) => `<div style="margin-bottom:10px"><span class="req-id">${g.reqId}</span> ${pill(g.enforced ? 'enforced' : 'not enforced', g.enforced ? 'built' : 'not-built')}<div class="cc-sub">${g.text}</div><div class="cc-sub">${g.evidence}</div></div>`
+        )
+        .join('');
+    } else if (tabId === 'pm') {
+      extra = real.releases
+        .map((r) => {
+          const stories = real.stories
+            .filter((s) => s.release === r.id)
+            .map((s) => `<li>${s.id} — ${s.title} (${s.owner}, due ${fmtDate(s.due)})</li>`)
+            .join('');
+          return `<div style="margin-bottom:10px"><strong>${r.id} — ${r.name}</strong><ul class="cc-detail-list">${stories}</ul></div>`;
+        })
+        .join('');
+    } else if (tabId === 'agents') {
+      extra = `<ul class="cc-detail-list">${real.owners.map((o) => `<li>${o.name} — ${o.stories.join(', ')}</li>`).join('')}</ul>`;
+    } else if (tabId === 'users') {
+      extra = `<ul class="cc-detail-list">${real.users.map((u) => `<li><strong>${u.role}</strong> — ${u.wants}</li>`).join('')}</ul>`;
+    } else if (tabId === 'systems') {
+      extra =
+        real.systems.length === 0
+          ? '<p class="cc-sub">No systems named in the plan yet.</p>'
+          : `<ul class="cc-detail-list">${real.systems.map((s) => `<li>${s}</li>`).join('')}</ul>`;
+    }
+    return {
+      title: `${TAB_LABEL[tabId]} — detail`,
+      body: `<p><strong>What will live here:</strong> ${info.will}</p>
+        <p><strong>What has to happen first:</strong> ${info.first}</p>
+        ${extra}`,
+    };
+  }
+
+  function getCardDetail(id) {
+    switch (id) {
+      case 'overview-summary':
+        return detailSummary();
+      case 'overview-release':
+        return detailRelease();
+      case 'overview-requirements':
+        return detailRequirements();
+      case 'overview-foundational':
+        return detailFoundational();
+      case 'overview-connections':
+        return detailConnections();
+      case 'overview-stats':
+        return detailStats();
+      default:
+        return id.startsWith('stub-') ? detailStub(id.slice(5)) : null;
+    }
+  }
+
+  function onCardClick(e) {
+    const card = e.target.closest('.cc-card[data-card]');
+    if (!card || !DATA) return;
+    const detail = getCardDetail(card.dataset.card);
+    if (!detail) return;
+    window.CommandCenterModal.open(detail.title, detail.body);
+  }
+
+  // ---------- tab rendering ----------
+
   function renderOverview() {
     const real = DATA.real;
     const sample = DATA.sample;
-    const today = real.meta.today;
+    const today = nowISO();
     const focusRelease = currentOrNextRelease(real.releases, today);
     const focusStories = real.stories.filter((s) => s.release === focusRelease.id);
     const doneCount = focusStories.filter((s) => s.status === 'done').length;
@@ -164,7 +358,7 @@
 
     const statsHtml =
       mode === 'sample'
-        ? `<div class="cc-card">
+        ? `<div class="cc-card" data-card="overview-stats">
             <h3>Illustrative volume ${pill('sample', 'sample')}</h3>
             <p class="cc-sub">Made up, to show the shape of this card. Real numbers appear once the workflow runs.</p>
             <div class="cc-stat-grid">
@@ -179,31 +373,31 @@
 
     document.getElementById('tab-content').innerHTML = `
       <div class="cc-grid">
-        <div class="cc-card cc-span-2">
+        <div class="cc-card cc-span-2" data-card="overview-summary">
           <h2>${real.meta.name}</h2>
           <p class="cc-sub">${real.meta.tagline}</p>
           <div style="font-size:13px">${usersLine}</div>
         </div>
 
-        <div class="cc-card cc-span-2">
+        <div class="cc-card cc-span-2" data-card="overview-release">
           <h3>Release you are in</h3>
           <div class="cc-release-strip">${releaseStrip}</div>
           <div class="cc-foot">${focusRelease.id} stories complete: ${doneCount} of ${focusStories.length} · Demo day ${fmtDate(real.meta.demoDay)} · build ends ${fmtDate(real.meta.buildEnds)} · ${daysBetween(real.meta.buildEnds, real.meta.demoDay)} days of demo prep after build ends.</div>
         </div>
 
-        <div class="cc-card cc-span-2">
+        <div class="cc-card cc-span-2" data-card="overview-requirements">
           <h3>What's live, requirement by requirement</h3>
           <p class="cc-sub">All 10 requirements from the plan. "Built" means code in this repo enforces or delivers it today — not that a story is scheduled.</p>
           <ul class="cc-req-list">${reqRows}</ul>
         </div>
 
-        <div class="cc-card">
+        <div class="cc-card" data-card="overview-foundational">
           <h3>Foundational work shipped early</h3>
           <p class="cc-sub">Ahead of the r0 story schedule, outside STORY-00x numbering.</p>
           ${foundational}
         </div>
 
-        <div class="cc-card">
+        <div class="cc-card" data-card="overview-connections">
           <h3>System connections</h3>
           <p class="cc-sub">Grey means unknown, not healthy — nothing is wired up to check yet.</p>
           ${connectionsHtml}
@@ -211,20 +405,49 @@
 
         ${statsHtml}
       </div>
-      <p class="cc-foot">Generated from PROGRESS.md, CLAUDE.md requirements/stories, and a live re-run of <code>npm test</code> as of ${fmtDate(today)}.</p>
+      <p class="cc-foot">Generated from .colaberry/plan.json and .colaberry/progress.json as of ${fmtDate(today)}. Click any card for detail.</p>
     `;
   }
 
   function renderStub(tabId, label) {
     const info = STUB_INFO[tabId];
     document.getElementById('tab-content').innerHTML = `
-      <div class="cc-stub cc-card">
+      <div class="cc-stub cc-card" data-card="stub-${tabId}">
         <h2>${label}</h2>
         <p><strong>Not built yet.</strong> Overview came first, per plan — this tab is next in line.</p>
         <p class="cc-sub" style="margin-bottom:6px"><strong>What will live here:</strong> ${info.will}</p>
         <p class="cc-sub" style="margin-bottom:0"><strong>What has to happen first:</strong> ${info.first}</p>
+        <p class="cc-sub" style="margin-top:10px">Click this card for what's already known.</p>
       </div>
     `;
+  }
+
+  function renderLoading() {
+    document.getElementById('tab-content').innerHTML = `<div class="cc-card">Loading project state from .colaberry/…</div>`;
+  }
+
+  function renderLoadError(err) {
+    document.getElementById('tab-content').innerHTML = `
+      <div class="cc-card cc-load-error">
+        <h3>Could not load project data</h3>
+        <p>${err.message}</p>
+        <p class="cc-sub">error class: ${err.errorClass || 'Error'}</p>
+      </div>`;
+    console.error('[command-center] data load failed', err.errorClass || 'Error', err);
+  }
+
+  function renderDataAgeBar() {
+    const bar = document.getElementById('data-age-bar');
+    if (!bar || !MANIFEST) return;
+    const age = window.commandCenterDataAge(MANIFEST);
+    const days = Math.floor(age.days);
+    const label = days <= 0 ? 'updated today' : days === 1 ? '1 day ago' : `${days} days ago`;
+    let text = `Data last updated ${fmtDate(age.updated.toISOString().slice(0, 10))} (${label})`;
+    if (age.isStale) {
+      text += ` — WARNING: over ${age.staleAfterDays} days old, may be out of date.`;
+    }
+    bar.textContent = text;
+    bar.classList.toggle('stale', age.isStale);
   }
 
   function render() {
@@ -232,6 +455,8 @@
     document.querySelectorAll('nav.cc-tabs button').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.tab === activeTab);
     });
+    renderDataAgeBar();
+    if (!DATA) return;
     if (activeTab === 'overview') {
       renderOverview();
     } else {
@@ -240,7 +465,7 @@
     }
   }
 
-  function init() {
+  async function init() {
     const nav = document.querySelector('nav.cc-tabs');
     nav.innerHTML = TABS.map((t) => `<button data-tab="${t.id}">${t.label}</button>`).join('');
     nav.addEventListener('click', (e) => {
@@ -255,6 +480,18 @@
       render();
     });
 
+    document.getElementById('tab-content').addEventListener('click', onCardClick);
+
+    renderLoading();
+    try {
+      const loaded = await window.loadCommandCenterData();
+      DATA = loaded.data;
+      MANIFEST = loaded.manifest;
+    } catch (err) {
+      renderLoadError(err);
+      renderDataAgeBar();
+      return;
+    }
     render();
   }
 

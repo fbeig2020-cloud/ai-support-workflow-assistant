@@ -1,0 +1,19 @@
+{
+  "foundationalWork": [
+    {
+      "title": "R4 Safety Guardrail wired into the agent boundary",
+      "date": "2026-08-12",
+      "detail": "validateAssistantOutput() + presentToAgent() — the only sanctioned path from assistant output to a support agent. Fails closed; blocks anything that skips human approval or claims to have already acted.",
+      "files": ["src/guardrail.js", "src/presentToAgent.js"],
+      "verification": "17/17 tests passing (re-run 2026-08-17)"
+    }
+  ],
+
+  "owners": [
+    { "name": "Support Agent", "stories": ["STORY-001", "STORY-004", "STORY-005", "STORY-006", "STORY-007"], "skills": [] },
+    { "name": "support_agent", "stories": ["STORY-002"], "skills": [] },
+    { "name": "system_auditor", "stories": ["STORY-003"], "skills": [] }
+  ],
+
+  "connections": []
+}

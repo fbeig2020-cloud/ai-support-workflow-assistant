@@ -49,6 +49,21 @@ body {
 }
 body[data-mode="sample"] #sample-banner { display: block; }
 
+/* ---------- data-age bar ---------- */
+#data-age-bar {
+  background: var(--cc-surface);
+  border-bottom: 1px solid var(--cc-border);
+  color: var(--cc-text-muted);
+  font-size: 12px;
+  padding: 6px 28px;
+}
+#data-age-bar:empty { display: none; }
+#data-age-bar.stale {
+  background: var(--cc-warning-weak);
+  color: var(--cc-warning);
+  font-weight: 600;
+}
+
 /* ---------- header ---------- */
 header.cc-header {
   background: var(--cc-surface);
@@ -127,12 +142,18 @@ main { padding: 24px 28px 60px; max-width: 1180px; margin: 0 auto; }
   border-radius: var(--cc-radius);
   box-shadow: var(--cc-shadow);
   padding: 18px 20px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
+.cc-card:hover { border-color: var(--cc-accent); box-shadow: 0 2px 6px rgba(20, 24, 31, 0.1); }
+.cc-card:focus-visible { outline: 2px solid var(--cc-accent); outline-offset: 2px; }
 .cc-card h2 { margin: 0 0 4px; font-size: 15px; }
 .cc-card h3 { margin: 0 0 10px; font-size: 15px; }
 .cc-card .cc-sub { color: var(--cc-text-muted); font-size: 13px; margin: 0 0 14px; }
 .cc-card.cc-span-2 { grid-column: span 2; }
 @media (max-width: 760px) { .cc-card.cc-span-2 { grid-column: span 1; } }
+.cc-load-error { border-color: var(--cc-danger); cursor: default; }
+.cc-load-error h3 { color: var(--cc-danger); }
 
 /* ---------- status pills ---------- */
 .cc-pill {
@@ -206,3 +227,50 @@ main { padding: 24px 28px 60px; max-width: 1180px; margin: 0 auto; }
 /* ---------- placeholder tab pages ---------- */
 .cc-stub { max-width: 640px; }
 .cc-stub h2 { margin-top: 0; }
+
+/* ---------- drill-down detail content ---------- */
+.cc-detail-list { list-style: none; margin: 0 0 12px; padding: 0; font-size: 13px; }
+.cc-detail-list li { padding: 6px 0; border-bottom: 1px solid var(--cc-border); }
+.cc-detail-list li:last-child { border-bottom: none; }
+.cc-detail-table { border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.cc-detail-table th { text-align: left; color: var(--cc-text-muted); font-weight: 600; padding: 4px 16px 4px 0; }
+.cc-detail-table td { padding: 4px 0; }
+
+/* ---------- drill-down modal ---------- */
+.cc-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 31, 0.45);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 20px;
+  z-index: 100;
+  overflow-y: auto;
+}
+.cc-modal-backdrop.open { display: flex; }
+.cc-modal {
+  background: var(--cc-surface);
+  border-radius: var(--cc-radius);
+  box-shadow: var(--cc-shadow);
+  max-width: 640px;
+  width: 100%;
+  padding: 24px 28px;
+  position: relative;
+  cursor: default;
+}
+.cc-modal-close {
+  position: absolute;
+  top: 12px; right: 14px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--cc-text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+.cc-modal-close:hover { color: var(--cc-text); }
+.cc-modal-title { font-size: 17px; font-weight: 700; margin: 0 0 14px; padding-right: 24px; }
+.cc-modal-body { font-size: 13px; color: var(--cc-text); }
+.cc-modal-body h4 { font-size: 13px; }
