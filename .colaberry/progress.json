@@ -10,6 +10,14 @@
         { "text": "Given .colaberry/manifest.json, when any tab is shown, then it displays how old the data is and warns when that age exceeds a week.", "passed": true },
         { "text": "Trust - no tab shows a number, a connection or a result the project has not actually produced.", "passed": true }
       ]
+    },
+    {
+      "id": "STORY-001",
+      "criteria": [
+        { "text": "Given a support request, when it is pasted into the assistant, then it should be classified into a predefined category.", "passed": true },
+        { "text": "Given a support request, when it is classified, then the assistant should determine its priority.", "passed": true },
+        { "text": "Trust: The classification and priority determination should be logged in the audit trail.", "passed": true }
+      ]
     }
   ]
 }
