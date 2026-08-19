@@ -30,7 +30,7 @@
     { "id": "REQ-002", "type": "FUNC", "priority": "must", "text": "Determine urgency/priority and produce a short summary.", "builtBy": "STORY-001", "built": true },
     { "id": "REQ-003", "type": "FUNC", "priority": "must", "text": "Search the knowledge base for approved troubleshooting instructions and recommend next steps.", "builtBy": "STORY-004", "built": false },
     { "id": "REQ-004", "type": "FUNC", "priority": "must", "text": "Generate a professional draft response for agent review.", "builtBy": "STORY-005", "built": false },
-    { "id": "REQ-005", "type": "FUNC", "priority": "must", "text": "Let a support agent review, approve, edit, or reject classification, solution, and draft response.", "builtBy": "STORY-002", "built": false },
+    { "id": "REQ-005", "type": "FUNC", "priority": "must", "text": "Let a support agent review, approve, edit, or reject classification, solution, and draft response.", "builtBy": "STORY-002", "built": true },
     { "id": "REQ-006", "type": "FUNC", "priority": "must", "text": "Recommend escalation, with reasoning, when the knowledge base can’t resolve an issue.", "builtBy": "STORY-006", "built": false },
     { "id": "REQ-007", "type": "FUNC", "priority": "must", "text": "Produce a final support summary once the workflow completes.", "builtBy": "STORY-007", "built": false },
     { "id": "REQ-008", "type": "SAFE", "priority": "must", "text": "Never act on tickets/data/permissions automatically — recommend only.", "builtBy": "R4 (foundational, pre-r0)", "built": true },
@@ -46,7 +46,7 @@
 
   "stories": [
     { "id": "STORY-001", "title": "Classify and Prioritize Support Requests", "release": "r0", "due": "2026-08-18", "owner": "Support Agent", "status": "built" },
-    { "id": "STORY-002", "title": "Human Approval of Classification and Priority", "release": "r0", "due": "2026-08-24", "owner": "support_agent", "status": "not_started" },
+    { "id": "STORY-002", "title": "Human Approval of Classification and Priority", "release": "r0", "due": "2026-08-24", "owner": "support_agent", "status": "built" },
     { "id": "STORY-003", "title": "Audit Trail Logging", "release": "r0", "due": "2026-08-29", "owner": "system_auditor", "status": "not_started" },
     { "id": "STORY-004", "title": "Search Knowledge Base for Troubleshooting Steps", "release": "r1", "due": "2026-09-07", "owner": "Support Agent", "status": "not_started" },
     { "id": "STORY-005", "title": "Generate Draft Response for Agent Review", "release": "r1", "due": "2026-09-15", "owner": "Support Agent", "status": "not_started" },

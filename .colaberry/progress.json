@@ -18,6 +18,14 @@
         { "text": "Given a support request, when it is classified, then the assistant should determine its priority.", "passed": true },
         { "text": "Trust: The classification and priority determination should be logged in the audit trail.", "passed": true }
       ]
+    },
+    {
+      "id": "STORY-002",
+      "criteria": [
+        { "text": "Given a classified support request, when I review it, then I can approve or reject the classification and priority.", "passed": true },
+        { "text": "Given a misclassified support request, when I reject it, then it is sent back for reclassification.", "passed": true },
+        { "text": "Trust: Every approval or rejection action is logged in the audit trail.", "passed": true }
+      ]
     }
   ]
 }
