@@ -26,6 +26,14 @@
         { "text": "Given a misclassified support request, when I reject it, then it is sent back for reclassification.", "passed": true },
         { "text": "Trust: Every approval or rejection action is logged in the audit trail.", "passed": true }
       ]
+    },
+    {
+      "id": "STORY-003",
+      "criteria": [
+        { "text": "Given an action on a support request, when it occurs, then it is logged in the audit trail.", "passed": true },
+        { "text": "Given a failed logging attempt, when it occurs, then an alert is generated.", "passed": true },
+        { "text": "Trust: The audit trail is immutable and records all actions accurately.", "passed": true }
+      ]
     }
   ]
 }

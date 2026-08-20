@@ -18,10 +18,10 @@
     {
       "reqId": "REQ-010",
       "text": "The system must keep an audit trail of AI recommendations and human approvals or rejections.",
-      "enforced": false,
-      "mechanism": null,
-      "evidence": "Not built yet — scoped as STORY-003, due 2026-08-29",
-      "lastVerified": null
+      "enforced": true,
+      "mechanism": "src/auditLog.js (appendAuditEntry — hash-chained, append-only JSON Lines write path with fail-closed stderr ALERT on failure) + src/auditedActions.js (classifyAndLog/reviewAndLog — the only callers currently wired to persist; calling classify.js/reviewClassification.js directly does not auto-log)",
+      "evidence": "68/68 tests passing across tests/auditLog.test.js and tests/auditedActions.test.js",
+      "lastVerified": "2026-08-20"
     }
   ],
 
@@ -35,7 +35,7 @@
     { "id": "REQ-007", "type": "FUNC", "priority": "must", "text": "Produce a final support summary once the workflow completes.", "builtBy": "STORY-007", "built": false },
     { "id": "REQ-008", "type": "SAFE", "priority": "must", "text": "Never act on tickets/data/permissions automatically — recommend only.", "builtBy": "R4 (foundational, pre-r0)", "built": true },
     { "id": "REQ-009", "type": "CONSTRAINT", "priority": "must", "text": "Read from a small knowledge base of approved instructions and sample tickets.", "builtBy": "STORY-004", "built": false },
-    { "id": "REQ-010", "type": "SAFE", "priority": "must", "text": "Keep an audit trail of AI recommendations and human approvals/rejections.", "builtBy": "STORY-003", "built": false }
+    { "id": "REQ-010", "type": "SAFE", "priority": "must", "text": "Keep an audit trail of AI recommendations and human approvals/rejections.", "builtBy": "STORY-003", "built": true }
   ],
 
   "releases": [
@@ -47,7 +47,7 @@
   "stories": [
     { "id": "STORY-001", "title": "Classify and Prioritize Support Requests", "release": "r0", "due": "2026-08-18", "owner": "Support Agent", "status": "built" },
     { "id": "STORY-002", "title": "Human Approval of Classification and Priority", "release": "r0", "due": "2026-08-24", "owner": "support_agent", "status": "built" },
-    { "id": "STORY-003", "title": "Audit Trail Logging", "release": "r0", "due": "2026-08-29", "owner": "system_auditor", "status": "not_started" },
+    { "id": "STORY-003", "title": "Audit Trail Logging", "release": "r0", "due": "2026-08-29", "owner": "system_auditor", "status": "built" },
     { "id": "STORY-004", "title": "Search Knowledge Base for Troubleshooting Steps", "release": "r1", "due": "2026-09-07", "owner": "Support Agent", "status": "not_started" },
     { "id": "STORY-005", "title": "Generate Draft Response for Agent Review", "release": "r1", "due": "2026-09-15", "owner": "Support Agent", "status": "not_started" },
     { "id": "STORY-006", "title": "Recommend Escalation with Explanation", "release": "r2", "due": "2026-09-23", "owner": "Support Agent", "status": "not_started" },
