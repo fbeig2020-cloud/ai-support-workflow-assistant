@@ -1,12 +1,16 @@
 /**
- * STORY-003 — audit trail wiring boundary.
+ * STORY-003 — audit trail wiring boundary. Extended by STORY-004 with
+ * searchKnowledgeBaseAndLog (same shape, added below) so a knowledge-base
+ * search's query and results are also persisted, not just classify/review.
  *
  * classify.js and reviewClassification.js are documented and tested as
- * pure, side-effect-free functions. Adding a file write inside either would
- * break that contract for every existing consumer. This module is a thin,
- * caller-side wrapper instead — the same shape presentToAgent.js already
- * uses around guardrail.js: call the pure function, then persist the
- * logEntry it produced via auditLog.js's sanctioned write path.
+ * pure, side-effect-free functions; knowledgeBaseSearch.js is side-effect-free
+ * but not pure (it reads a file). Either way, none of the three persist
+ * anything themselves — adding a write inside them would break that
+ * contract for every existing consumer. This module is a thin, caller-side
+ * wrapper instead — the same shape presentToAgent.js already uses around
+ * guardrail.js: call the underlying function, then persist the logEntry it
+ * produced via auditLog.js's sanctioned write path.
  *
  * SCOPE NOTE: this module is not something STORY-003's story text asked
  * for. The story only asked to persist the logEntry objects classify.js
@@ -29,6 +33,7 @@
 
 import { classifySupportRequest } from './classify.js';
 import { reviewClassification } from './reviewClassification.js';
+import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -56,6 +61,22 @@ export function classifyAndLog(requestText, options = {}) {
  */
 export function reviewAndLog(classification, decision, options = {}) {
   const result = reviewClassification(classification, decision);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Search the knowledge base for a classification and persist the resulting
+ * logEntry (the search query and result summary) to the audit trail.
+ *
+ * @param {unknown} classification
+ * @param {{ logPath?: string, kbPath?: string|URL, timeoutMs?: number }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `kbPath`/`timeoutMs`
+ *   are passed through to searchKnowledgeBase (tests only).
+ * @returns {Promise<import('./knowledgeBaseSearch.js').KnowledgeBaseSearchResult & { auditResult: import('./auditLog.js').AuditAppendResult }>}
+ */
+export async function searchKnowledgeBaseAndLog(classification, options = {}) {
+  const result = await searchKnowledgeBase(classification, options);
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }

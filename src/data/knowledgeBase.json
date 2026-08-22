@@ -1,0 +1,89 @@
+{
+  "articles": [
+    {
+      "id": "KB-001",
+      "category": "login_problem",
+      "tags": ["password", "locked out", "locked account", "log in", "login", "sign in"],
+      "title": "Reset a locked-out account password",
+      "steps": [
+        "Confirm the user's identity (employee ID + manager name) before touching the account.",
+        "Check if the account is locked due to repeated failed attempts (Admin Console > Users > Security).",
+        "If locked, clear the lockout and send a password-reset link to the user's on-file email.",
+        "Ask the user to sign in with the new password within 15 minutes, before the reset link expires.",
+        "If the lockout recurs immediately after reset, escalate — it may indicate a compromised credential, not a forgotten password."
+      ]
+    },
+    {
+      "id": "KB-002",
+      "category": "login_problem",
+      "tags": ["mfa", "2fa", "two-factor", "authentication failed"],
+      "title": "User cannot complete multi-factor authentication",
+      "steps": [
+        "Ask which MFA method the user is using (authenticator app, SMS, hardware key).",
+        "Check the MFA provider's status page for an active outage before assuming a user-side issue.",
+        "If the user's device/app is out of sync, guide them to re-sync time in the authenticator app settings.",
+        "If the user lost their MFA device, do not disable MFA yourself — this requires the access-review process (see KB-003)."
+      ]
+    },
+    {
+      "id": "KB-003",
+      "category": "access_permission_issue",
+      "tags": ["access", "permission", "unauthorized", "access denied", "role assignment", "entitlement"],
+      "title": "User needs access or permission to a resource",
+      "steps": [
+        "Identify the exact resource (report, folder, database, tool) and the permission level requested.",
+        "Check whether the user's role already includes this entitlement (Admin Console > Roles).",
+        "If it does not, this requires a permission change — the assistant may only recommend it; a human must approve and apply it.",
+        "Document the business justification given by the user for the access-review audit trail."
+      ]
+    },
+    {
+      "id": "KB-004",
+      "category": "power_bi_report_issue",
+      "tags": ["power bi", "powerbi", "report", "dashboard", "visual", "dataset refresh", "refresh failed"],
+      "title": "Power BI report is blank or fails to refresh",
+      "steps": [
+        "Confirm whether the issue is the whole report (blank/won't load) or a single visual.",
+        "Check the dataset's last successful refresh time in the Power BI service (Settings > Refresh history).",
+        "If the refresh failed, open the refresh history error detail — most failures are a source-credential expiry.",
+        "If credentials expired, the data-source connection needs re-authentication — flag for the report owner, do not modify shared credentials directly.",
+        "If the report loads but a visual is blank, check for an active filter/slicer excluding all data."
+      ]
+    },
+    {
+      "id": "KB-005",
+      "category": "sql_database_issue",
+      "tags": ["sql", "database", "db connection", "stored procedure", "query timeout", "deadlock", "query failed", "query is slow"],
+      "title": "Database query is slow, timing out, or failing",
+      "steps": [
+        "Get the exact query or stored procedure name and the error message/timeout duration reported.",
+        "Check current database load and any active blocking sessions or deadlocks (DBA dashboard).",
+        "If a deadlock is present, note the two contending transactions — this is a candidate for the DBA team, not a self-serve fix.",
+        "If it's a timeout on a specific report/query, check whether an index or query-plan change is needed before recommending a code fix."
+      ]
+    },
+    {
+      "id": "KB-006",
+      "category": "data_issue",
+      "tags": ["data quality", "data is missing", "missing data", "wrong data", "incorrect data", "duplicate records", "data mismatch"],
+      "title": "Data appears missing, duplicated, or incorrect",
+      "steps": [
+        "Get a specific example: which record, which field, and what value was expected vs. shown.",
+        "Check the source system directly to see if the discrepancy originates upstream or in this report/view.",
+        "If duplicates are present, identify the shared key causing the duplication before recommending any deletion.",
+        "Never modify or delete data directly — document findings and recommend the correction for a human to apply."
+      ]
+    },
+    {
+      "id": "KB-007",
+      "category": "technical_question",
+      "tags": ["how do i", "how to", "question about", "can you explain", "is it possible to"],
+      "title": "General how-to / technical question",
+      "steps": [
+        "Identify the specific tool or workflow the question is about.",
+        "Check internal documentation and prior tickets for an existing answer before drafting a new one.",
+        "If no documented answer exists, note this as a documentation gap rather than guessing."
+      ]
+    }
+  ]
+}
