@@ -1,39 +1,308 @@
 {
   "schema_version": 2,
+  "project": "AI-Powered Business Support Workflow Assistant",
+  "totals": {
+    "stories_total": 8,
+    "stories_verified": 5,
+    "stories_submitted": 0,
+    "stories_in_progress": 0,
+    "stories_not_started": 3,
+    "criteria_total": 26,
+    "criteria_passed": 17,
+    "points_awarded": 500
+  },
   "stories": [
     {
       "id": "STORY-000",
+      "release": null,
+      "acceptance_total": 5,
       "criteria": [
-        { "text": "Given the Command Center, when it is opened, then every tab is reachable and every card drills down one level.", "passed": true },
-        { "text": "Given sample mode, when any tab is shown, then the sample data is visibly labelled as sample.", "passed": true },
-        { "text": "Given the data files, when any tab renders, then its content comes from .colaberry/plan.json and .colaberry/progress.json read at runtime rather than from hard-coded values.", "passed": true },
-        { "text": "Given .colaberry/manifest.json, when any tab is shown, then it displays how old the data is and warns when that age exceeds a week.", "passed": true },
-        { "text": "Trust - no tab shows a number, a connection or a result the project has not actually produced.", "passed": true }
-      ]
+        {
+          "text": "Given the Command Center, when it is opened, then every tab is reachable and every card drills down one level.",
+          "passed": true
+        },
+        {
+          "text": "Given sample mode, when any tab is shown, then the sample data is visibly labelled as sample.",
+          "passed": true
+        },
+        {
+          "text": "Given the Command Center, when any tab renders, then .colaberry/plan.json and .colaberry/progress.json are both committed in this repo and every tab reads its content from them at runtime rather than from hard-coded values.",
+          "passed": true
+        },
+        {
+          "text": "Given the Command Center, when any tab is shown, then .colaberry/manifest.json is committed in this repo and every tab shows how old that data is and warns when the age exceeds a week.",
+          "passed": true
+        },
+        {
+          "text": "Trust — no tab shows a number, a connection or a result the project has not actually produced.",
+          "passed": true
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "verified",
+        "criteria_passed": 5,
+        "criteria_total": 5,
+        "verified_at": "2026-08-17T22:08:52.372Z",
+        "commit_sha": "3f2db133c84a7e86f8a8f9c25916270cd31570fd",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/3f2db133c84a7e86f8a8f9c25916270cd31570fd",
+        "commit_at": "2026-08-17T20:11:44Z",
+        "points_awarded": 100,
+        "outstanding": []
+      }
     },
     {
       "id": "STORY-001",
+      "release": "r0",
+      "acceptance_total": 3,
       "criteria": [
-        { "text": "Given a support request, when it is pasted into the assistant, then it should be classified into a predefined category.", "passed": true },
-        { "text": "Given a support request, when it is classified, then the assistant should determine its priority.", "passed": true },
-        { "text": "Trust: The classification and priority determination should be logged in the audit trail.", "passed": true }
-      ]
+        {
+          "text": "Given a support request, when it is pasted into the assistant, then it should be classified into a predefined category.",
+          "passed": true
+        },
+        {
+          "text": "Given a support request, when it is classified, then the assistant should determine its priority.",
+          "passed": true
+        },
+        {
+          "text": "Trust: The classification and priority determination should be logged in the audit trail.",
+          "passed": true
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "verified",
+        "criteria_passed": 3,
+        "criteria_total": 3,
+        "verified_at": "2026-08-19T18:20:20.758Z",
+        "commit_sha": "3f88183137c92799a9001e972442e96361e3048d",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/3f88183137c92799a9001e972442e96361e3048d",
+        "commit_at": "2026-08-19T15:34:42Z",
+        "points_awarded": 100,
+        "outstanding": []
+      }
     },
     {
       "id": "STORY-002",
+      "release": "r0",
+      "acceptance_total": 3,
       "criteria": [
-        { "text": "Given a classified support request, when I review it, then I can approve or reject the classification and priority.", "passed": true },
-        { "text": "Given a misclassified support request, when I reject it, then it is sent back for reclassification.", "passed": true },
-        { "text": "Trust: Every approval or rejection action is logged in the audit trail.", "passed": true }
-      ]
+        {
+          "text": "Given a classified support request, when I review it, then I can approve or reject the classification and priority.",
+          "passed": true
+        },
+        {
+          "text": "Given a misclassified support request, when I reject it, then it is sent back for reclassification.",
+          "passed": true
+        },
+        {
+          "text": "Trust: Every approval or rejection action is logged in the audit trail.",
+          "passed": true
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "verified",
+        "criteria_passed": 3,
+        "criteria_total": 3,
+        "verified_at": "2026-08-19T19:39:22.328Z",
+        "commit_sha": "08bbf3ff071c2a7b9e533e0beaea53079b8b95b5",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/08bbf3ff071c2a7b9e533e0beaea53079b8b95b5",
+        "commit_at": "2026-08-19T19:29:35Z",
+        "points_awarded": 100,
+        "outstanding": []
+      }
     },
     {
       "id": "STORY-003",
+      "release": "r0",
+      "acceptance_total": 3,
       "criteria": [
-        { "text": "Given an action on a support request, when it occurs, then it is logged in the audit trail.", "passed": true },
-        { "text": "Given a failed logging attempt, when it occurs, then an alert is generated.", "passed": true },
-        { "text": "Trust: The audit trail is immutable and records all actions accurately.", "passed": true }
-      ]
+        {
+          "text": "Given an action on a support request, when it occurs, then it is logged in the audit trail.",
+          "passed": true
+        },
+        {
+          "text": "Given a failed logging attempt, when it occurs, then an alert is generated.",
+          "passed": true
+        },
+        {
+          "text": "Trust: The audit trail is immutable and records all actions accurately.",
+          "passed": true
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "verified",
+        "criteria_passed": 3,
+        "criteria_total": 3,
+        "verified_at": "2026-08-20T22:35:42.107Z",
+        "commit_sha": "e26de944a29b59fbae6808f501411674117725ee",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/e26de944a29b59fbae6808f501411674117725ee",
+        "commit_at": "2026-08-20T22:27:59Z",
+        "points_awarded": 100,
+        "outstanding": []
+      }
+    },
+    {
+      "id": "STORY-004",
+      "release": "r1",
+      "acceptance_total": 3,
+      "criteria": [
+        {
+          "text": "Given a classified request, when the assistant searches the knowledge base, then it should return relevant troubleshooting steps.",
+          "passed": true
+        },
+        {
+          "text": "Given a search, when no relevant steps are found, then the assistant should indicate uncertainty.",
+          "passed": true
+        },
+        {
+          "text": "Trust: The search query and results should be logged in the audit trail.",
+          "passed": true
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "verified",
+        "criteria_passed": 3,
+        "criteria_total": 3,
+        "verified_at": "2026-08-23T00:07:42.000Z",
+        "commit_sha": "a87023a6a7b6d866b28c5f3706123192d6d03bff",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/a87023a6a7b6d866b28c5f3706123192d6d03bff",
+        "commit_at": "2026-08-22T23:56:52Z",
+        "points_awarded": 100,
+        "outstanding": []
+      }
+    },
+    {
+      "id": "STORY-005",
+      "release": "r1",
+      "acceptance_total": 3,
+      "criteria": [
+        {
+          "text": "Given troubleshooting steps, when the assistant generates a response, then it should be professional and based on available information.",
+          "passed": false
+        },
+        {
+          "text": "Given a response draft, when I review it, then I should be able to edit it before sending.",
+          "passed": false
+        },
+        {
+          "text": "Trust: The draft generation should be logged in the audit trail.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 3,
+        "verified_at": null,
+        "commit_sha": null,
+        "commit_url": null,
+        "commit_at": null,
+        "points_awarded": null,
+        "outstanding": [
+          "Given troubleshooting steps, when the assistant generates a response, then it should be professional and based on available information.",
+          "Given a response draft, when I review it, then I should be able to edit it before sending.",
+          "Trust: The draft generation should be logged in the audit trail."
+        ]
+      }
+    },
+    {
+      "id": "STORY-006",
+      "release": "r2",
+      "acceptance_total": 3,
+      "criteria": [
+        {
+          "text": "Given an unresolved issue, when the assistant recommends escalation, then it should provide a clear explanation.",
+          "passed": false
+        },
+        {
+          "text": "Given an escalation recommendation, when I review it, then I should be able to approve or reject it.",
+          "passed": false
+        },
+        {
+          "text": "Trust: The escalation recommendation and decision should be logged in the audit trail.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 3,
+        "verified_at": null,
+        "commit_sha": null,
+        "commit_url": null,
+        "commit_at": null,
+        "points_awarded": null,
+        "outstanding": [
+          "Given an unresolved issue, when the assistant recommends escalation, then it should provide a clear explanation.",
+          "Given an escalation recommendation, when I review it, then I should be able to approve or reject it.",
+          "Trust: The escalation recommendation and decision should be logged in the audit trail."
+        ]
+      }
+    },
+    {
+      "id": "STORY-007",
+      "release": "r2",
+      "acceptance_total": 3,
+      "criteria": [
+        {
+          "text": "Given a completed workflow, when the assistant generates a support summary, then it should include all relevant details.",
+          "passed": false
+        },
+        {
+          "text": "Given a support summary, when I review it, then I should be able to save it manually.",
+          "passed": false
+        },
+        {
+          "text": "Trust: The summary generation should be logged in the audit trail.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": null,
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 3,
+        "verified_at": null,
+        "commit_sha": null,
+        "commit_url": null,
+        "commit_at": null,
+        "points_awarded": null,
+        "outstanding": [
+          "Given a completed workflow, when the assistant generates a support summary, then it should include all relevant details.",
+          "Given a support summary, when I review it, then I should be able to save it manually.",
+          "Trust: The summary generation should be logged in the audit trail."
+        ]
+      }
     }
   ]
 }
