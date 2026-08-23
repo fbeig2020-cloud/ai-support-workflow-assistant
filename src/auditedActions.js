@@ -34,6 +34,7 @@
 import { classifySupportRequest } from './classify.js';
 import { reviewClassification } from './reviewClassification.js';
 import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
+import { generateDraftResponse } from './generateDraftResponse.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -77,6 +78,23 @@ export function reviewAndLog(classification, decision, options = {}) {
  */
 export async function searchKnowledgeBaseAndLog(classification, options = {}) {
   const result = await searchKnowledgeBase(classification, options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Generate a draft response for a classification (and its knowledge-base
+ * search result) and persist the resulting logEntry to the audit trail.
+ *
+ * @param {unknown} classification
+ * @param {unknown} kbSearchResult
+ * @param {{ logPath?: string, templatesPath?: string|URL, timeoutMs?: number }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `templatesPath`/`timeoutMs`
+ *   are passed through to generateDraftResponse (tests only).
+ * @returns {Promise<import('./generateDraftResponse.js').DraftResponseResult & { auditResult: import('./auditLog.js').AuditAppendResult }>}
+ */
+export async function generateDraftResponseAndLog(classification, kbSearchResult, options = {}) {
+  const result = await generateDraftResponse(classification, kbSearchResult, options);
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }

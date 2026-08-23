@@ -1,0 +1,39 @@
+{
+  "greeting": "Hello,",
+  "signOff": "Best regards,\nSupport Team",
+  "templates": {
+    "login_problem": {
+      "openingLine": "Thank you for reaching out about the trouble signing in.",
+      "closingLine": "If you're still unable to log in after trying the steps above, please reply to this message and we'll take a closer look."
+    },
+    "access_permission_issue": {
+      "openingLine": "Thank you for letting us know about the access issue.",
+      "closingLine": "If the steps above don't resolve your access, please reply and we'll follow up further."
+    },
+    "power_bi_report_issue": {
+      "openingLine": "Thank you for reporting the issue with your Power BI report.",
+      "closingLine": "If the report still isn't displaying correctly after trying these steps, please reply and we'll dig further."
+    },
+    "sql_database_issue": {
+      "openingLine": "Thank you for flagging the database issue you ran into.",
+      "closingLine": "If the issue persists after trying the steps above, please reply with any additional details (query, error message, timestamp) so we can investigate further."
+    },
+    "data_issue": {
+      "openingLine": "Thank you for bringing this data issue to our attention.",
+      "closingLine": "If the data still looks incorrect after reviewing the steps above, please reply and we'll look into it further."
+    },
+    "technical_question": {
+      "openingLine": "Thank you for your question.",
+      "closingLine": "Let us know if you have any follow-up questions."
+    },
+    "default": {
+      "openingLine": "Thank you for contacting support.",
+      "closingLine": "If you need any further assistance, please reply to this message and we'll be happy to help."
+    }
+  },
+  "stepsSection": {
+    "foundHeading": "Here are the recommended troubleshooting steps for \"{{articleTitle}}\":",
+    "lowConfidenceCaveat": "Note: this is a low-confidence match — please confirm it applies before sending.",
+    "notFound": "We weren't able to find a specific troubleshooting article for this issue in our knowledge base yet. A support agent will review the details and follow up with next steps."
+  }
+}
