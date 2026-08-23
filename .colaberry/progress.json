@@ -3,13 +3,13 @@
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
     "stories_total": 8,
-    "stories_verified": 5,
+    "stories_verified": 6,
     "stories_submitted": 0,
     "stories_in_progress": 0,
-    "stories_not_started": 3,
+    "stories_not_started": 2,
     "criteria_total": 26,
-    "criteria_passed": 17,
-    "points_awarded": 500
+    "criteria_passed": 20,
+    "points_awarded": 600
   },
   "stories": [
     {
@@ -197,15 +197,15 @@
       "criteria": [
         {
           "text": "Given troubleshooting steps, when the assistant generates a response, then it should be professional and based on available information.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a response draft, when I review it, then I should be able to edit it before sending.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: The draft generation should be logged in the audit trail.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
@@ -213,19 +213,15 @@
       "notes": null,
       "updated_at": null,
       "verification": {
-        "state": "not_started",
-        "criteria_passed": 0,
+        "state": "verified",
+        "criteria_passed": 3,
         "criteria_total": 3,
-        "verified_at": null,
-        "commit_sha": null,
-        "commit_url": null,
-        "commit_at": null,
-        "points_awarded": null,
-        "outstanding": [
-          "Given troubleshooting steps, when the assistant generates a response, then it should be professional and based on available information.",
-          "Given a response draft, when I review it, then I should be able to edit it before sending.",
-          "Trust: The draft generation should be logged in the audit trail."
-        ]
+        "verified_at": "2026-08-23T17:09:00.000Z",
+        "commit_sha": "aa50ebc9e3961719780e5415de64b9fae7c843ba",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/aa50ebc9e3961719780e5415de64b9fae7c843ba",
+        "commit_at": "2026-08-23T16:56:58Z",
+        "points_awarded": 100,
+        "outstanding": []
       }
     },
     {
