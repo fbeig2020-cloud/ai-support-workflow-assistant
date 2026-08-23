@@ -1,8 +1,68 @@
 {
-  "dataUpdated": "2026-08-17T00:00:00Z",
-  "sources": {
-    "plan.json": "2026-08-17T00:00:00Z",
-    "progress.json": "2026-08-17T00:00:00Z"
-  },
-  "generatedBy": "STORY-000 command center fix — CC-20260817"
+  "generated_at": "2026-08-23T18:00:00.000Z",
+  "plan_version": 1,
+  "plan_sha256": "2df79e71383eddba3ddb12f5459eecb2da10d388b4d234d7e0ef7c31ff940070",
+  "correlation_id": "e078cccc-dbaf-4fd0-b668-da90ee81744e",
+  "files": [
+    {
+      "path": "docs/REQUIREMENTS.md",
+      "sha256": "8ce111492b9bbe246a2fd6cb497369b910fa71666d3acdeb126e64ad08acabb1"
+    },
+    {
+      "path": "docs/STORIES.md",
+      "sha256": "c0ef07c3c9513a7a3a466075038461bd10f972f2d71072a4871ed927735933db"
+    },
+    {
+      "path": "docs/TRACEABILITY.md",
+      "sha256": "c2f719d209c7ea6fd296f1f64acb02ff8219a107f119f1f7a11820698e713233"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "676ab1a9d76a8e0c17c1b70187af155cf2fbe29c61c869b16b9d1175a9177f36"
+    },
+    {
+      "path": "docs/stories/STORY-001.md",
+      "sha256": "1356e344ee0599156e70956629173d9c93d4c5733845c60d8b28e714419bc872"
+    },
+    {
+      "path": "docs/stories/STORY-002.md",
+      "sha256": "91bc0056a499058eaf1fedaaa0395f951d9f7aa62ebad6cacc1a6afdcde3bdb2"
+    },
+    {
+      "path": "docs/stories/STORY-003.md",
+      "sha256": "74b460653dd57b0b7c3232d7ed0570b9d57270fa489c925d1aa239159518d80d"
+    },
+    {
+      "path": "docs/stories/STORY-004.md",
+      "sha256": "6bff251e0c267501f6aaaf164f3862eb4d47d44834dab0ff25544a5b2d5c64d0"
+    },
+    {
+      "path": "docs/stories/STORY-005.md",
+      "sha256": "db9c6e074f58f53f96282a61613b73b2d3c8e8710f585752962c42c0b6199eee"
+    },
+    {
+      "path": "docs/stories/STORY-006.md",
+      "sha256": "76acae7160782a56f74a1ed848db6631076540730457eb326d16a21bf82e9d07"
+    },
+    {
+      "path": "docs/stories/STORY-007.md",
+      "sha256": "0ede8862a2a61cf4cdc7873deb1630a2ba72a89c714cfc9c9d847ee0d66c976d"
+    },
+    {
+      "path": "docs/stories/STORY-000.md",
+      "sha256": "ff01b7b61b4c85e021b3b136e33a314626258c293c6fecdbb7f7d01b540c3f6a"
+    },
+    {
+      "path": ".colaberry/plan.json",
+      "sha256": "60a4ebd1816f5af8b6dfa19e0cbc5c293b33a6993c177412843a53bf067b20eb"
+    },
+    {
+      "path": ".colaberry/progress.json",
+      "sha256": "2710093f5548bc9404b18727ec2ec6e5cd2350512f38f583fb850bbc4baea605"
+    },
+    {
+      "path": ".colaberry/profile.json",
+      "sha256": "23a23259ef9033421479380c44c0c928276bb7066f34ef0fee30bb7661a46e88"
+    }
+  ]
 }
