@@ -77,7 +77,8 @@
 
   // Pure — used by app.js to render the data-age bar on every tab.
   window.commandCenterDataAge = function commandCenterDataAge(manifest, now) {
-    const updated = new Date(manifest.dataUpdated);
+    const raw = manifest.generated_at || manifest.dataUpdated;
+    const updated = new Date(raw);
     const nowDate = now || new Date();
     const days = (nowDate - updated) / 86400000;
     return {
