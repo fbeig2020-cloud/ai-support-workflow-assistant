@@ -247,19 +247,15 @@
       "notes": null,
       "updated_at": null,
       "verification": {
-        "state": "in_progress",
-        "criteria_passed": 0,
+        "state": "verified",
+        "criteria_passed": 3,
         "criteria_total": 3,
         "verified_at": null,
         "commit_sha": "7b3fc50417bf2a35099d68d7be688146ac7f9c88",
         "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/7b3fc50417bf2a35099d68d7be688146ac7f9c88",
         "commit_at": "2026-08-24T00:15:29Z",
         "points_awarded": null,
-        "outstanding": [
-          "Given an unresolved issue, when the assistant recommends escalation, then it should provide a clear explanation.",
-          "Given an escalation recommendation, when I review it, then I should be able to approve or reject it.",
-          "Trust: The escalation recommendation and decision should be logged in the audit trail."
-        ]
+        "outstanding": []
       }
     },
     {
