@@ -2,6 +2,10 @@
  * STORY-003 — audit trail wiring boundary. Extended by STORY-004 with
  * searchKnowledgeBaseAndLog (same shape, added below) so a knowledge-base
  * search's query and results are also persisted, not just classify/review.
+ * Further extended by STORY-005 (generateDraftResponseAndLog), STORY-006
+ * (generateEscalationRecommendationAndLog, reviewEscalationAndLog), and
+ * STORY-007 (generateSupportSummaryAndLog, saveSupportSummaryAndLog) — every
+ * new workflow action follows this same thin-wrapper shape.
  *
  * classify.js and reviewClassification.js are documented and tested as
  * pure, side-effect-free functions; knowledgeBaseSearch.js is side-effect-free
@@ -37,6 +41,8 @@ import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
 import { generateDraftResponse } from './generateDraftResponse.js';
 import { generateEscalationRecommendation } from './generateEscalationRecommendation.js';
 import { reviewEscalation } from './reviewEscalation.js';
+import { generateSupportSummary } from './generateSupportSummary.js';
+import { saveSupportSummary } from './saveSupportSummary.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -128,6 +134,36 @@ export function generateEscalationRecommendationAndLog(classification, kbSearchR
  */
 export function reviewEscalationAndLog(recommendation, decision, options = {}) {
   const result = reviewEscalation(recommendation, decision);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Compile a completed workflow into a final support summary and persist the
+ * resulting logEntry to the audit trail.
+ *
+ * @param {unknown} workflow
+ * @param {{ logPath?: string }} [options]   Passed through to appendAuditEntry (tests only).
+ * @returns {import('./generateSupportSummary.js').SupportSummaryResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function generateSupportSummaryAndLog(workflow, options = {}) {
+  const result = generateSupportSummary(workflow);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Manually save a generated support summary and persist the resulting
+ * logEntry to the audit trail.
+ *
+ * @param {unknown} summary
+ * @param {{ logPath?: string, summariesDir?: string }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `summariesDir`
+ *   is passed through to saveSupportSummary (tests only).
+ * @returns {import('./saveSupportSummary.js').SaveSummaryResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function saveSupportSummaryAndLog(summary, options = {}) {
+  const result = saveSupportSummary(summary, options);
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }

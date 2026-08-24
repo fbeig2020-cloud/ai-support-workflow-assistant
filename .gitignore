@@ -26,3 +26,6 @@ build/
 # Temporary files
 tmp/
 *.tmp
+
+# Saved support summaries (runtime-generated ticket data, not shipped code)
+summaries/
