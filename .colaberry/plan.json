@@ -1,63 +1,386 @@
 {
-  "meta": {
-    "name": "AI-Powered Business Support Workflow Assistant",
-    "tagline": "A small AI-powered assistant to streamline support request handling for support staff, ensuring human oversight and control.",
-    "demoDay": "2026-10-08",
-    "buildEnds": "2026-10-01"
-  },
-
-  "guardrails": [
+  "schema_version": 2,
+  "project_name": "AI-Powered Business Support Workflow Assistant",
+  "descriptor": "A small AI-powered assistant to streamline support request handling for support staff, ensuring human oversight and control.",
+  "requirements": [
     {
-      "reqId": "REQ-008",
-      "text": "The assistant must not send messages, close or resolve tickets, change ticket priority, change permissions or user access, modify data, delete information, or escalate a case automatically.",
-      "enforced": true,
-      "mechanism": "src/guardrail.js (validateAssistantOutput) + src/presentToAgent.js (the sanctioned boundary that calls it before any output reaches an agent)",
-      "evidence": "17/17 tests passing across tests/guardrail.test.js and tests/presentToAgent.test.js",
-      "lastVerified": "2026-08-17"
+      "id": "REQ-001",
+      "kind": "FUNC",
+      "cluster": "Classification",
+      "priority": "must",
+      "statement": "The assistant must classify support requests into predefined categories such as Power BI/report issue, data issue, access or permission issue, SQL/database issue, login problem, technical question, or general support request.",
+      "fulfilled_by": [
+        "STORY-001"
+      ]
     },
     {
-      "reqId": "REQ-010",
-      "text": "The system must keep an audit trail of AI recommendations and human approvals or rejections.",
-      "enforced": true,
-      "mechanism": "src/auditLog.js (appendAuditEntry — hash-chained, append-only JSON Lines write path with fail-closed stderr ALERT on failure) + src/auditedActions.js (classifyAndLog/reviewAndLog — the only callers currently wired to persist; calling classify.js/reviewClassification.js directly does not auto-log)",
-      "evidence": "68/68 tests passing across tests/auditLog.test.js and tests/auditedActions.test.js",
-      "lastVerified": "2026-08-20"
+      "id": "REQ-002",
+      "kind": "FUNC",
+      "cluster": "Classification",
+      "priority": "must",
+      "statement": "The assistant must determine the urgency or priority of a support request and create a short summary of the problem.",
+      "fulfilled_by": [
+        "STORY-001"
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "kind": "FUNC",
+      "cluster": "Knowledge Base Search",
+      "priority": "must",
+      "statement": "The assistant must search a small knowledge base for approved troubleshooting instructions and recommend the next steps based on the request.",
+      "fulfilled_by": [
+        "STORY-004"
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "kind": "FUNC",
+      "cluster": "Response Generation",
+      "priority": "must",
+      "statement": "The assistant must generate a professional response draft for the support agent to review, based on the information available.",
+      "fulfilled_by": [
+        "STORY-005"
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "kind": "FUNC",
+      "cluster": "Human Approval",
+      "priority": "must",
+      "statement": "The assistant must allow a support agent to review, approve, edit, or reject the classification, recommended solution, and draft response.",
+      "fulfilled_by": [
+        "STORY-002"
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "kind": "FUNC",
+      "cluster": "Escalation",
+      "priority": "must",
+      "statement": "The assistant must recommend escalation when an issue cannot be solved using the available knowledge, explaining the reason for escalation.",
+      "fulfilled_by": [
+        "STORY-006"
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "kind": "FUNC",
+      "cluster": "Support Summary",
+      "priority": "must",
+      "statement": "The assistant must produce a final support summary after the workflow is complete, which can be saved with the ticket.",
+      "fulfilled_by": [
+        "STORY-007"
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "kind": "SAFE",
+      "cluster": "Safety and Control",
+      "priority": "must",
+      "statement": "The assistant must not send messages, close or resolve tickets, change ticket priority, change permissions or user access, modify data, delete information, or escalate a case automatically.",
+      "fulfilled_by": [
+        "STORY-002"
+      ]
+    },
+    {
+      "id": "REQ-009",
+      "kind": "CONSTRAINT",
+      "cluster": "Data Access",
+      "priority": "must",
+      "statement": "The assistant must read from a small knowledge base containing approved troubleshooting instructions and sample support tickets.",
+      "fulfilled_by": [
+        "STORY-004"
+      ]
+    },
+    {
+      "id": "REQ-010",
+      "kind": "SAFE",
+      "cluster": "Audit Trail",
+      "priority": "must",
+      "statement": "The system must keep an audit trail of AI recommendations and human approvals or rejections.",
+      "fulfilled_by": [
+        "STORY-003"
+      ]
     }
   ],
-
-  "requirements": [
-    { "id": "REQ-001", "type": "FUNC", "priority": "must", "text": "Classify support requests into predefined categories.", "builtBy": "STORY-001", "built": true },
-    { "id": "REQ-002", "type": "FUNC", "priority": "must", "text": "Determine urgency/priority and produce a short summary.", "builtBy": "STORY-001", "built": true },
-    { "id": "REQ-003", "type": "FUNC", "priority": "must", "text": "Search the knowledge base for approved troubleshooting instructions and recommend next steps.", "builtBy": "STORY-004", "built": false },
-    { "id": "REQ-004", "type": "FUNC", "priority": "must", "text": "Generate a professional draft response for agent review.", "builtBy": "STORY-005", "built": false },
-    { "id": "REQ-005", "type": "FUNC", "priority": "must", "text": "Let a support agent review, approve, edit, or reject classification, solution, and draft response.", "builtBy": "STORY-002", "built": true },
-    { "id": "REQ-006", "type": "FUNC", "priority": "must", "text": "Recommend escalation, with reasoning, when the knowledge base can’t resolve an issue.", "builtBy": "STORY-006", "built": false },
-    { "id": "REQ-007", "type": "FUNC", "priority": "must", "text": "Produce a final support summary once the workflow completes.", "builtBy": "STORY-007", "built": false },
-    { "id": "REQ-008", "type": "SAFE", "priority": "must", "text": "Never act on tickets/data/permissions automatically — recommend only.", "builtBy": "R4 (foundational, pre-r0)", "built": true },
-    { "id": "REQ-009", "type": "CONSTRAINT", "priority": "must", "text": "Read from a small knowledge base of approved instructions and sample tickets.", "builtBy": "STORY-004", "built": false },
-    { "id": "REQ-010", "type": "SAFE", "priority": "must", "text": "Keep an audit trail of AI recommendations and human approvals/rejections.", "builtBy": "STORY-003", "built": true }
-  ],
-
   "releases": [
-    { "id": "r0", "name": "Initial Workflow Skeleton", "storyCount": 3, "start": "2026-08-18", "end": "2026-08-29" },
-    { "id": "r1", "name": "Knowledge Base Integration and Response Drafting", "storyCount": 2, "start": "2026-09-07", "end": "2026-09-15" },
-    { "id": "r2", "name": "Escalation and Final Summary", "storyCount": 2, "start": "2026-09-23", "end": "2026-10-01" }
+    {
+      "key": "r0",
+      "demo": "Demonstrate a support request being classified, prioritized, and summarized with human approval and audit trail logging.",
+      "goal": "Establish the basic end-to-end workflow with human oversight and audit trail.",
+      "name": "Initial Workflow Skeleton",
+      "week_end": 2,
+      "week_start": 1,
+      "story_ids": [
+        "STORY-001",
+        "STORY-002",
+        "STORY-003"
+      ],
+      "starts_on": null,
+      "ends_on": null,
+      "is_demo_target": false
+    },
+    {
+      "key": "r1",
+      "demo": "Showcase the assistant searching the knowledge base and generating a draft response for agent review.",
+      "goal": "Integrate knowledge base search and response drafting capabilities.",
+      "name": "Knowledge Base Integration and Response Drafting",
+      "week_end": 4,
+      "week_start": 3,
+      "story_ids": [
+        "STORY-004",
+        "STORY-005"
+      ],
+      "starts_on": null,
+      "ends_on": null,
+      "is_demo_target": false
+    },
+    {
+      "key": "r2",
+      "demo": "Demonstrate the assistant recommending escalation and producing a final support summary.",
+      "goal": "Implement escalation recommendations and final support summary generation.",
+      "name": "Escalation and Final Summary",
+      "week_end": 6,
+      "week_start": 5,
+      "story_ids": [
+        "STORY-006",
+        "STORY-007"
+      ],
+      "starts_on": null,
+      "ends_on": null,
+      "is_demo_target": false
+    }
   ],
-
   "stories": [
-    { "id": "STORY-001", "title": "Classify and Prioritize Support Requests", "release": "r0", "due": "2026-08-18", "owner": "Support Agent", "status": "built" },
-    { "id": "STORY-002", "title": "Human Approval of Classification and Priority", "release": "r0", "due": "2026-08-24", "owner": "support_agent", "status": "built" },
-    { "id": "STORY-003", "title": "Audit Trail Logging", "release": "r0", "due": "2026-08-29", "owner": "system_auditor", "status": "built" },
-    { "id": "STORY-004", "title": "Search Knowledge Base for Troubleshooting Steps", "release": "r1", "due": "2026-09-07", "owner": "Support Agent", "status": "not_started" },
-    { "id": "STORY-005", "title": "Generate Draft Response for Agent Review", "release": "r1", "due": "2026-09-15", "owner": "Support Agent", "status": "not_started" },
-    { "id": "STORY-006", "title": "Recommend Escalation with Explanation", "release": "r2", "due": "2026-09-23", "owner": "Support Agent", "status": "not_started" },
-    { "id": "STORY-007", "title": "Generate Final Support Summary", "release": "r2", "due": "2026-10-01", "owner": "Support Agent", "status": "not_started" }
+    {
+      "id": "STORY-001",
+      "title": "Classify and Prioritize Support Requests",
+      "release": "r0",
+      "fulfills": [
+        "REQ-001",
+        "REQ-002"
+      ],
+      "narrative": "As a support agent, I want the assistant to classify and prioritize support requests, so that I can quickly understand the issue's urgency and category.",
+      "acceptance": [
+        "Given a support request, when it is pasted into the assistant, then it should be classified into a predefined category.",
+        "Given a support request, when it is classified, then the assistant should determine its priority.",
+        "Trust: The classification and priority determination should be logged in the audit trail."
+      ],
+      "blocked_by": [],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Incorrect classification",
+        "Incorrect priority",
+        "Missing category",
+        "Missing priority",
+        "Audit trail not updated"
+      ],
+      "task_guidance": "Implement classification logic using predefined categories and priority determination based on request content.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-002",
+      "title": "Human Approval of Classification and Priority",
+      "release": "r0",
+      "fulfills": [
+        "REQ-005",
+        "REQ-008"
+      ],
+      "narrative": "As a support agent, I want to approve the classification and priority of support requests, so that I can ensure accuracy before proceeding.",
+      "acceptance": [
+        "Given a classified support request, when I review it, then I can approve or reject the classification and priority.",
+        "Given a misclassified support request, when I reject it, then it is sent back for reclassification.",
+        "Trust: Every approval or rejection action is logged in the audit trail."
+      ],
+      "blocked_by": [],
+      "owner_agent": "support_agent",
+      "failure_paths": [
+        "Incorrect classification approval",
+        "Rejection not logged",
+        "Approval interface not loading"
+      ],
+      "task_guidance": "Implement a review interface for support agents to approve or reject classifications. Ensure actions are logged in the audit trail.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-003",
+      "title": "Audit Trail Logging",
+      "release": "r0",
+      "fulfills": [
+        "REQ-010"
+      ],
+      "narrative": "As a system auditor, I want all actions logged, so that I can review the history of support request handling.",
+      "acceptance": [
+        "Given an action on a support request, when it occurs, then it is logged in the audit trail.",
+        "Given a failed logging attempt, when it occurs, then an alert is generated.",
+        "Trust: The audit trail is immutable and records all actions accurately."
+      ],
+      "blocked_by": [],
+      "owner_agent": "system_auditor",
+      "failure_paths": [
+        "Logging failure",
+        "Audit trail tampering",
+        "Alert not generated on failure"
+      ],
+      "task_guidance": "Set up logging for all actions related to support requests. Ensure immutability and alerting on failures.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-004",
+      "title": "Search Knowledge Base for Troubleshooting Steps",
+      "release": "r1",
+      "fulfills": [
+        "REQ-003",
+        "REQ-009"
+      ],
+      "narrative": "As a support agent, I want the assistant to search the knowledge base for troubleshooting steps, so that I can provide accurate solutions.",
+      "acceptance": [
+        "Given a classified request, when the assistant searches the knowledge base, then it should return relevant troubleshooting steps.",
+        "Given a search, when no relevant steps are found, then the assistant should indicate uncertainty.",
+        "Trust: The search query and results should be logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-003"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "No results found",
+        "Incorrect search results",
+        "Search timeout",
+        "Knowledge base access denied",
+        "Audit trail not updated"
+      ],
+      "task_guidance": "Integrate knowledge base search functionality using predefined queries and data sources.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-005",
+      "title": "Generate Draft Response for Agent Review",
+      "release": "r1",
+      "fulfills": [
+        "REQ-004"
+      ],
+      "narrative": "As a support agent, I want the assistant to generate a draft response, so that I can quickly send a professional reply.",
+      "acceptance": [
+        "Given troubleshooting steps, when the assistant generates a response, then it should be professional and based on available information.",
+        "Given a response draft, when I review it, then I should be able to edit it before sending.",
+        "Trust: The draft generation should be logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-004"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Response not generated",
+        "Response contains errors",
+        "Response not editable",
+        "Audit trail not updated",
+        "Template missing"
+      ],
+      "task_guidance": "Develop response generation logic using template-based approaches and available data.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-006",
+      "title": "Recommend Escalation with Explanation",
+      "release": "r2",
+      "fulfills": [
+        "REQ-006"
+      ],
+      "narrative": "As a support agent, I want the assistant to recommend escalation when necessary, so that I can handle complex issues appropriately.",
+      "acceptance": [
+        "Given an unresolved issue, when the assistant recommends escalation, then it should provide a clear explanation.",
+        "Given an escalation recommendation, when I review it, then I should be able to approve or reject it.",
+        "Trust: The escalation recommendation and decision should be logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-005"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Escalation not recommended",
+        "Explanation missing",
+        "Incorrect escalation criteria",
+        "Audit trail not updated",
+        "Approval interface not available"
+      ],
+      "task_guidance": "Implement escalation logic with clear criteria and explanation generation.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-007",
+      "title": "Generate Final Support Summary",
+      "release": "r2",
+      "fulfills": [
+        "REQ-007"
+      ],
+      "narrative": "As a support agent, I want the assistant to generate a final support summary, so that I can document the resolution process.",
+      "acceptance": [
+        "Given a completed workflow, when the assistant generates a support summary, then it should include all relevant details.",
+        "Given a support summary, when I review it, then I should be able to save it manually.",
+        "Trust: The summary generation should be logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-006"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Summary not generated",
+        "Summary incomplete",
+        "Summary not savable",
+        "Audit trail not updated",
+        "Incorrect summary details"
+      ],
+      "task_guidance": "Create summary generation logic that compiles workflow details into a coherent document.",
+      "due_on": null,
+      "due_baseline_on": null
+    }
   ],
-
-  "systems": [],
-
-  "users": [
-    { "role": "support agent", "wants": "review, approve, edit, or reject what the assistant classifies, recommends, and drafts — never have it act on its own." },
-    { "role": "system auditor", "wants": "a complete, trustworthy trail of every AI recommendation and every human approval or rejection." }
-  ]
+  "agents": [],
+  "project": {
+    "name": "AI-Powered Business Support Workflow Assistant",
+    "descriptor": "A small AI-powered assistant to streamline support request handling for support staff, ensuring human oversight and control.",
+    "repo_url": null,
+    "plan_version": 1,
+    "plan_sha256": "2df79e71383eddba3ddb12f5459eecb2da10d388b4d234d7e0ef7c31ff940070"
+  },
+  "schedule": null,
+  "derived": {
+    "measures": [],
+    "guardrails": [
+      {
+        "id": "REQ-008",
+        "statement": "The assistant must not send messages, close or resolve tickets, change ticket priority, change permissions or user access, modify data, delete information, or escalate a case automatically."
+      },
+      {
+        "id": "REQ-010",
+        "statement": "The system must keep an audit trail of AI recommendations and human approvals or rejections."
+      }
+    ],
+    "systems": [],
+    "roles": [
+      "support agent",
+      "system auditor"
+    ],
+    "counts": {
+      "requirements_total": 10,
+      "requirements_by_kind": {
+        "CONSTRAINT": 1,
+        "FUNC": 7,
+        "SAFE": 2
+      },
+      "stories_total": 7,
+      "releases_total": 3,
+      "agents_total": 0,
+      "failure_paths_total": 27,
+      "agents_by_autonomy": {}
+    }
+  }
 }
