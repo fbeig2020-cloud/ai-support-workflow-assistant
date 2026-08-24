@@ -5,8 +5,8 @@
     "stories_total": 8,
     "stories_verified": 6,
     "stories_submitted": 0,
-    "stories_in_progress": 0,
-    "stories_not_started": 2,
+    "stories_in_progress": 2,
+    "stories_not_started": 0,
     "criteria_total": 26,
     "criteria_passed": 20,
     "points_awarded": 600
@@ -182,7 +182,7 @@
         "state": "verified",
         "criteria_passed": 3,
         "criteria_total": 3,
-        "verified_at": "2026-08-23T00:07:42.000Z",
+        "verified_at": "2026-08-23T00:22:36.435Z",
         "commit_sha": "a87023a6a7b6d866b28c5f3706123192d6d03bff",
         "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/a87023a6a7b6d866b28c5f3706123192d6d03bff",
         "commit_at": "2026-08-22T23:56:52Z",
@@ -216,7 +216,7 @@
         "state": "verified",
         "criteria_passed": 3,
         "criteria_total": 3,
-        "verified_at": "2026-08-23T17:09:00.000Z",
+        "verified_at": "2026-08-23T17:11:47.391Z",
         "commit_sha": "aa50ebc9e3961719780e5415de64b9fae7c843ba",
         "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/aa50ebc9e3961719780e5415de64b9fae7c843ba",
         "commit_at": "2026-08-23T16:56:58Z",
@@ -231,15 +231,15 @@
       "criteria": [
         {
           "text": "Given an unresolved issue, when the assistant recommends escalation, then it should provide a clear explanation.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given an escalation recommendation, when I review it, then I should be able to approve or reject it.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: The escalation recommendation and decision should be logged in the audit trail.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
@@ -247,13 +247,13 @@
       "notes": null,
       "updated_at": null,
       "verification": {
-        "state": "not_started",
+        "state": "in_progress",
         "criteria_passed": 0,
         "criteria_total": 3,
         "verified_at": null,
-        "commit_sha": null,
-        "commit_url": null,
-        "commit_at": null,
+        "commit_sha": "7b3fc50417bf2a35099d68d7be688146ac7f9c88",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/7b3fc50417bf2a35099d68d7be688146ac7f9c88",
+        "commit_at": "2026-08-24T00:15:29Z",
         "points_awarded": null,
         "outstanding": [
           "Given an unresolved issue, when the assistant recommends escalation, then it should provide a clear explanation.",
@@ -285,7 +285,7 @@
       "notes": null,
       "updated_at": null,
       "verification": {
-        "state": "not_started",
+        "state": "in_progress",
         "criteria_passed": 0,
         "criteria_total": 3,
         "verified_at": null,
