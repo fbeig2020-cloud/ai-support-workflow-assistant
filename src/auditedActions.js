@@ -35,6 +35,8 @@ import { classifySupportRequest } from './classify.js';
 import { reviewClassification } from './reviewClassification.js';
 import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
 import { generateDraftResponse } from './generateDraftResponse.js';
+import { generateEscalationRecommendation } from './generateEscalationRecommendation.js';
+import { reviewEscalation } from './reviewEscalation.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -95,6 +97,37 @@ export async function searchKnowledgeBaseAndLog(classification, options = {}) {
  */
 export async function generateDraftResponseAndLog(classification, kbSearchResult, options = {}) {
   const result = await generateDraftResponse(classification, kbSearchResult, options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Decide whether to recommend escalation for a classification (and its
+ * knowledge-base search result) and persist the resulting logEntry to the
+ * audit trail.
+ *
+ * @param {unknown} classification
+ * @param {unknown} kbSearchResult
+ * @param {{ logPath?: string }} [options]   Passed through to appendAuditEntry (tests only).
+ * @returns {import('./generateEscalationRecommendation.js').EscalationRecommendation & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function generateEscalationRecommendationAndLog(classification, kbSearchResult, options = {}) {
+  const result = generateEscalationRecommendation(classification, kbSearchResult);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Review an escalation recommendation decision and persist the resulting
+ * logEntry to the audit trail.
+ *
+ * @param {unknown} recommendation
+ * @param {unknown} decision
+ * @param {{ logPath?: string }} [options]   Passed through to appendAuditEntry (tests only).
+ * @returns {import('./reviewEscalation.js').EscalationReviewResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function reviewEscalationAndLog(recommendation, decision, options = {}) {
+  const result = reviewEscalation(recommendation, decision);
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
