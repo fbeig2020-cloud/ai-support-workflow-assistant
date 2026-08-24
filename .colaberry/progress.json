@@ -3,13 +3,13 @@
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
     "stories_total": 8,
-    "stories_verified": 6,
+    "stories_verified": 8,
     "stories_submitted": 0,
-    "stories_in_progress": 2,
+    "stories_in_progress": 0,
     "stories_not_started": 0,
     "criteria_total": 26,
-    "criteria_passed": 20,
-    "points_awarded": 600
+    "criteria_passed": 26,
+    "points_awarded": 800
   },
   "stories": [
     {
@@ -254,7 +254,7 @@
         "commit_sha": "7b3fc50417bf2a35099d68d7be688146ac7f9c88",
         "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/7b3fc50417bf2a35099d68d7be688146ac7f9c88",
         "commit_at": "2026-08-24T00:15:29Z",
-        "points_awarded": null,
+        "points_awarded": 100,
         "outstanding": []
       }
     },
@@ -265,15 +265,15 @@
       "criteria": [
         {
           "text": "Given a completed workflow, when the assistant generates a support summary, then it should include all relevant details.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a support summary, when I review it, then I should be able to save it manually.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: The summary generation should be logged in the audit trail.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
@@ -281,19 +281,15 @@
       "notes": null,
       "updated_at": null,
       "verification": {
-        "state": "in_progress",
-        "criteria_passed": 0,
+        "state": "verified",
+        "criteria_passed": 3,
         "criteria_total": 3,
-        "verified_at": null,
-        "commit_sha": null,
-        "commit_url": null,
-        "commit_at": null,
-        "points_awarded": null,
-        "outstanding": [
-          "Given a completed workflow, when the assistant generates a support summary, then it should include all relevant details.",
-          "Given a support summary, when I review it, then I should be able to save it manually.",
-          "Trust: The summary generation should be logged in the audit trail."
-        ]
+        "verified_at": "2026-08-24T13:47:04.812Z",
+        "commit_sha": "40631140bc3164653e0ff3fc6eaf0bf699e76587",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/40631140bc3164653e0ff3fc6eaf0bf699e76587",
+        "commit_at": "2026-08-24T13:08:08Z",
+        "points_awarded": 100,
+        "outstanding": []
       }
     }
   ]
