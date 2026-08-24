@@ -76,21 +76,30 @@
     return new Date().toISOString().slice(0, 10);
   }
 
+  // A release with no starts_on/ends_on yet (schedule not populated in the
+  // plan) is "unscheduled", not silently "complete" — the null/null case
+  // would otherwise fall through every date comparison below to the final
+  // "complete" branch, which would be a fabricated status, not a real one.
   function releaseStatus(release, today) {
-    if (today < release.start) {
-      const n = daysBetween(today, release.start);
+    if (!release.starts_on || !release.ends_on) {
+      return { label: 'unscheduled', cls: 'not-built' };
+    }
+    if (today < release.starts_on) {
+      const n = daysBetween(today, release.starts_on);
       return { label: n === 1 ? 'starts tomorrow' : `starts in ${n} days`, cls: 'not-built' };
     }
-    if (today >= release.start && today <= release.end) {
+    if (today >= release.starts_on && today <= release.ends_on) {
       return { label: 'in progress', cls: 'progress' };
     }
     return { label: 'complete', cls: 'built' };
   }
 
   function currentOrNextRelease(releases, today) {
-    const active = releases.find((r) => today >= r.start && today <= r.end);
+    const active = releases.find((r) => r.starts_on && r.ends_on && today >= r.starts_on && today <= r.ends_on);
     if (active) return active;
-    const upcoming = releases.filter((r) => r.start > today).sort((a, b) => (a.start > b.start ? 1 : -1));
+    const upcoming = releases
+      .filter((r) => r.starts_on && r.starts_on > today)
+      .sort((a, b) => (a.starts_on > b.starts_on ? 1 : -1));
     return upcoming[0] || releases[releases.length - 1];
   }
 
@@ -102,14 +111,14 @@
 
   function detailSummary() {
     const real = DATA.real;
-    const usersHtml = real.users.map((u) => `<li><strong>${u.role}</strong> — ${u.wants}</li>`).join('');
+    const usersHtml = real.users.map((role) => `<li><strong>${role}</strong></li>`).join('');
     return {
-      title: real.meta.name,
-      body: `<p>${real.meta.tagline}</p>
+      title: real.project.name,
+      body: `<p>${real.project.descriptor}</p>
         <ul class="cc-detail-list">${usersHtml}</ul>
         <table class="cc-detail-table">
-          <tr><th>Demo day</th><td>${fmtDate(real.meta.demoDay)}</td></tr>
-          <tr><th>Build ends</th><td>${fmtDate(real.meta.buildEnds)}</td></tr>
+          <tr><th>Demo day</th><td>${fmtDate(real.project.demoDay)}</td></tr>
+          <tr><th>Build ends</th><td>${fmtDate(real.project.buildEnds)}</td></tr>
           <tr><th>Requirements tracked</th><td>${real.requirements.length}</td></tr>
           <tr><th>Stories tracked</th><td>${real.stories.length}</td></tr>
         </table>`,
@@ -123,17 +132,17 @@
       .map((r) => {
         const st = releaseStatus(r, today);
         const stories = real.stories
-          .filter((s) => s.release === r.id)
+          .filter((s) => s.release === r.key)
           .map(
-            (s) => `<li><span class="req-id">${s.id}</span> ${s.title} — <em>${s.owner}</em> ${pill(
+            (s) => `<li><span class="req-id">${s.id}</span> ${s.title} — <em>${s.owner_agent}</em> ${pill(
               s.status.replace('_', ' '),
-              s.status === 'done' ? 'built' : 'not-built'
-            )} <span class="cc-sub">due ${fmtDate(s.due)}</span></li>`
+              s.status === 'verified' ? 'built' : 'not-built'
+            )} <span class="cc-sub">due ${fmtDate(s.due_on)}</span></li>`
           )
           .join('');
         return `<div style="margin-bottom:14px">
-          <div style="font-weight:600">${r.id} — ${r.name} ${pill(st.label, st.cls)}</div>
-          <div class="cc-sub">${fmtDate(r.start)} → ${fmtDate(r.end)}</div>
+          <div style="font-weight:600">${r.key} — ${r.name} ${pill(st.label, st.cls)}</div>
+          <div class="cc-sub">${fmtDate(r.starts_on)} → ${fmtDate(r.ends_on)}</div>
           <ul class="cc-detail-list">${stories}</ul>
         </div>`;
       })
@@ -143,20 +152,14 @@
 
   function detailRequirements() {
     const real = DATA.real;
-    const guardById = Object.fromEntries(real.guardrails.map((g) => [g.reqId, g]));
     const rows = real.requirements
-      .map((r) => {
-        const g = guardById[r.id];
-        const extra = g
-          ? `<div class="cc-sub">${g.mechanism ? 'Mechanism: ' + g.mechanism : 'No mechanism yet'}<br/>Evidence: ${g.evidence}</div>`
-          : '';
-        return `<li>
+      .map(
+        (r) => `<li>
           <span class="req-id">${r.id}</span>
-          <span class="req-text">[${r.type}] ${r.text} — ${r.builtBy}</span>
+          <span class="req-text">[${r.kind}] ${r.statement} — ${r.fulfilled_by.join(', ')}</span>
           ${pill(r.built ? 'built' : 'not built', r.built ? 'built' : 'not-built')}
-          ${extra}
-        </li>`;
-      })
+        </li>`
+      )
       .join('');
     return { title: 'All requirements — full detail', body: `<ul class="cc-req-list">${rows}</ul>` };
   }
@@ -173,12 +176,14 @@
         </div>`
       )
       .join('');
+    // guardrails no longer carry mechanism/evidence/enforced under the new
+    // plan.json schema (plan.derived.guardrails is just { id, statement }) —
+    // showing only what's real rather than inventing an enforcement claim.
     const guardrails = real.guardrails
       .map(
         (g) => `<div style="margin-bottom:10px">
-          <div><span class="req-id">${g.reqId}</span> ${pill(g.enforced ? 'enforced' : 'not enforced', g.enforced ? 'built' : 'not-built')}</div>
-          <div class="cc-sub">${g.text}</div>
-          <div class="cc-sub">${g.evidence}</div>
+          <div><span class="req-id">${g.id}</span></div>
+          <div class="cc-sub">${g.statement}</div>
         </div>`
       )
       .join('');
@@ -225,23 +230,23 @@
     if (tabId === 'guardrails') {
       extra = real.guardrails
         .map(
-          (g) => `<div style="margin-bottom:10px"><span class="req-id">${g.reqId}</span> ${pill(g.enforced ? 'enforced' : 'not enforced', g.enforced ? 'built' : 'not-built')}<div class="cc-sub">${g.text}</div><div class="cc-sub">${g.evidence}</div></div>`
+          (g) => `<div style="margin-bottom:10px"><span class="req-id">${g.id}</span><div class="cc-sub">${g.statement}</div></div>`
         )
         .join('');
     } else if (tabId === 'pm') {
       extra = real.releases
         .map((r) => {
           const stories = real.stories
-            .filter((s) => s.release === r.id)
-            .map((s) => `<li>${s.id} — ${s.title} (${s.owner}, due ${fmtDate(s.due)})</li>`)
+            .filter((s) => s.release === r.key)
+            .map((s) => `<li>${s.id} — ${s.title} (${s.owner_agent}, due ${fmtDate(s.due_on)})</li>`)
             .join('');
-          return `<div style="margin-bottom:10px"><strong>${r.id} — ${r.name}</strong><ul class="cc-detail-list">${stories}</ul></div>`;
+          return `<div style="margin-bottom:10px"><strong>${r.key} — ${r.name}</strong><ul class="cc-detail-list">${stories}</ul></div>`;
         })
         .join('');
     } else if (tabId === 'agents') {
       extra = `<ul class="cc-detail-list">${real.owners.map((o) => `<li>${o.name} — ${o.stories.join(', ')}</li>`).join('')}</ul>`;
     } else if (tabId === 'users') {
-      extra = `<ul class="cc-detail-list">${real.users.map((u) => `<li><strong>${u.role}</strong> — ${u.wants}</li>`).join('')}</ul>`;
+      extra = `<ul class="cc-detail-list">${real.users.map((role) => `<li><strong>${role}</strong></li>`).join('')}</ul>`;
     } else if (tabId === 'systems') {
       extra =
         real.systems.length === 0
@@ -290,30 +295,31 @@
     const sample = DATA.sample;
     const today = nowISO();
     const focusRelease = currentOrNextRelease(real.releases, today);
-    const focusStories = real.stories.filter((s) => s.release === focusRelease.id);
-    const doneCount = focusStories.filter((s) => s.status === 'done').length;
+    const focusStories = real.stories.filter((s) => s.release === focusRelease.key);
+    const doneCount = focusStories.filter((s) => s.status === 'verified').length;
 
     const releaseStrip = real.releases
       .map((r) => {
         const st = releaseStatus(r, today);
-        const isFocus = r.id === focusRelease.id;
+        const isFocus = r.key === focusRelease.key;
+        const storyCount = real.stories.filter((s) => s.release === r.key).length;
         return `<div class="cc-release-chip ${isFocus ? 'current' : ''}">
-          <div class="rid">${r.id}${isFocus ? ' — you are here' : ''}</div>
+          <div class="rid">${r.key}${isFocus ? ' — you are here' : ''}</div>
           <div class="rname">${r.name}</div>
-          <div class="rdates">${fmtDate(r.start)} → ${fmtDate(r.end)} · ${r.storyCount} stories</div>
+          <div class="rdates">${fmtDate(r.starts_on)} → ${fmtDate(r.ends_on)} · ${storyCount} stories</div>
           <div class="rstatus">${pill(st.label, st.cls)}</div>
         </div>`;
       })
       .join('');
 
     const reqRows = real.requirements
-      .map((r) => {
-        return `<li>
+      .map(
+        (r) => `<li>
           <span class="req-id">${r.id}</span>
-          <span class="req-text">${r.text} <span style="color:var(--cc-text-muted)">— ${r.builtBy}</span></span>
+          <span class="req-text">${r.statement} <span style="color:var(--cc-text-muted)">— ${r.fulfilled_by.join(', ')}</span></span>
           ${pill(r.built ? 'built' : 'not built', r.built ? 'built' : 'not-built')}
-        </li>`;
-      })
+        </li>`
+      )
       .join('');
 
     const foundational = real.foundationalWork
@@ -369,20 +375,29 @@
           </div>`
         : '';
 
-    const usersLine = real.users.map((u) => `<strong>${u.role}</strong> — ${u.wants}`).join('<br/>');
+    const usersLine = real.users.map((role) => `<strong>${role}</strong>`).join('<br/>');
+
+    // The plan's schedule (demo day / build-end dates) isn't populated yet in
+    // this schema sync (plan.project has no date fields, plan.schedule is
+    // null) — show that honestly instead of computing NaN days from missing
+    // dates.
+    const demoPrepText =
+      real.project.demoDay && real.project.buildEnds
+        ? `Demo day ${fmtDate(real.project.demoDay)} · build ends ${fmtDate(real.project.buildEnds)} · ${daysBetween(real.project.buildEnds, real.project.demoDay)} days of demo prep after build ends.`
+        : 'Demo day and build-end dates are not yet scheduled in the plan.';
 
     document.getElementById('tab-content').innerHTML = `
       <div class="cc-grid">
         <div class="cc-card cc-span-2" data-card="overview-summary">
-          <h2>${real.meta.name}</h2>
-          <p class="cc-sub">${real.meta.tagline}</p>
+          <h2>${real.project.name}</h2>
+          <p class="cc-sub">${real.project.descriptor}</p>
           <div style="font-size:13px">${usersLine}</div>
         </div>
 
         <div class="cc-card cc-span-2" data-card="overview-release">
           <h3>Release you are in</h3>
           <div class="cc-release-strip">${releaseStrip}</div>
-          <div class="cc-foot">${focusRelease.id} stories complete: ${doneCount} of ${focusStories.length} · Demo day ${fmtDate(real.meta.demoDay)} · build ends ${fmtDate(real.meta.buildEnds)} · ${daysBetween(real.meta.buildEnds, real.meta.demoDay)} days of demo prep after build ends.</div>
+          <div class="cc-foot">${focusRelease.key} stories complete: ${doneCount} of ${focusStories.length} · ${demoPrepText}</div>
         </div>
 
         <div class="cc-card cc-span-2" data-card="overview-requirements">
