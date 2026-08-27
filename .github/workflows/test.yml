@@ -1,0 +1,22 @@
+# Runs this project's automated test suite on every pull request.
+# Pair with a GitHub branch protection rule (Settings -> Branches) requiring
+# the "test" job below to pass before a PR can be merged.
+name: Test Suite
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - run: npm install
+
+      - run: npm test
