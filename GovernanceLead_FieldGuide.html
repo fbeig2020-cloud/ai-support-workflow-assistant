@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Governance Lead Field Guide | Colaberry</title>
+<meta name="description" content="Colaberry Enterprise AI Leadership Accelerator — Governance Lead Field Guide for the AI Solution Architect track, built around the ACTA (Aegis Auto Claims Triage Assistant) case study.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --cherry:#FB2832;
+  --berry:#367895;
+  --leaf:#5BA63C;
+  --amber:#E8920C;
+  --text:#1A1A1A;
+  --muted:#6B6B6B;
+  --border:#E4E4E3;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F8F7;
+  --berry-tint:#EAF3F6;
+  --leaf-tint:#EDF6E8;
+  --amber-tint:#FDF2E1;
+  --cherry-tint:#FEEAEB;
+  --shadow: 0 1px 2px rgba(26,26,26,.06), 0 4px 16px rgba(26,26,26,.06);
+  --radius: 10px;
+  --font-body:'Roboto', system-ui, Arial, sans-serif;
+  --font-mono:'Roboto Mono','Consolas',monospace;
+  --sidenav-w: 292px;
+  --topbar-h: 64px;
+}
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --cherry:#FF5960; --berry:#5EA9C4; --leaf:#8AC759;
+    --text:#F0F0EE; --muted:#A8A8A5; --border:#2B2B2B;
+    --surface:#171717; --surface-alt:#0F0F0F;
+    --berry-tint:#122A33; --leaf-tint:#16260F; --amber-tint:#2E2107; --cherry-tint:#33131A;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 20px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --cherry:#FF5960; --berry:#5EA9C4; --leaf:#8AC759;
+  --text:#F0F0EE; --muted:#A8A8A5; --border:#2B2B2B;
+  --surface:#171717; --surface-alt:#0F0F0F;
+  --berry-tint:#122A33; --leaf-tint:#16260F; --amber-tint:#2E2107; --cherry-tint:#33131A;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 20px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  color:var(--text);
+  background:var(--surface-alt);
+  font-size:15px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-body); color:var(--berry); font-weight:700; line-height:1.25;}
+a{color:var(--berry);}
+code,pre,.mono{font-family:var(--font-mono);}
+.container{max-width:980px;}
+::selection{background:var(--cherry-tint);}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  position:fixed; top:0; left:0; right:0; height:var(--topbar-h);
+  background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:16px; padding:0 18px; z-index:100;
+  box-shadow:var(--shadow);
+}
+.topbar .brand{display:flex; align-items:center; gap:10px; min-width:180px;}
+.topbar .brand img{height:38px; display:block;}
+.topbar .brand-title{font-weight:700; color:var(--berry); font-size:14px; letter-spacing:.2px; line-height:1.15;}
+.topbar .brand-title small{display:block; font-weight:400; color:var(--muted); font-size:11px;}
+.navtoggle{display:none; background:none; border:1px solid var(--border); border-radius:8px; width:36px; height:36px; color:var(--text); font-size:18px; cursor:pointer;}
+.searchwrap{flex:1; max-width:560px; position:relative;}
+.searchbox{
+  width:100%; padding:10px 14px 10px 38px; border-radius:999px; border:1px solid var(--border);
+  background:var(--surface-alt); color:var(--text); font-family:var(--font-body); font-size:14px; outline:none;
+}
+.searchbox:focus{border-color:var(--berry); background:var(--surface);}
+.searchwrap::before{
+  content:"⌕"; position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:17px; font-weight:700;
+}
+.search-results{
+  position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; box-shadow:var(--shadow); max-height:420px; overflow-y:auto; display:none; z-index:200;
+}
+.search-results.show{display:block;}
+.search-results .sr-item{padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer;}
+.search-results .sr-item:last-child{border-bottom:none;}
+.search-results .sr-item:hover{background:var(--berry-tint);}
+.search-results .sr-title{font-weight:700; color:var(--text); font-size:13.5px;}
+.search-results .sr-title mark{background:var(--amber-tint); color:var(--text); padding:0 2px; border-radius:2px;}
+.search-results .sr-crumb{color:var(--muted); font-size:11.5px; margin-top:2px;}
+.search-results .sr-snippet{color:var(--muted); font-size:12.5px; margin-top:3px;}
+.search-results .sr-empty{padding:16px; color:var(--muted); font-size:13px; text-align:center;}
+.topbar-actions{display:flex; align-items:center; gap:8px;}
+.iconbtn{
+  background:var(--surface-alt); border:1px solid var(--border); color:var(--text); border-radius:8px;
+  width:36px; height:36px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center;
+}
+.iconbtn:hover{border-color:var(--berry);}
+
+/* ============ SHELL / LAYOUT ============ */
+.shell{display:flex; padding-top:var(--topbar-h); min-height:100vh;}
+.sidenav{
+  position:fixed; top:var(--topbar-h); left:0; bottom:0; width:var(--sidenav-w);
+  background:var(--surface); border-right:1px solid var(--border); overflow-y:auto; padding:16px 0 60px;
+  z-index:80;
+}
+.sidenav .nav-group{margin-bottom:6px;}
+.sidenav .nav-group-title{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); font-weight:700;
+  padding:14px 20px 6px;
+}
+.sidenav a.nav-link{
+  display:block; padding:8px 20px; color:var(--text); text-decoration:none; font-size:13.6px;
+  border-left:3px solid transparent;
+}
+.sidenav a.nav-link:hover{background:var(--berry-tint); color:var(--berry);}
+.sidenav a.nav-link.active{border-left-color:var(--cherry); background:var(--berry-tint); color:var(--berry); font-weight:700;}
+.sidenav a.nav-link.doc-link::before{content:"⬇ "; color:var(--muted); font-size:11px;}
+.content{margin-left:var(--sidenav-w); flex:1; padding:32px 40px 120px; max-width:1180px;}
+
+@media (max-width: 980px){
+  .navtoggle{display:flex; align-items:center; justify-content:center;}
+  .sidenav{transform:translateX(-100%); transition:transform .2s ease; box-shadow:var(--shadow);}
+  .sidenav.open{transform:translateX(0);}
+  .content{margin-left:0; padding:24px 18px 120px;}
+  .topbar .brand-title{display:none;}
+}
+
+/* ============ CONTENT TYPOGRAPHY ============ */
+section.page{padding-top:14px; margin-bottom:8px; scroll-margin-top:80px;}
+section.page h1{font-size:28px; margin:0 0 6px;}
+section.page > .eyebrow{color:var(--cherry); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.09em; margin-bottom:6px;}
+section.page .lede{color:var(--muted); font-size:15.5px; max-width:760px; margin-bottom:22px;}
+.subsection{scroll-margin-top:80px; margin:34px 0;}
+.subsection h2{font-size:20px; border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:14px;}
+.subsection h3{font-size:15.5px; color:var(--text); margin:18px 0 8px;}
+hr.rule{border:none; border-top:1px solid var(--border); margin:36px 0;}
+
+p{margin:0 0 12px;}
+ul,ol{margin:0 0 14px; padding-left:22px;}
+li{margin-bottom:5px;}
+
+/* callouts */
+.callout{border-radius:8px; padding:14px 16px; margin:14px 0; border-left:4px solid var(--berry); background:var(--berry-tint); font-size:13.8px;}
+.callout.success{border-color:var(--leaf); background:var(--leaf-tint);}
+.callout.warning{border-color:var(--amber); background:var(--amber-tint);}
+.callout.critical{border-color:var(--cherry); background:var(--cherry-tint);}
+.callout .co-title{font-weight:700; display:block; margin-bottom:3px; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em;}
+.callout.success .co-title{color:var(--leaf);}
+.callout.warning .co-title{color:var(--amber);}
+.callout.critical .co-title{color:var(--cherry);}
+.callout:not(.success):not(.warning):not(.critical) .co-title{color:var(--berry);}
+
+/* tables */
+.tablewrap{overflow-x:auto; margin:14px 0; border:1px solid var(--border); border-radius:8px;}
+table{border-collapse:collapse; width:100%; font-size:13.3px; min-width:520px;}
+table th{background:var(--berry); color:#fff; text-align:left; padding:9px 12px; font-weight:700; white-space:nowrap;}
+table td{padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top;}
+table tr:nth-child(even) td{background:var(--surface-alt);}
+table td code{background:var(--surface-alt); padding:1px 5px; border-radius:4px; font-size:12px;}
+.badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em;}
+.badge.sev-high, .badge.crit{background:var(--cherry-tint); color:var(--cherry);}
+.badge.sev-med, .badge.warn{background:var(--amber-tint); color:var(--amber);}
+.badge.sev-low, .badge.ok{background:var(--leaf-tint); color:var(--leaf);}
+.badge.info{background:var(--berry-tint); color:var(--berry);}
+
+/* code blocks */
+pre.code{background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:14px 16px; overflow-x:auto; font-size:12.6px; line-height:1.55; color:var(--text);}
+pre.code .cm{color:var(--muted);}
+
+/* diagrams / charts container */
+.figure{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; margin:16px 0;}
+.figure svg{width:100%; height:auto; display:block;}
+.figure figcaption{color:var(--muted); font-size:12.5px; margin-top:10px; text-align:center;}
+.chart-row{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:16px 0;}
+@media (max-width:860px){.chart-row{grid-template-columns:repeat(2,1fr);}}
+.charts-2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:860px){.charts-2{grid-template-columns:1fr;}}
+
+/* ============ DOCUMENT (docx) STYLES — shared with export ============ */
+.doctools{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 18px;}
+.btn{
+  display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; font-size:13px; font-weight:700;
+  border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; text-decoration:none;
+  font-family:var(--font-body);
+}
+.btn.primary{background:var(--cherry); border-color:var(--cherry); color:#fff;}
+.btn.primary:hover{filter:brightness(0.94);}
+.btn.ghost:hover{border-color:var(--berry); color:var(--berry);}
+.btn.leaf{border-color:var(--leaf); color:var(--leaf);}
+
+.docx-page{background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:10px;}
+.docx-cover{padding:34px 38px 26px; border-bottom:1px solid var(--border); background:linear-gradient(135deg, var(--berry-tint), var(--surface) 60%);}
+.docx-cover .docx-logo{height:34px; margin-bottom:18px; display:block;}
+.docx-cover .docx-kicker{color:var(--cherry); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.09em; margin-bottom:8px;}
+.docx-cover h2{font-size:25px; margin:0 0 6px; color:var(--text); border:none; padding:0;}
+.docx-cover .docx-sub{color:var(--muted); font-size:14px; max-width:640px;}
+.docx-control{display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-bottom:1px solid var(--border);}
+.docx-control div{padding:12px 16px; border-right:1px solid var(--border);}
+.docx-control div:last-child{border-right:none;}
+.docx-control .dc-label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:3px;}
+.docx-control .dc-value{font-size:13px; font-weight:700; color:var(--text); font-family:var(--font-mono);}
+@media (max-width:760px){.docx-control{grid-template-columns:repeat(2,1fr);} .docx-control div{border-bottom:1px solid var(--border);}}
+.docx-body{padding:30px 38px;}
+.docx-body h3.docx-h{font-size:17px; color:var(--berry); border-bottom:2px solid var(--border); padding-bottom:7px; margin:26px 0 12px;}
+.docx-body h3.docx-h:first-child{margin-top:0;}
+.docx-body h4{font-size:14px; color:var(--text); margin:16px 0 6px;}
+.docx-signoff{margin-top:28px;}
+.docx-signoff table th{background:var(--text);}
+:root[data-theme="dark"] .docx-signoff table th, :root:not([data-theme="light"]) .docx-signoff table th{color:#111;}
+.docx-footer{padding:14px 38px; border-top:1px solid var(--border); background:var(--surface-alt); display:flex; justify-content:space-between; color:var(--muted); font-size:11px; flex-wrap:wrap; gap:6px;}
+.docx-footer strong{color:var(--text);}
+
+/* KPI tiles */
+.kpi-tile{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+.kpi-tile .kpi-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700;}
+.kpi-tile .kpi-value{font-family:var(--font-mono); font-size:26px; font-weight:700; margin:6px 0 2px; color:var(--text);}
+.kpi-tile .kpi-trend{font-size:12px; font-weight:700;}
+.kpi-tile .kpi-trend.up{color:var(--leaf);}
+.kpi-tile .kpi-trend.down.good{color:var(--leaf);}
+.kpi-tile .kpi-trend.down.bad{color:var(--cherry);}
+.kpi-tile .kpi-trend.flat{color:var(--muted);}
+.kpi-tile .kpi-band{font-size:11px; color:var(--muted); margin-top:6px;}
+
+/* FAQ / Ask */
+.faq-item{border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:10px; background:var(--surface); cursor:pointer;}
+.faq-item h4{margin:0 0 4px; font-size:14px; color:var(--text);}
+.faq-item p{margin:0; color:var(--muted); font-size:13px;}
+.faq-item:hover{border-color:var(--berry);}
+
+.ask-fab{
+  position:fixed; right:24px; bottom:24px; z-index:150; background:var(--cherry); color:#fff; border:none;
+  border-radius:999px; padding:14px 20px; font-weight:700; font-size:14px; box-shadow:var(--shadow); cursor:pointer;
+  display:flex; align-items:center; gap:8px; font-family:var(--font-body);
+}
+.ask-panel{
+  position:fixed; right:24px; bottom:88px; width:380px; max-width:calc(100vw - 32px); max-height:70vh; background:var(--surface);
+  border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); z-index:150; display:none; flex-direction:column; overflow:hidden;
+}
+.ask-panel.open{display:flex;}
+.ask-head{background:var(--berry); color:#fff; padding:14px 16px; display:flex; justify-content:space-between; align-items:center;}
+.ask-head strong{font-size:14px;}
+.ask-head span{font-size:11.5px; opacity:.85; display:block;}
+.ask-head button{background:none; border:none; color:#fff; font-size:16px; cursor:pointer;}
+.ask-body{padding:14px 16px; overflow-y:auto; flex:1; font-size:13.3px;}
+.ask-msg{margin-bottom:12px;}
+.ask-msg.user{text-align:right;}
+.ask-msg .bubble{display:inline-block; padding:9px 13px; border-radius:12px; max-width:88%; text-align:left; font-size:13px;}
+.ask-msg.user .bubble{background:var(--berry); color:#fff; border-bottom-right-radius:3px;}
+.ask-msg.bot .bubble{background:var(--surface-alt); border:1px solid var(--border); border-bottom-left-radius:3px;}
+.ask-msg .bubble a{color:var(--cherry); font-weight:700;}
+.ask-suggest{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.ask-suggest button{background:var(--surface-alt); border:1px solid var(--border); border-radius:999px; padding:5px 11px; font-size:11.5px; cursor:pointer; color:var(--text); font-family:var(--font-body);}
+.ask-suggest button:hover{border-color:var(--berry); color:var(--berry);}
+.ask-input{display:flex; gap:8px; padding:12px; border-top:1px solid var(--border);}
+.ask-input input{flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--border); font-family:var(--font-body); font-size:13px; background:var(--surface-alt); color:var(--text);}
+.ask-input button{background:var(--cherry); color:#fff; border:none; border-radius:8px; padding:0 14px; font-weight:700; cursor:pointer;}
+
+footer.sitefoot{margin-left:var(--sidenav-w); padding:24px 40px 60px; color:var(--muted); font-size:12px; border-top:1px solid var(--border);}
+@media (max-width:980px){footer.sitefoot{margin-left:0;}}
+
+/* print handling: hide everything except the active printable doc when printing a single document */
+@media print{
+  .topbar,.sidenav,.ask-fab,.ask-panel,.doctools,.navtoggle,footer.sitefoot{display:none !important;}
+  body.printing-doc .content > *{display:none !important;}
+  body.printing-doc .content > section.page[data-printing="true"]{display:block !important;}
+  body.printing-doc .content > section.page[data-printing="true"] .doctools{display:none !important;}
+  .content{margin-left:0 !important; padding:0 !important;}
+  .docx-page{box-shadow:none !important; border:none !important;}
+  a[href]::after{content:"";}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="navtoggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+  <div class="brand">
+    <img class="needs-logo" alt="Colaberry logo">
+    <span class="brand-title">Governance Field Guide<small>Enterprise AI Leadership Accelerator</small></span>
+  </div>
+  <div class="searchwrap">
+    <input type="text" class="searchbox" id="searchBox" placeholder="Search the guide — try &quot;risk appetite&quot;, &quot;RACI&quot;, &quot;SOC 2&quot;…" autocomplete="off">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="topbar-actions">
+    <button class="iconbtn" id="themeToggle" title="Toggle dark mode">◑</button>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidenav" id="sidenav">
+    <div class="nav-group">
+      <div class="nav-group-title">Orientation</div>
+      <a class="nav-link" href="#home" data-nav>Welcome &amp; how to use this guide</a>
+      <a class="nav-link" href="#case-study" data-nav>The case study: ACTA at Aegis Mutual</a>
+      <a class="nav-link" href="#why-governance" data-nav>Why governance exists</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">The 20% to Know</div>
+      <a class="nav-link" href="#tp-govmgmt" data-nav>Governance vs. management</a>
+      <a class="nav-link" href="#tp-raci" data-nav>Decision rights &amp; RACI</a>
+      <a class="nav-link" href="#tp-policies" data-nav>Policies, standards &amp; controls</a>
+      <a class="nav-link" href="#tp-risk" data-nav>Risk register &amp; risk appetite</a>
+      <a class="nav-link" href="#tp-airisk" data-nav>AI-specific risk</a>
+      <a class="nav-link" href="#tp-compliance" data-nav>Compliance mapping</a>
+      <a class="nav-link" href="#tp-audit" data-nav>Audit trails &amp; evidence</a>
+      <a class="nav-link" href="#tp-responsible" data-nav>Responsible AI &amp; human oversight</a>
+      <a class="nav-link" href="#tp-operating" data-nav>Operating model &amp; cadence</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Architect's Judgment</div>
+      <a class="nav-link" href="#good-vs-bad" data-nav>Good vs. bad governance</a>
+      <a class="nav-link" href="#kpis" data-nav>Governance KPIs</a>
+      <a class="nav-link" href="#review-lens" data-nav>The architect's review lens</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Governance Documents</div>
+      <a class="nav-link" href="#documents-overview" data-nav>About these documents</a>
+      <a class="nav-link doc-link" href="#doc-framework" data-nav>Governance Framework</a>
+      <a class="nav-link doc-link" href="#doc-raci" data-nav>Decision RACI</a>
+      <a class="nav-link doc-link" href="#doc-compliance" data-nav>Compliance Checklist</a>
+      <a class="nav-link doc-link" href="#doc-risk" data-nav>Risk Register</a>
+      <a class="nav-link doc-link" href="#doc-responsible" data-nav>Responsible-AI Policy</a>
+      <a class="nav-link doc-link" href="#doc-audit" data-nav>Audit Plan</a>
+      <a class="nav-link doc-link" href="#doc-operating" data-nav>Operating Model &amp; Cadence</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Help</div>
+      <a class="nav-link" href="#faq" data-nav>FAQ &amp; Ask the guide</a>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+<section class="page" id="home" data-title="Welcome" data-crumb="Orientation">
+  <div class="eyebrow">Colaberry Enterprise AI Leadership Accelerator</div>
+  <h1>Governance Lead Field Guide</h1>
+  <p class="lede">Everything an AI Solution Architect needs from AI governance — not to write every control yourself, but to direct the agents and teams who build them, evaluate what comes back, and know exactly where your signature belongs on the approval line.</p>
+
+  <div class="callout">
+    <span class="co-title">How this guide works</span>
+    This is a knowledge base, not a slide deck. Use the <strong>search box</strong> at the top to jump straight to a term. Use <strong>Ask the guide</strong> (bottom right) to type a plain-language question — it answers from this document's own content, offline, with no external service involved. Use the left nav to browse by topic or to open one of the seven governance documents, each a real, downloadable artifact styled to Colaberry's document standard.
+  </div>
+
+  <div class="subsection">
+    <h2>What "the 20%" means here</h2>
+    <p>You will never personally write a bias-testing script or draft a regulatory filing. A model risk analyst, a compliance officer, or an AI agent working under your direction will do that. Your job is to know enough of the discipline that you can:</p>
+    <ul>
+      <li><strong>Direct</strong> — write a governance directive precise enough that a team (or an agent) cannot quietly ship an AI system with no owner, no risk appetite, and no kill-switch.</li>
+      <li><strong>Evaluate</strong> — read a RACI chart, a risk register, or a compliance checklist and tell a control that actually works from one that merely looks tidy on a slide.</li>
+      <li><strong>Approve</strong> — sign off on a deployment, a retrain, or an override policy with a specific number in mind (a risk appetite threshold, a bias-test ratio, an evidence artifact) instead of a feeling.</li>
+    </ul>
+    <p>The remainder of this guide teaches the concepts once, then applies every one of them to a single running example so the abstractions stay load-bearing rather than decorative.</p>
+  </div>
+</section>
+
+<section class="page" id="case-study" data-title="The case study: ACTA at Aegis Mutual" data-crumb="Orientation">
+  <div class="eyebrow">Running example — used in every document below</div>
+  <h1>ACTA — the Aegis Auto Claims Triage Assistant</h1>
+  <p class="lede">One fictional AI initiative, carried through every framework, register, and threshold in this guide, so that "the risk appetite" and "the human-oversight trigger" always mean the same concrete thing.</p>
+
+  <div class="subsection">
+    <h2>The business situation</h2>
+    <p><strong>Aegis Mutual</strong> is a mid-size auto insurer handling roughly 4,200 new auto claims per week. Historically, every First Notice of Loss (FNOL) waited in a single queue for a human adjuster to read, classify, and route — an average wait of 19 hours that drove customer complaints and adjuster burnout during storm season.</p>
+    <p><strong>ACTA</strong> is the AI assistant Aegis Mutual's leadership approved to fix that. The moment an FNOL arrives, ACTA reads it and produces four outputs: a severity classification, a fraud-risk score (from the third-party vendor <strong>SentinelScore</strong>, 0–100), a routing decision (Fast-Track auto-approval, standard Adjuster Review, or referral to the Special Investigations Unit — SIU), and an initial reserve estimate. A human adjuster always retains override authority; <strong>ACTA never closes a claim on its own</strong> — it is a decision-support tool, not an autonomous decision-maker. That single sentence is the fact this entire governance program exists to enforce, verify, and prove — to the Board, to regulators, and to claimants — every single day.</p>
+  </div>
+
+  <div class="subsection">
+    <h2>Why this is a good governance teaching case</h2>
+    <ul>
+      <li><strong>Consequential decisions.</strong> A wrong fraud flag on an honest claimant, or an unreviewed denial, is not an abstract model-accuracy statistic — it is a person's car, a person's medical bill, and in some states a bad-faim-claims-handling lawsuit. That raises the bar on human oversight and explainability far above a typical recommendation engine.</li>
+      <li><strong>Regulated industry, multiple frameworks.</strong> Insurance is state-regulated (unfair claims practices acts, several states' emerging AI-in-insurance bulletins modeled on the NAIC's Model Bulletin on the Use of AI Systems), the carrier is SOC 2- and ISO 27001-aligned for its technology controls, and it has voluntarily adopted GDPR-style automated-decision safeguards as its internal privacy bar — giving the compliance mapping real teeth instead of a single narrow framework.</li>
+      <li><strong>A real, current AI system with real vendors.</strong> ACTA sits on top of six systems, two of them third-party AI vendors (SentinelScore for fraud scoring, DocScan AI for document OCR) that Aegis Mutual does not control — which is exactly the seam where AI governance earns its keep: you cannot govern what a vendor does internally, only what you require of the interface, the evidence, and the fallback.</li>
+    </ul>
+  </div>
+
+  <div class="subsection">
+    <h2>System at a glance</h2>
+    <div class="tablewrap"><table>
+      <tr><th>Component</th><th>Role</th><th>Governance relevance</th></tr>
+      <tr><td><strong>Claimant Portal</strong></td><td>Customer-facing FNOL intake</td><td>Source of the claimant consent/notice language for automated processing</td></tr>
+      <tr><td><strong>Policy Admin System (PAS)</strong></td><td>System of record for policy status &amp; coverage</td><td>Authoritative source ACTA must reconcile against before any routing decision</td></tr>
+      <tr><td><strong>DocScan AI</strong></td><td>Third-party OCR/document-extraction AI (vendor: Lexicon Vision)</td><td>Vendor AI risk assessment; data-minimization boundary for claim photos/documents</td></tr>
+      <tr><td><strong>SentinelScore</strong></td><td>Third-party fraud-scoring AI, 0–100 score (vendor: Sentinel Analytics)</td><td>The single highest-governance-attention component: bias testing, human-in-the-loop trigger, vendor concentration risk</td></tr>
+      <tr><td><strong>ACTA core</strong></td><td>Classification, routing, reserve estimation (Aegis-owned model)</td><td>Subject to the full model lifecycle: validation, deployment approval, drift monitoring, retirement</td></tr>
+      <tr><td><strong>ClaimPay</strong></td><td>Payment gateway: reserve holds &amp; payouts (vendor: ClaimPay Inc.)</td><td>Only ever called after a human-approved or policy-compliant Fast-Track decision — never by ACTA unilaterally</td></tr>
+      <tr><td><strong>NotifyHub</strong></td><td>Claimant/adjuster notifications</td><td>Carries every adverse-action (denial) notice — the last gate before a claimant sees the decision</td></tr>
+    </table></div>
+  </div>
+
+  <div class="subsection">
+    <h2>The two numbers every document in this guide agrees on</h2>
+    <div class="callout success">
+      <span class="co-title">The governing thresholds</span>
+      <strong>Fast-Track auto-approval</strong> requires ALL THREE: model confidence &ge; 0.90, reserve estimate &lt; $25,000, and a SentinelScore fraud score in the LOW band (&lt; 40 of 100). <strong>Any fraud score &ge; 70 (HIGH or CRITICAL band) is routed to SIU for mandatory human review — never Fast-Tracked, regardless of confidence or reserve size.</strong> Every RACI decision, risk-appetite threshold, and human-oversight trigger in this guide is written against these two numbers, not invented fresh per document.
+    </div>
+  </div>
+</section>
+
+<section class="page" id="why-governance" data-title="Why governance exists" data-crumb="Orientation">
+  <div class="eyebrow">Orientation</div>
+  <h1>Why governance exists — and how it differs from management</h1>
+  <p class="lede">Management makes ACTA work. Governance proves ACTA is allowed to keep working — to the Board, to regulators, and to the claimant on the other end of a denial letter.</p>
+
+  <div class="subsection">
+    <h2>The distinction that trips up new architects</h2>
+    <p><strong>Management</strong> asks "is it running, is it fast enough, did the sprint ship." It is owned by the people who build and operate ACTA day to day — Claims Operations and ML Engineering. <strong>Governance</strong> asks a different question entirely: "who is allowed to decide this, what evidence proves the decision was sound, and what happens when it goes wrong." Governance does not build the model faster; it makes sure that when someone — an adjuster, a regulator, a plaintiff's attorney, the Board — asks "who approved this and why," there is a specific, documented, single-throated answer, not a shrug.</p>
+    <p>A team can be excellent at management (ACTA has 99.7% uptime, adjusters love the console) and still have zero governance (nobody can produce the bias test that proves the fraud score doesn't disproportionately flag one ZIP code, and nobody actually knows who is accountable for approving a threshold change). That gap is invisible until the day it is very visible — an audit, an incident, a regulator's letter — and by then it is a Board-level problem, not an engineering one.</p>
+  </div>
+
+  <div class="subsection">
+    <h2>What governance is not</h2>
+    <ul>
+      <li>Not a document that exists to satisfy an auditor once a year — it is a set of controls that run continuously and produce evidence as a byproduct of running.</li>
+      <li>Not a veto held by one risk-averse office — decision rights are distributed by decision type (see RACI), not concentrated in a single gatekeeper who becomes a bottleneck.</li>
+      <li>Not a slower version of management — a well-run governance program makes deployment <em>faster</em> over time, because the deployment checklist is known in advance instead of negotiated ad hoc under deadline pressure.</li>
+    </ul>
+  </div>
+
+  <div class="callout warning">
+    <span class="co-title">The question that separates the two disciplines</span>
+    Ask a manager "does it work?" Ask a governance lead "if it stopped working safely tomorrow, who would know first, who is accountable for the fix, and what is the evidence that the fix actually worked?" If the second question has no clean answer, you do not have governance — you have hope with a dashboard.
+  </div>
+</section>
+
+<section class="page" id="tp-govmgmt" data-title="Governance vs. management" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Governance vs. management, restated as a design rule</h1>
+  <p class="lede">Every artifact you will review in this guide answers one of these two questions. Knowing which one keeps you from grading a management document against a governance bar, or vice versa.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Question</th><th>Discipline</th><th>Owned by</th><th>ACTA example</th></tr>
+    <tr><td>Is it working right now?</td><td>Management</td><td>Claims Operations, ML Engineering</td><td>ACTA uptime, adjuster queue depth, p95 scoring latency</td></tr>
+    <tr><td>Is it allowed to be working this way?</td><td>Governance</td><td>AI Governance Council, Model Risk Management</td><td>Was this threshold change approved by the accountable role in the RACI?</td></tr>
+    <tr><td>Can we prove it was working correctly, later?</td><td>Governance (evidence)</td><td>Internal Audit, Model Risk Management</td><td>Hash-chained audit log of every override, sign-off, and threshold change</td></tr>
+    <tr><td>What do we do when it breaks?</td><td>Both — management executes, governance pre-authorizes</td><td>On-call + CRO/AGC</td><td>Kill-switch runbook: who can pull it, and who must be told within the hour</td></tr>
+  </table></div>
+  <div class="callout"><span class="co-title">Reviewer's habit</span> When you're handed any AI deliverable, silently ask "which of these four rows is this document answering?" A risk register that only measures uptime is a management document wearing a governance document's title.</div>
+</section>
+
+<section class="page" id="tp-raci" data-title="Decision rights & RACI" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Decision rights and RACI</h1>
+  <p class="lede">Governance fails first at the boundary between "a lot of people care about this" and "exactly one person is accountable for it." RACI is the tool that forces that boundary into the open.</p>
+  <ul>
+    <li><strong>Responsible</strong> — does the work to produce the decision or artifact. Can be more than one role.</li>
+    <li><strong>Accountable</strong> — owns the outcome and answers for it. <strong>Exactly one</strong> per decision — the single most important rule in this whole discipline, because "the team decided" is how bad decisions survive their own postmortem.</li>
+    <li><strong>Consulted</strong> — has relevant input sought before the decision is made (two-way conversation).</li>
+    <li><strong>Informed</strong> — told after the decision is made (one-way notice).</li>
+  </ul>
+  <div class="callout critical">
+    <span class="co-title">The trap an AI agent will walk into</span>
+    Ask an AI coding agent to "add an approval step" and it will often generate a workflow where a Slack channel is "responsible" for approval — nobody is accountable, so a bad deploy has no name attached to it. Every RACI row in the <a href="#doc-raci">Decision RACI</a> names an individual role, never a channel, a committee-in-the-abstract, or "the team."
+  </div>
+  <p>ACTA's RACI covers ten decisions, from initial production deployment down to a single-case human override — see the full <a href="#doc-raci">Decision RACI</a> for the complete matrix with exactly one Accountable role per row.</p>
+</section>
+
+<section class="page" id="tp-policies" data-title="Policies, standards & controls" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Policies, standards, and controls — and how they chain together</h1>
+  <p class="lede">These three words get used interchangeably in casual conversation and that is exactly how governance programs end up with policies nobody can point to a control for.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Term</th><th>What it is</th><th>ACTA example</th></tr>
+    <tr><td><strong>Policy</strong></td><td>A statement of intent and rules — what must be true, and why</td><td>"No claimant is denied without a documented human sign-off" (Responsible-AI Policy)</td></tr>
+    <tr><td><strong>Standard</strong></td><td>The specific, measurable bar a policy is held to</td><td>"Sign-off must be logged within the same case record, by a named adjuster, before NotifyHub sends the notice"</td></tr>
+    <tr><td><strong>Control</strong></td><td>The mechanism — technical or procedural — that makes the standard actually happen, and that produces evidence that it happened</td><td>The claim-status state machine will not transition to "denied-communicated" without a non-null <code>sign_off_by</code> field; NotifyHub's send API rejects the call otherwise</td></tr>
+  </table></div>
+  <div class="callout"><span class="co-title">The chain, in one line</span> Policy says what must be true. Standard says how you'd measure it. Control is the thing that actually stops the bad path and leaves a trace. <strong>A policy with no traceable control is a wish, not governance</strong> — see the Compliance Checklist's Evidence column for what "traceable" looks like in practice.</div>
+</section>
+
+<section class="page" id="tp-risk" data-title="Risk register & risk appetite" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>The risk register and risk appetite</h1>
+  <p class="lede">A risk register that never assigns a number is a list of worries. Risk appetite is the number that turns "we're aware of this" into "here is the threshold at which we stop and act."</p>
+  <ul>
+    <li><strong>Likelihood &times; Impact</strong> — each risk is scored on two 1–5 scales; the product (1–25) is the risk score, plotted on a 5&times;5 heatmap.</li>
+    <li><strong>Inherent vs. residual</strong> — inherent is the risk before any mitigation exists; residual is what's left after the mitigation is actually running. The gap between the two is the mitigation's entire justification for existing.</li>
+    <li><strong>Risk appetite</strong> — the Board-approved line: how much residual risk the organization will tolerate before it must escalate. Aegis Mutual's Board has set ACTA's appetite at three tiers: <strong>&le;8 Within Appetite</strong> (standing monitoring only), <strong>9–14 Accepted with Monitoring</strong> (requires CRO sign-off and quarterly review), <strong>&ge;15 Exceeds Appetite</strong> (immediate mitigation plan and Board Risk Committee notification within 5 business days).</li>
+  </ul>
+  <div class="callout warning"><span class="co-title">Reviewer's trap</span> A risk register where every single residual score is 1–4 is not a well-governed system — it's a register nobody stress-tested. See the full <a href="#doc-risk">Risk Register</a>: several inherent scores reach 20 (algorithmic bias, inadequate human oversight) and one residual — vendor concentration on SentinelScore — is deliberately left at "Accepted with Monitoring," not forced down to zero, because a single-source AI vendor is a risk you manage, not one you can fully eliminate without rebuilding the fraud model in-house.</div>
+</section>
+
+<section class="page" id="tp-airisk" data-title="AI-specific risk" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>AI-specific risk: the categories a generic risk register misses</h1>
+  <p class="lede">A traditional IT risk register covers security and availability well. AI systems add categories that don't map cleanly onto either — miss them and your register will look complete while missing the risks that actually cause incidents.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Category</th><th>What it is</th><th>ACTA instance</th></tr>
+    <tr><td><strong>Bias / fairness</strong></td><td>The model's outputs correlate with a protected class, even without using the protected attribute directly (proxy discrimination)</td><td>SentinelScore's fraud referral rate disparately flagging claimants by ZIP code as a proxy for race or income</td></tr>
+    <tr><td><strong>Privacy</strong></td><td>Personal or sensitive data is collected, retained, or exposed beyond what's needed or disclosed</td><td>Bodily-injury claim attachments carrying medical detail beyond what triage requires</td></tr>
+    <tr><td><strong>Security</strong></td><td>The model, its data, or its infrastructure is a new attack surface (prompt/data poisoning, model theft, adversarial inputs)</td><td>An adjuster or claimant crafting an FNOL narrative specifically to game the fraud score downward</td></tr>
+    <tr><td><strong>Model drift</strong></td><td>Real-world data shifts away from what the model was trained/validated on, silently degrading accuracy</td><td>Claim patterns after a hurricane look nothing like the training distribution — false negatives spike</td></tr>
+    <tr><td><strong>Misuse</strong></td><td>The system is used outside its approved scope or by people who shouldn't have access to override it</td><td>ACTA used to triage a claim type or state it was never validated for; an adjuster's override rate suggesting rubber-stamping rather than genuine review</td></tr>
+  </table></div>
+  <p>Every one of these five categories has at least one corresponding row in the <a href="#doc-risk">Risk Register</a> and at least one human-oversight trigger in the <a href="#doc-responsible">Responsible-AI Policy</a> — a category with no register entry and no trigger is a category that isn't actually governed yet, whatever the slide deck claims.</p>
+</section>
+
+<section class="page" id="tp-compliance" data-title="Compliance mapping" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Compliance mapping: SOC 2, ISO 27001, and GDPR, at the concept level</h1>
+  <p class="lede">You do not need to be a certified auditor for any of these three frameworks. You need to know what each one is actually checking for, so you can tell a control that satisfies it from one that only sounds like it does.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Framework</th><th>What it actually checks</th><th>Why it applies to ACTA</th></tr>
+    <tr><td><strong>SOC 2</strong></td><td>Five Trust Service Criteria — Security, Availability, Processing Integrity, Confidentiality, Privacy — verified by an independent auditor against controls you define and evidence you produce</td><td>Aegis Mutual's technology stack (including ACTA) is SOC 2 Type II audited annually; claims data confidentiality and processing-integrity (model output accuracy) are the two criteria examiners scrutinize hardest for an AI system</td></tr>
+    <tr><td><strong>ISO 27001</strong></td><td>An information security management system standard; Annex A lists control domains (access control, supplier relationships, incident management, etc.) an organization must address and evidence</td><td>Aegis Mutual's ISO 27001 certification scope explicitly includes the AI system inventory (ACTA, SentinelScore, DocScan) as in-scope assets requiring documented risk treatment</td></tr>
+    <tr><td><strong>GDPR (voluntarily adopted, concept level)</strong></td><td>EU privacy regulation whose automated-decision-making safeguard (Art. 22 — no purely automated decision with legal/significant effect without meaningful human involvement) Aegis Mutual has adopted as an internal best-practice bar, alongside its reinsurance partners' EU data-sharing requirements</td><td>Directly maps onto ACTA's core design constraint: no claim denial is ever communicated without a human sign-off — this is GDPR Art. 22 compliance by construction, not an afterthought</td></tr>
+  </table></div>
+  <div class="callout"><span class="co-title">The concept that ties all three together</span> Every framework above is really asking the same underlying question in different vocabulary: <em>"can you prove, after the fact, that the control you claim exists actually ran?"</em> The <a href="#doc-compliance">Compliance Checklist</a>'s Evidence column exists precisely because "we have a policy for that" is not an answer any of the three frameworks accepts.</div>
+</section>
+
+<section class="page" id="tp-audit" data-title="Audit trails & evidence" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Audit trails and evidence</h1>
+  <p class="lede">An audit trail that can be edited after the fact is not an audit trail — it's a diary the defendant wrote. Two properties separate real evidence from a log file.</p>
+  <ul>
+    <li><strong>Immutable / tamper-evident</strong> — every override, sign-off, threshold change, and denial notice is written once and hash-chained, so editing or deleting a past entry breaks the chain for every entry after it, visibly.</li>
+    <li><strong>Attributable</strong> — every entry names a specific person or system identity, a timestamp, and the decision made — never an anonymous "system updated record."</li>
+  </ul>
+  <div class="callout warning"><span class="co-title">Reviewer's trap</span> "We log everything" is not evidence of governance — retrievability is. If Internal Audit cannot pull, in under an hour, every denial ACTA recommended in the last quarter along with the adjuster's sign-off for each one, the log exists but the control doesn't. See the <a href="#doc-audit">Audit Plan</a>'s AP-08 test, which recomputes the hash chain on a sampled period specifically to catch a log that "exists" but has quietly been edited.</div>
+</section>
+
+<section class="page" id="tp-responsible" data-title="Responsible AI & human oversight" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Responsible AI and human oversight, with a number attached</h1>
+  <p class="lede">"A human is in the loop" is not a control until it names the exact condition that pulls the human in, and the exact consequence if that condition is ignored.</p>
+  <p>A human-oversight trigger has three required parts: a <strong>numeric condition</strong> (not "when it seems risky"), a <strong>named role</strong> that must act, and a <strong>hard stop</strong> if the role doesn't act — the system does not proceed on its own by default. ACTA's four governing triggers:</p>
+  <div class="tablewrap"><table>
+    <tr><th>Trigger</th><th>Condition</th><th>Required action</th></tr>
+    <tr><td>Fraud referral</td><td>SentinelScore score &ge; 70 (HIGH/CRITICAL band)</td><td>Mandatory SIU analyst review before any routing decision proceeds — never Fast-Tracked</td></tr>
+    <tr><td>Denial sign-off</td><td>Any claim denial recommendation, regardless of amount</td><td>Mandatory second-line (Compliance &amp; Legal-reviewed template) sign-off before NotifyHub sends the notice</td></tr>
+    <tr><td>Large reserve</td><td>Reserve or payout &ge; $50,000</td><td>Senior Claims Manager approval in addition to standard Adjuster Review</td></tr>
+    <tr><td>Override-pattern anomaly</td><td>A single adjuster's override rate exceeds 30% in a rolling 30-day window</td><td>Automatic compliance-audit trigger and Model Risk Management review of that adjuster's queue</td></tr>
+  </table></div>
+  <p>The complete acceptable-use rules, prohibited uses, and escalation path live in the <a href="#doc-responsible">Responsible-AI Policy</a>.</p>
+</section>
+
+<section class="page" id="tp-operating" data-title="Operating model & cadence" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Operating model and cadence</h1>
+  <p class="lede">Governance that only convenes when something breaks is not governance — it's incident response wearing a governance hat. A real operating model has standing bodies that meet whether or not anything is on fire.</p>
+  <ul>
+    <li><strong>Standing bodies</strong> — named, chartered groups with defined membership and authority, not an ad hoc meeting invite.</li>
+    <li><strong>Cadence</strong> — a fixed meeting rhythm (weekly, bi-weekly, monthly, quarterly) so oversight happens on a schedule, not when someone remembers.</li>
+    <li><strong>Escalation path</strong> — a defined route from the working level up to the Board when a risk or decision exceeds the authority of the level below it.</li>
+  </ul>
+  <p>Aegis Mutual runs four standing bodies for ACTA, from a weekly working group up to a quarterly Board Risk Committee review — see the full <a href="#doc-operating">Operating Model &amp; Cadence</a>.</p>
+</section>
+
+<section class="page" id="good-vs-bad" data-title="Good vs. bad governance" data-crumb="Architect's Judgment">
+  <div class="eyebrow">Architect's judgment</div>
+  <h1>Good vs. bad governance</h1>
+  <p class="lede">Both a well-governed and a poorly-governed AI system can pass a demo and even a first audit. The difference shows up the first time something goes wrong, or the first time someone asks a pointed question.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Signal</th><th>Bad governance</th><th>Good governance</th></tr>
+    <tr><td>Accountability</td><td>"The team" or "the AI Governance Council" approved it — no individual name</td><td>Exactly one named Accountable role per decision, traceable in the RACI</td></tr>
+    <tr><td>Risk appetite</td><td>"We try to keep risk low" — no number</td><td>Board-approved numeric thresholds (&le;8 / 9–14 / &ge;15) with defined actions at each</td></tr>
+    <tr><td>Human oversight</td><td>"A human is in the loop" with no defined trigger</td><td>A numeric condition (score &ge; 70, amount &ge; $50,000) tied to a named role and a hard stop</td></tr>
+    <tr><td>Evidence</td><td>"We log everything" — logs exist but were never retrieved or tested</td><td>Quarterly control tests that actually pull the evidence and verify it, with a sign-off trail</td></tr>
+    <tr><td>Bias testing</td><td>Tested once before launch, never again</td><td>Recurring (quarterly) disparate-impact testing with a defined pass/fail ratio (four-fifths rule)</td></tr>
+    <tr><td>Vendor risk</td><td>Vendor contract signed, no ongoing reassessment</td><td>Annual vendor risk reassessment plus a documented manual-fallback procedure if the vendor fails</td></tr>
+    <tr><td>Incident response</td><td>No kill-switch, or a kill-switch nobody has ever actually tested</td><td>A named authority (CRO) who can suspend the system, rehearsed via a tabletop exercise</td></tr>
+    <tr><td>Policy-to-control chain</td><td>A Responsible-AI policy that reads like a mission statement</td><td>Every policy clause maps to a specific control and a specific evidence artifact</td></tr>
+  </table></div>
+  <div class="callout success"><span class="co-title">The one-line test</span> Good governance survives a subpoena. If every row above only holds up when nobody asks a hard question, it isn't governance — it's a policy binder.</div>
+</section>
+
+<section class="page" id="kpis" data-title="Governance KPIs" data-crumb="Architect's Judgment">
+  <div class="eyebrow">Architect's judgment</div>
+  <h1>Governance KPIs</h1>
+  <p class="lede">A governance program that can't produce a number is a governance program you can't manage. These six are the ones Aegis Mutual's AI Governance Council reviews every month — trailing-quarter snapshot below.</p>
+
+  <div class="chart-row">
+    <div class="kpi-tile">
+      <div class="kpi-label">Human sign-off compliance</div>
+      <div class="kpi-value">100<span style="font-size:14px;color:var(--muted);">%</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,10 20,8 40,10 60,6 80,4 100,4 120,4" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend flat">— steady at target</div>
+      <div class="kpi-band">Target: 100% — zero unreviewed denials, trailing 12 months</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Adjuster override rate</div>
+      <div class="kpi-value">6.4<span style="font-size:14px;color:var(--muted);">%</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,6 20,8 40,10 60,14 80,18 100,20 120,22" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend down good">▼ improved from 8.1%</div>
+      <div class="kpi-band">Expected range 3–10%; individual outlier trigger &gt;30%</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Disparate-impact ratio</div>
+      <div class="kpi-value">0.91</div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,22 20,18 40,14 60,12 80,10 100,8 120,6" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend up">▲ improved from 0.84</div>
+      <div class="kpi-band">Target &ge; 0.80 (EEOC four-fifths rule) on SIU referral rate</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Open audit findings past due</div>
+      <div class="kpi-value">0</div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,6 20,6 40,10 60,6 80,6 100,6 120,6" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend flat">— steady at target</div>
+      <div class="kpi-band">Target: 0; 1 finding closed this quarter within SLA</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Mean time to remediate</div>
+      <div class="kpi-value">11<span style="font-size:14px;color:var(--muted);">d</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,4 20,6 40,10 60,14 80,18 100,20 120,22" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend down good">▼ improved from 19 days</div>
+      <div class="kpi-band">Target &le; 30 days from audit finding to closure</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Model drift alerts (quarter)</div>
+      <div class="kpi-value">2</div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,20 20,14 40,18 60,10 80,16 100,8 120,12" fill="none" stroke="var(--berry)" stroke-width="2"/></svg>
+      <div class="kpi-trend flat">— within normal range</div>
+      <div class="kpi-band">Both resolved within the 5-business-day SLA</div>
+    </div>
+  </div>
+
+  <div class="callout"><span class="co-title">Reading the snapshot</span> The disparate-impact ratio is the KPI to watch most closely: it's the single number that would trigger an immediate model suspension if it dropped below 0.80. Everything else on this board is a lagging indicator of process health; that one is a leading indicator of a regulatory and fairness problem.</div>
+</section>
+
+<section class="page" id="review-lens" data-title="The architect's review lens" data-crumb="Architect's Judgment">
+  <div class="eyebrow">Architect's judgment</div>
+  <h1>The architect's review lens</h1>
+  <p class="lede">Seven checks to run, in order, on any AI-generated governance artifact before you approve it. If any of these fail, send it back — don't fix it yourself and don't approve it "with a note."</p>
+  <ol>
+    <li><strong>Exactly one Accountable per decision.</strong> If a RACI row lists two Accountables, or a committee instead of a role, it's not done.</li>
+    <li><strong>Every risk has a number, not an adjective.</strong> "High risk" fails; "Likelihood 4, Impact 5, inherent score 20" passes.</li>
+    <li><strong>Every human-oversight trigger has a threshold and a hard stop.</strong> "Reviewed as needed" fails; "score &ge; 70, mandatory SIU review, cannot proceed without it" passes.</li>
+    <li><strong>Every compliance obligation has an evidence column entry, not just a control name.</strong> "We have access controls" fails; "quarterly access review report, attached" passes.</li>
+    <li><strong>Residual risk is shown, not just inherent.</strong> A register with only inherent scores hasn't proven the mitigation does anything.</li>
+    <li><strong>The document names who tests the control, and when.</strong> A control with no test schedule in the Audit Plan is a control that runs on faith.</li>
+    <li><strong>Nothing reads as "everything is fine."</strong> A risk register with every score in the green, or a compliance checklist with every row "Implemented," is a document that wasn't stress-tested — real programs carry open items and monitored (not eliminated) risks.</li>
+  </ol>
+  <div class="callout critical"><span class="co-title">The single fastest tell</span> Open the Risk Register first. If nothing on it is inherently scored 15 or higher, either ACTA is a far simpler system than described, or the register was written to look clean rather than to be useful. A governance document with no uncomfortable numbers in it has not done its job.</div>
+</section>
+
+<section class="page" id="documents-overview" data-title="About these documents" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance documents</div>
+  <h1>About these documents</h1>
+  <p class="lede">Seven real governance artifacts for ACTA, each styled to Colaberry's document standard: a branded cover, a document-control strip, a Prepared/Reviewed/Approved sign-off block, and a footer. Each is individually downloadable.</p>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>Document</th><th>Answers</th><th>Formats</th></tr>
+    <tr><td>1</td><td><a href="#doc-framework">Governance Framework</a></td><td>What principles, scope, and control structure govern ACTA overall?</td><td>HTML, PDF</td></tr>
+    <tr><td>2</td><td><a href="#doc-raci">Decision RACI</a></td><td>Who is Accountable for deploy, retrain, override, and retire?</td><td>HTML, PDF, CSV</td></tr>
+    <tr><td>3</td><td><a href="#doc-compliance">Compliance Checklist</a></td><td>What does SOC 2 / ISO 27001 / GDPR require, and what's the evidence?</td><td>HTML, PDF, CSV</td></tr>
+    <tr><td>4</td><td><a href="#doc-risk">Risk Register</a></td><td>What can go wrong, how badly, and against what appetite?</td><td>HTML, PDF, CSV</td></tr>
+    <tr><td>5</td><td><a href="#doc-responsible">Responsible-AI Policy</a></td><td>What is ACTA allowed to do, and when must a human step in?</td><td>HTML, PDF</td></tr>
+    <tr><td>6</td><td><a href="#doc-audit">Audit Plan</a></td><td>How and when is every control actually tested?</td><td>HTML, PDF, CSV</td></tr>
+    <tr><td>7</td><td><a href="#doc-operating">Operating Model &amp; Cadence</a></td><td>Who meets, how often, and what escalates to the Board?</td><td>HTML, PDF</td></tr>
+  </table></div>
+  <div class="callout"><span class="co-title">How to use these in review</span> Every policy clause in these seven documents traces to an operating control somewhere else in the set (usually the Audit Plan); every compliance obligation has an evidence artifact named; every risk carries a number; exactly one Accountable role exists per decision. If you find a clause that doesn't trace, that's a real finding — flag it the way you'd flag any other incomplete deliverable.</div>
+</section>
+
+<section class="page" id="doc-framework" data-title="Governance Framework" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 1 of 7</div>
+  <h1>Governance Framework</h1>
+  <p class="lede">The constitution for ACTA: what it governs, who has authority over what, and how the three lines of defense divide labor so no single team is both building and grading its own work.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-framework','Governance_Framework_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-framework')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-framework">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Governance Framework — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">Principles, scope, decision rights, and the control structure that governs ACTA across its full lifecycle.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">AI Governance Council</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Purpose</h3>
+      <p>This Framework establishes how Aegis Mutual governs ACTA across its entire lifecycle — design, validation, deployment, operation, retraining, and eventual retirement. It exists so that "who allowed this, and on what basis" always has a documented, single-throated answer, independent of who happens to be in the room when a question is asked.</p>
+
+      <h3 class="docx-h">2. Scope</h3>
+      <p>This Framework applies to ACTA's classification, fraud-scoring integration (SentinelScore), routing, and reserve-estimation functions, and to every system ACTA depends on for a governed decision: the Policy Admin System (policy truth), DocScan AI (document extraction), ClaimPay (payment execution), and NotifyHub (claimant communication). It does not govern Aegis Mutual's non-AI claims systems, which fall under the standard IT Risk Framework.</p>
+
+      <h3 class="docx-h">3. Governing principles</h3>
+      <ul>
+        <li><strong>Human accountability is never delegated to the model.</strong> ACTA recommends; a named human decides, on every claim it touches, at the point specified by the Responsible-AI Policy.</li>
+        <li><strong>Every decision has exactly one Accountable role.</strong> No decision in ACTA's lifecycle is accountable to "the team" or "the committee" — see the Decision RACI.</li>
+        <li><strong>Risk is quantified, not described.</strong> Every material risk carries a likelihood, an impact, and a residual score measured against the Board-approved appetite.</li>
+        <li><strong>Every obligation has evidence.</strong> A control that cannot produce evidence on demand is treated as not existing, regardless of intent.</li>
+        <li><strong>Independence is structural, not aspirational.</strong> The team that builds and operates ACTA (1st line) is never the same team that validates or audits it (2nd and 3rd lines).</li>
+      </ul>
+
+      <h3 class="docx-h">4. Control structure — three lines of defense</h3>
+      <p>Aegis Mutual governs ACTA using the standard three-lines-of-defense model, adapted for an AI system. The first line owns and operates; the second line independently validates and challenges; the third line provides independent assurance directly to the Board, bypassing the reporting chain of the first two lines entirely.</p>
+      <div class="figure">
+        <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three lines of defense diagram for ACTA governance">
+          <defs><marker id="gfArrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <style>
+            .gn{fill:var(--surface);stroke:var(--border);stroke-width:1.5;}
+            .gn1{fill:var(--berry-tint);stroke:var(--berry);stroke-width:1.5;}
+            .gn2{fill:var(--leaf-tint);stroke:var(--leaf);stroke-width:1.5;}
+            .gn3{fill:var(--amber-tint);stroke:var(--amber);stroke-width:1.5;}
+            .gt{font-family:Roboto,Arial,sans-serif;font-size:13px;fill:var(--text);font-weight:700;}
+            .gs{font-family:Roboto,Arial,sans-serif;font-size:10.5px;fill:var(--muted);}
+            .glane{font-family:Roboto,Arial,sans-serif;font-size:10.5px;fill:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+            .gedge{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#gfArrow);}
+            .gedge-dash{stroke:var(--muted);stroke-width:1.5;fill:none;stroke-dasharray:5 4;marker-end:url(#gfArrow);}
+          </style>
+          <rect class="gn" x="320" y="15" width="260" height="55" rx="8"/>
+          <text class="gt" x="450" y="38" text-anchor="middle">Board Risk Committee</text>
+          <text class="gs" x="450" y="55" text-anchor="middle">Quarterly AI risk oversight</text>
+
+          <path class="gedge" d="M450,140 L450,70" marker-end="url(#gfArrow)"/>
+          <text class="gs" x="465" y="105">reports to</text>
+
+          <rect class="gn1" x="320" y="140" width="260" height="55" rx="8"/>
+          <text class="gt" x="450" y="163" text-anchor="middle">AI Governance Council</text>
+          <text class="gs" x="450" y="180" text-anchor="middle">Chaired by the CRO &middot; monthly</text>
+
+          <text class="glane" x="45" y="235">1st line — own &amp; operate</text>
+          <text class="glane" x="365" y="235">2nd line — oversee &amp; challenge</text>
+          <text class="glane" x="660" y="235">3rd line — independent assurance</text>
+
+          <rect class="gn2" x="30" y="250" width="270" height="60" rx="8"/>
+          <text class="gt" x="165" y="273" text-anchor="middle">Claims Operations</text>
+          <text class="gs" x="165" y="290" text-anchor="middle">Owns adjusters, SIU, business process</text>
+
+          <rect class="gn2" x="30" y="320" width="270" height="60" rx="8"/>
+          <text class="gt" x="165" y="343" text-anchor="middle">ML Engineering &amp; Data Science</text>
+          <text class="gs" x="165" y="360" text-anchor="middle">Builds &amp; operates ACTA models</text>
+
+          <rect class="gn3" x="325" y="250" width="270" height="60" rx="8"/>
+          <text class="gt" x="460" y="273" text-anchor="middle">Model Risk Management</text>
+          <text class="gs" x="460" y="290" text-anchor="middle">Independent model validation</text>
+
+          <rect class="gn3" x="325" y="320" width="270" height="60" rx="8"/>
+          <text class="gt" x="460" y="343" text-anchor="middle">Compliance &amp; Legal</text>
+          <text class="gs" x="460" y="360" text-anchor="middle">Regulatory &amp; fair-claims oversight</text>
+
+          <rect class="gn" x="630" y="285" width="245" height="60" rx="8" style="fill:var(--cherry-tint);stroke:var(--cherry);"/>
+          <text class="gt" x="752" y="308" text-anchor="middle">Internal Audit</text>
+          <text class="gs" x="752" y="325" text-anchor="middle">Independently tests both lines</text>
+
+          <path class="gedge" d="M450,195 L165,250" marker-end="url(#gfArrow)"/>
+          <path class="gedge" d="M450,195 L460,250" marker-end="url(#gfArrow)"/>
+          <path class="gedge-dash" d="M630,300 L300,275" marker-end="url(#gfArrow)"/>
+          <path class="gedge-dash" d="M630,315 L300,345" marker-end="url(#gfArrow)"/>
+          <path class="gedge-dash" d="M752,285 C752,90 580,40 582,42" marker-end="url(#gfArrow)"/>
+        </svg>
+        <figcaption>Solid lines: oversight authority (AI Governance Council directs the 1st and 2nd lines). Dashed lines: independent testing and direct-to-Board reporting — Internal Audit tests both other lines and reports to the Board Risk Committee without passing through the Council it is auditing.</figcaption>
+      </div>
+
+      <h3 class="docx-h">5. Decision rights</h3>
+      <p>Every material decision in ACTA's lifecycle — initial deployment, retraining, threshold changes, overrides, kill-switch invocation, denial sign-off, expansion, retirement, and vendor changes — has exactly one Accountable role, defined in the <a href="#doc-raci">Decision RACI</a>. This Framework does not restate that matrix; it establishes that no decision may proceed without a documented Accountable role, full stop.</p>
+
+      <h3 class="docx-h">6. Risk appetite (summary)</h3>
+      <p>The Board has approved a three-tier residual risk appetite for ACTA: <strong>&le;8 Within Appetite</strong>, <strong>9–14 Accepted with Monitoring</strong> (CRO sign-off required), <strong>&ge;15 Exceeds Appetite</strong> (immediate mitigation plan, Board notified within 5 business days). Full detail and current scoring live in the <a href="#doc-risk">Risk Register</a>.</p>
+
+      <h3 class="docx-h">7. Regulatory context</h3>
+      <p>ACTA operates under Aegis Mutual's SOC 2 Type II and ISO 27001 certifications, each states' unfair claims practices acts, emerging state AI-in-insurance bulletins modeled on the NAIC Model Bulletin on the Use of Artificial Intelligence Systems, and Aegis Mutual's voluntary GDPR-style automated-decision-making safeguards. Full mapping lives in the <a href="#doc-compliance">Compliance Checklist</a>.</p>
+
+      <h3 class="docx-h">8. Amendment</h3>
+      <p>This Framework is reviewed annually by the AI Governance Council and amended only by Council vote with CRO ratification. Material amendments (scope changes, new AI systems added, control-structure changes) require Board Risk Committee notification within one cycle.</p>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Owen Falk, Head of Model Risk Management</td><td>2026-08-27</td><td>O. Falk</td></tr>
+          <tr><td>Reviewed by</td><td>Sofia Marchetti, General Counsel &amp; Chief Compliance Officer</td><td>2026-08-28</td><td>S. Marchetti</td></tr>
+          <tr><td>Approved by</td><td>Renata Kovic, Chief Risk Officer &amp; AI Governance Council Chair</td><td>2026-08-29</td><td>R. Kovic</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Governance Framework v1.0 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-raci" data-title="Decision RACI" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 2 of 7</div>
+  <h1>Decision RACI</h1>
+  <p class="lede">Ten decisions across ACTA's lifecycle, each with exactly one Accountable role. This is the single artifact Internal Audit reaches for first when a decision's legitimacy is questioned.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-raci','Decision_RACI_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-raci')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('raci')">Download CSV</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-raci">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Decision RACI — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">Who is Responsible, Accountable, Consulted, and Informed for every material decision across ACTA's lifecycle.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.1</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">AI Governance Council</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Role legend</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Abbreviation</th><th>Role</th></tr>
+        <tr><td class="mono">AGC</td><td>AI Governance Council (cross-functional steering body, chaired by the CRO)</td></tr>
+        <tr><td class="mono">CRO</td><td>Chief Risk Officer</td></tr>
+        <tr><td class="mono">MRM</td><td>Model Risk Management (2nd line, independent model validation)</td></tr>
+        <tr><td class="mono">CO</td><td>Claims Operations Lead (1st line, business/process owner)</td></tr>
+        <tr><td class="mono">MLE</td><td>ML Engineering &amp; Data Science (1st line, builds/operates ACTA)</td></tr>
+        <tr><td class="mono">CPL</td><td>Compliance &amp; Legal</td></tr>
+        <tr><td class="mono">SEC</td><td>IT Security / CISO office</td></tr>
+        <tr><td class="mono">IA</td><td>Internal Audit (3rd line, independent assurance)</td></tr>
+        <tr><td class="mono">ADJ</td><td>Claims Adjuster / SIU Analyst (front-line human reviewer)</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">2. Decision matrix — exactly one Accountable per row</h3>
+      <div class="tablewrap"><table>
+        <tr><th>#</th><th>Decision</th><th>Responsible (R)</th><th>Accountable (A)</th><th>Consulted (C)</th><th>Informed (I)</th></tr>
+        <tr><td>1</td><td>Approve initial production deployment of ACTA</td><td>MLE</td><td><strong>AGC</strong></td><td>MRM, CPL, SEC, CO</td><td>IA, Board Risk Committee</td></tr>
+        <tr><td>2</td><td>Approve a model retrain / version upgrade</td><td>MLE</td><td><strong>MRM</strong></td><td>CO, CPL</td><td>AGC, IA</td></tr>
+        <tr><td>3</td><td>Approve a fraud-score threshold or routing-rule change</td><td>MLE</td><td><strong>CO</strong></td><td>MRM, CPL</td><td>AGC</td></tr>
+        <tr><td>4</td><td>Approve a single-case human override of an AI recommendation</td><td>ADJ</td><td><strong>ADJ</strong></td><td>&mdash;</td><td>MRM (via override log)</td></tr>
+        <tr><td>5</td><td>Approve an override-policy or override-authority change</td><td>CO</td><td><strong>MRM</strong></td><td>CPL, AGC</td><td>IA</td></tr>
+        <tr><td>6</td><td>Invoke the emergency kill-switch (suspend ACTA)</td><td>CO, SEC (on-call)</td><td><strong>CRO</strong></td><td>AGC, MLE</td><td>IA, Board Risk Committee</td></tr>
+        <tr><td>7</td><td>Sign off a denial recommendation before claimant communication</td><td>ADJ</td><td><strong>CO</strong></td><td>CPL</td><td>MRM</td></tr>
+        <tr><td>8</td><td>Approve expansion of ACTA to a new claim type or state</td><td>MLE, CO</td><td><strong>AGC</strong></td><td>CPL, MRM, SEC</td><td>IA, Board Risk Committee</td></tr>
+        <tr><td>9</td><td>Approve model retirement / decommission</td><td>MLE</td><td><strong>AGC</strong></td><td>CO, MRM, CPL</td><td>IA</td></tr>
+        <tr><td>10</td><td>Approve a material change to the SentinelScore vendor contract</td><td>CO</td><td><strong>CRO</strong></td><td>SEC, CPL, MRM</td><td>AGC, IA</td></tr>
+      </table></div>
+
+      <div class="callout warning"><span class="co-title">Why Decision 4 looks different</span> A single-case override is deliberately accountable to the individual adjuster who made it, not to a committee — that is what makes the override meaningful as a documented human judgment call rather than a rubber stamp. It becomes governance-visible through Decision 5 (the pattern-level policy) the moment any one adjuster's override rate crosses the 30% anomaly trigger defined in the Responsible-AI Policy.</div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Priya Deshmukh, VP Claims Operations</td><td>2026-08-26</td><td>P. Deshmukh</td></tr>
+          <tr><td>Reviewed by</td><td>Owen Falk, Head of Model Risk Management</td><td>2026-08-27</td><td>O. Falk</td></tr>
+          <tr><td>Approved by</td><td>Renata Kovic, Chief Risk Officer &amp; AI Governance Council Chair</td><td>2026-08-29</td><td>R. Kovic</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Decision RACI v1.1 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-compliance" data-title="Compliance Checklist" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 3 of 7</div>
+  <h1>Compliance Checklist</h1>
+  <p class="lede">Twenty obligations mapped to SOC 2, ISO 27001, and Aegis Mutual's voluntary GDPR-style safeguards — each with the control that satisfies it and the evidence artifact that proves the control ran.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-compliance','Compliance_Checklist_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-compliance')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('compliance')">Download CSV</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-compliance">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Compliance Checklist — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">SOC 2, ISO 27001, and GDPR-aligned obligations mapped to ACTA's controls, with evidence and ownership.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">2.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">Compliance &amp; Legal / MRM</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. How ACTA's controls map to each framework</h3>
+      <div class="figure">
+        <svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram mapping ACTA controls to SOC 2, ISO 27001, and GDPR">
+          <style>
+            .cn{fill:var(--surface);stroke:var(--border);stroke-width:1.4;}
+            .cf{fill:var(--surface-alt);stroke:var(--text);stroke-width:1.6;}
+            .ct{font-family:Roboto,Arial,sans-serif;font-size:11.5px;fill:var(--text);font-weight:700;}
+            .cft{font-family:Roboto,Arial,sans-serif;font-size:12.5px;fill:var(--text);font-weight:700;}
+          </style>
+          <rect class="cn" x="20" y="15" width="330" height="45" rx="7"/><text class="ct" x="185" y="42" text-anchor="middle">Access Control &amp; RBAC</text>
+          <rect class="cn" x="20" y="80" width="330" height="45" rx="7"/><text class="ct" x="185" y="107" text-anchor="middle">Encryption at Rest &amp; in Transit</text>
+          <rect class="cn" x="20" y="145" width="330" height="45" rx="7"/><text class="ct" x="185" y="172" text-anchor="middle">Model Change Management</text>
+          <rect class="cn" x="20" y="210" width="330" height="45" rx="7"/><text class="ct" x="185" y="237" text-anchor="middle">Bias &amp; Drift Monitoring</text>
+          <rect class="cn" x="20" y="275" width="330" height="45" rx="7"/><text class="ct" x="185" y="302" text-anchor="middle">Audit Logging &amp; Retention</text>
+          <rect class="cn" x="20" y="340" width="330" height="45" rx="7"/><text class="ct" x="185" y="367" text-anchor="middle">Vendor Risk Assessment</text>
+
+          <rect class="cf" x="620" y="35" width="260" height="55" rx="8" style="stroke:var(--berry);fill:var(--berry-tint);"/><text class="cft" x="750" y="68" text-anchor="middle" style="fill:var(--berry);">SOC 2</text>
+          <rect class="cf" x="620" y="180" width="260" height="55" rx="8" style="stroke:var(--leaf);fill:var(--leaf-tint);"/><text class="cft" x="750" y="213" text-anchor="middle" style="fill:var(--leaf);">ISO 27001</text>
+          <rect class="cf" x="620" y="325" width="260" height="55" rx="8" style="stroke:var(--amber);fill:var(--amber-tint);"/><text class="cft" x="750" y="358" text-anchor="middle" style="fill:var(--amber);">GDPR (voluntary)</text>
+
+          <path d="M350,37 C500,37 500,62 620,62" fill="none" stroke="var(--berry)" stroke-width="1.6"/>
+          <path d="M350,37 C520,37 520,207 620,207" fill="none" stroke="var(--leaf)" stroke-width="1.6"/>
+          <path d="M350,102 C500,102 500,62 620,62" fill="none" stroke="var(--berry)" stroke-width="1.6"/>
+          <path d="M350,102 C520,102 520,207 620,207" fill="none" stroke="var(--leaf)" stroke-width="1.6"/>
+          <path d="M350,167 C520,167 520,207 620,207" fill="none" stroke="var(--leaf)" stroke-width="1.6"/>
+          <path d="M350,232 C500,232 500,62 620,62" fill="none" stroke="var(--berry)" stroke-width="1.6"/>
+          <path d="M350,232 C520,232 520,352 620,352" fill="none" stroke="var(--amber)" stroke-width="1.6"/>
+          <path d="M350,297 C500,297 500,62 620,62" fill="none" stroke="var(--berry)" stroke-width="1.6"/>
+          <path d="M350,297 C520,297 520,207 620,207" fill="none" stroke="var(--leaf)" stroke-width="1.6"/>
+          <path d="M350,297 C520,297 520,352 620,352" fill="none" stroke="var(--amber)" stroke-width="1.6"/>
+          <path d="M350,362 C520,362 520,207 620,207" fill="none" stroke="var(--leaf)" stroke-width="1.6"/>
+        </svg>
+        <figcaption>Six representative ACTA controls, each mapped to every framework it satisfies. Audit Logging &amp; Retention is the single control that touches all three frameworks — which is why AP-08 in the Audit Plan tests it quarterly rather than annually.</figcaption>
+      </div>
+
+      <h3 class="docx-h">2. SOC 2 — Trust Service Criteria</h3>
+      <div class="tablewrap"><table>
+        <tr><th>ID</th><th>Requirement</th><th>ACTA control</th><th>Evidence</th><th>Owner</th><th>Status</th></tr>
+        <tr><td>SOC-01</td><td>Security — least-privilege, MFA-enforced access to the ACTA admin console</td><td>RBAC + MFA via Okta on all admin/config access</td><td>Quarterly access review report; Okta MFA policy export</td><td>SEC</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>SOC-02</td><td>Security — claims data encrypted at rest and in transit</td><td>AES-256 at rest (KMS-managed keys); TLS 1.2+ in transit</td><td>KMS key policy export; quarterly TLS scan report</td><td>SEC</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>SOC-03</td><td>Availability — ACTA meets its uptime commitment with a documented failover</td><td>99.5% availability SLA; automatic failover to manual triage queue on outage</td><td>Uptime dashboard export; annual DR test report</td><td>MLE</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>SOC-04</td><td>Processing integrity — model output accuracy is monitored, not assumed</td><td>Monthly re-scoring of the 500-claim golden evaluation set; drift dashboard</td><td>Monthly model performance report</td><td>MLE</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>SOC-05</td><td>Confidentiality — production claims data never enters non-production environments</td><td>Environment segregation enforced at the data-pipeline level; synthetic/de-identified data only below staging</td><td>Quarterly data environment segregation audit</td><td>SEC</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>SOC-06</td><td>Privacy — claimant PII retention and deletion schedule enforced</td><td>Automated retention/deletion job against the documented schedule</td><td>Retention policy document; deletion job execution logs</td><td>CPL</td><td><span class="badge warn">In Progress</span></td></tr>
+      </table></div>
+
+      <h3 class="docx-h">3. ISO 27001 — Annex A control domains</h3>
+      <div class="tablewrap"><table>
+        <tr><th>ID</th><th>Requirement</th><th>ACTA control</th><th>Evidence</th><th>Owner</th><th>Status</th></tr>
+        <tr><td>ISO-A5</td><td>Policies — an AI acceptable-use policy is approved and published</td><td>Responsible-AI Policy, Council-approved and intranet-published</td><td>Signed policy document; publish log</td><td>AGC</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>ISO-A8</td><td>Asset management — ACTA is a tracked, inventoried asset</td><td>ACTA listed in the enterprise AI system register with owner and risk tier</td><td>AI system register extract</td><td>MRM</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>ISO-A9</td><td>Access control — role-based access to model configuration and thresholds</td><td>RBAC matrix gating who can change fraud-score thresholds or routing rules</td><td>RBAC matrix; access-change ticket sample</td><td>SEC</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>ISO-A12</td><td>Operations security — change management gate for model deployments</td><td>Deployment pipeline requires a signed-off RACI Decision #1/#2/#3 ticket before promotion</td><td>Deployment approval ticket sample tied to RACI record</td><td>MLE</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>ISO-A14</td><td>System acquisition/development — independent validation before production</td><td>MRM validates accuracy, bias, and robustness before any production release</td><td>MRM model validation report</td><td>MRM</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>ISO-A15</td><td>Supplier relationships — third-party AI vendor risk assessed</td><td>Annual SentinelScore &amp; DocScan vendor AI risk assessment</td><td>Vendor risk assessment report</td><td>CO</td><td><span class="badge warn">In Progress</span></td></tr>
+        <tr><td>ISO-A16</td><td>Incident management — a tested AI incident response runbook exists</td><td>Kill-switch and manual-triage-fallback runbook, tabletop-tested</td><td>Tabletop exercise report</td><td>SEC</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>ISO-A18</td><td>Compliance — audit logs are retained and tamper-evident</td><td>Hash-chained append-only audit log for every override, sign-off, and threshold change</td><td>Log retention configuration; hash-chain integrity check output</td><td>MLE</td><td><span class="badge ok">Implemented</span></td></tr>
+      </table></div>
+
+      <h3 class="docx-h">4. GDPR-aligned safeguards (voluntarily adopted)</h3>
+      <div class="tablewrap"><table>
+        <tr><th>ID</th><th>Requirement</th><th>ACTA control</th><th>Evidence</th><th>Owner</th><th>Status</th></tr>
+        <tr><td>GDPR-01</td><td>Lawful basis documented for automated claims processing</td><td>Legitimate-interest/contract-performance basis recorded per processing activity</td><td>Records of Processing Activities (RoPA) entry</td><td>CPL</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>GDPR-02</td><td>A Data Protection Impact Assessment (DPIA) exists and is current</td><td>DPIA completed at launch, refreshed annually or on material change</td><td>Signed DPIA; annual refresh log</td><td>CPL</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>GDPR-03</td><td>Art. 22 safeguard — no claimant faces a solely automated denial</td><td>Mandatory human sign-off before any denial notice, no exceptions</td><td>Sign-off log covering 100% of denials</td><td>CO</td><td><span class="badge ok">Implemented</span></td></tr>
+        <tr><td>GDPR-04</td><td>Data subject access/correction/erasure requests are handled for ACTA-processed data</td><td>DSAR procedure extended to cover ACTA's derived scores and routing history</td><td>DSAR procedure document; sample response file</td><td>CPL</td><td><span class="badge warn">In Progress</span></td></tr>
+        <tr><td>GDPR-05</td><td>Data minimization in document extraction</td><td>DocScan OCR extracts only the fields ACTA's triage logic actually consumes</td><td>Field-level data-minimization review</td><td>MLE</td><td><span class="badge ok">Implemented</span></td></tr>
+      </table></div>
+
+      <h3 class="docx-h">5. Insurance regulatory alignment (context)</h3>
+      <div class="tablewrap"><table>
+        <tr><th>ID</th><th>Requirement</th><th>ACTA control</th><th>Evidence</th><th>Owner</th><th>Status</th></tr>
+        <tr><td>NAIC-01</td><td>Alignment with the NAIC Model Bulletin on the Use of AI Systems (governance, testing, third-party oversight)</td><td>This Framework, the Risk Register's bias testing, and ISO-A15's vendor oversight collectively satisfy the Bulletin's three pillars</td><td>Cross-reference memo mapping this checklist to the Bulletin's requirements, refreshed per state filing cycle</td><td>CPL</td><td><span class="badge ok">Implemented</span></td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Sofia Marchetti, General Counsel &amp; Chief Compliance Officer</td><td>2026-08-27</td><td>S. Marchetti</td></tr>
+          <tr><td>Reviewed by</td><td>Owen Falk, Head of Model Risk Management</td><td>2026-08-28</td><td>O. Falk</td></tr>
+          <tr><td>Approved by</td><td>Renata Kovic, Chief Risk Officer</td><td>2026-08-29</td><td>R. Kovic</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Compliance Checklist v2.0 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-risk" data-title="Risk Register" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 4 of 7</div>
+  <h1>Risk Register</h1>
+  <p class="lede">Twelve risks, scored inherent and residual against Aegis Mutual's Board-approved risk appetite. Nothing here reads as "everything is low risk" — several inherent scores reach 20, and one residual is deliberately left in the monitored tier.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-risk','Risk_Register_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-risk')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('risk')">Download CSV</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-risk">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Risk Register — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">Likelihood &times; impact scoring, mitigations, residual scores, and status against the Board-approved risk appetite.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.3</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">Model Risk Management</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal — Risk Sensitive</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Risk appetite (Board-approved)</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Residual score</th><th>Tier</th><th>Required action</th></tr>
+        <tr><td>&le; 8</td><td><span class="badge ok">Within Appetite</span></td><td>Standing monitoring only; no further escalation required</td></tr>
+        <tr><td>9 – 14</td><td><span class="badge warn">Accepted with Monitoring</span></td><td>CRO sign-off required; reviewed quarterly by the AI Governance Council</td></tr>
+        <tr><td>&ge; 15</td><td><span class="badge crit">Exceeds Appetite</span></td><td>Immediate mitigation plan; Board Risk Committee notified within 5 business days</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">2. Inherent risk heatmap</h3>
+      <div class="figure">
+        <svg viewBox="0 0 620 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="5 by 5 inherent risk heatmap, likelihood versus impact, with risk IDs plotted">
+          <style>
+            .hg{stroke-width:9px}
+            .hlbl{font-family:'Roboto Mono',monospace;font-size:10.5px;fill:var(--text);}
+            .hax{font-family:Roboto,Arial,sans-serif;font-size:11px;fill:var(--muted);font-weight:700;}
+            .hti{font-family:Roboto,Arial,sans-serif;font-size:12px;fill:var(--text);font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+          </style>
+          <text class="hti" x="310" y="18" text-anchor="middle">Likelihood (rows) &times; Impact (columns) — inherent score</text>
+          <text class="hax" x="310" y="548" text-anchor="middle">Impact &rarr;</text>
+          <text class="hax" x="20" y="290" text-anchor="middle" transform="rotate(-90 20 290)">Likelihood &rarr;</text>
+
+          <!-- column headers impact 1..5 -->
+          <text class="hax" x="130" y="52" text-anchor="middle">1</text><text class="hax" x="210" y="52" text-anchor="middle">2</text><text class="hax" x="290" y="52" text-anchor="middle">3</text><text class="hax" x="370" y="52" text-anchor="middle">4</text><text class="hax" x="450" y="52" text-anchor="middle">5</text>
+          <!-- row headers likelihood 5..1 top to bottom -->
+          <text class="hax" x="82" y="100" text-anchor="middle">5</text><text class="hax" x="82" y="180" text-anchor="middle">4</text><text class="hax" x="82" y="260" text-anchor="middle">3</text><text class="hax" x="82" y="340" text-anchor="middle">2</text><text class="hax" x="82" y="420" text-anchor="middle">1</text>
+
+          <!-- row L5: scores 5,10,15,20,25 -->
+          <rect x="90" y="65" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="170" y="65" width="80" height="70" fill="var(--amber-tint)" stroke="var(--amber)"/>
+          <rect x="250" y="65" width="80" height="70" fill="var(--cherry-tint)" stroke="var(--cherry)"/>
+          <rect x="330" y="65" width="80" height="70" fill="var(--cherry-tint)" stroke="var(--cherry)"/>
+          <rect x="410" y="65" width="80" height="70" fill="var(--cherry-tint)" stroke="var(--cherry)"/>
+          <!-- row L4: scores 4,8,12,16,20 -->
+          <rect x="90" y="145" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="170" y="145" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="250" y="145" width="80" height="70" fill="var(--amber-tint)" stroke="var(--amber)"/>
+          <rect x="330" y="145" width="80" height="70" fill="var(--cherry-tint)" stroke="var(--cherry)"/>
+          <rect x="410" y="145" width="80" height="70" fill="var(--cherry-tint)" stroke="var(--cherry)"/>
+          <!-- row L3: scores 3,6,9,12,15 -->
+          <rect x="90" y="225" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="170" y="225" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="250" y="225" width="80" height="70" fill="var(--amber-tint)" stroke="var(--amber)"/>
+          <rect x="330" y="225" width="80" height="70" fill="var(--amber-tint)" stroke="var(--amber)"/>
+          <rect x="410" y="225" width="80" height="70" fill="var(--cherry-tint)" stroke="var(--cherry)"/>
+          <!-- row L2: scores 2,4,6,8,10 -->
+          <rect x="90" y="305" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="170" y="305" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="250" y="305" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="330" y="305" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="410" y="305" width="80" height="70" fill="var(--amber-tint)" stroke="var(--amber)"/>
+          <!-- row L1: scores 1,2,3,4,5 -->
+          <rect x="90" y="385" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="170" y="385" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="250" y="385" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="330" y="385" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+          <rect x="410" y="385" width="80" height="70" fill="var(--leaf-tint)" stroke="var(--leaf)"/>
+
+          <!-- plotted risk IDs at their inherent likelihood x impact cell -->
+          <text class="hlbl" x="130" y="105" text-anchor="middle">R1, R5</text>
+          <text class="hlbl" x="370" y="185" text-anchor="middle">R2</text>
+          <text class="hlbl" x="450" y="265" text-anchor="middle">R3, R4</text>
+          <text class="hlbl" x="370" y="265" text-anchor="middle">R6, R8, R12</text>
+          <text class="hlbl" x="450" y="345" text-anchor="middle">R7, R11</text>
+          <text class="hlbl" x="290" y="265" text-anchor="middle">R9, R10</text>
+
+          <text class="hax" x="130" y="480" text-anchor="middle" style="fill:var(--leaf);">&#9632; &le;8 Within</text>
+          <text class="hax" x="270" y="480" text-anchor="middle" style="fill:var(--amber);">&#9632; 9&ndash;14 Monitored</text>
+          <text class="hax" x="430" y="480" text-anchor="middle" style="fill:var(--cherry);">&#9632; &ge;15 Exceeds</text>
+        </svg>
+        <figcaption>Inherent scores before mitigation. R1 (algorithmic bias) and R5 (inadequate human oversight) sit at the top of the matrix (score 20) — the two risks the mitigation column below works hardest to bring down.</figcaption>
+      </div>
+
+      <h3 class="docx-h">3. Full register</h3>
+      <div class="tablewrap"><table>
+        <tr><th>ID</th><th>Risk</th><th>Category</th><th>Inh. L&times;I</th><th>Inh. Score</th><th>Mitigation</th><th>Res. L&times;I</th><th>Res. Score</th><th>Owner</th><th>Appetite status</th></tr>
+        <tr><td>R1</td><td>Algorithmic bias in SentinelScore fraud referral (disparate impact on protected class)</td><td>Fairness / Ethics</td><td>4&times;5</td><td>20</td><td>Quarterly four-fifths adverse-impact testing on referral rates; mandatory human SIU review of every HIGH/CRITICAL referral; published model card bias disclosure</td><td>2&times;4</td><td>8</td><td>MRM</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R2</td><td>Model/data drift after a catastrophic weather event claim surge</td><td>Model / Operational</td><td>4&times;4</td><td>16</td><td>Real-time drift dashboard; monthly recalibration review; CAT-event manual-triage runbook</td><td>2&times;3</td><td>6</td><td>MLE</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R3</td><td>Vendor concentration — SentinelScore is the sole fraud-scoring provider</td><td>Third-Party / Vendor</td><td>3&times;5</td><td>15</td><td>Contractual SLA with exit clause; quarterly vendor risk reassessment; documented manual-fallback scoring procedure</td><td>2&times;5</td><td>10</td><td>CO</td><td><span class="badge warn">Accepted with Monitoring</span></td></tr>
+        <tr><td>R4</td><td>Claimant PII/PHI exposure in bodily-injury claim attachments</td><td>Privacy / Security</td><td>3&times;5</td><td>15</td><td>Encryption; DLP scanning of DocScan extracts; retention limits; DPIA</td><td>2&times;4</td><td>8</td><td>SEC</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R5</td><td>Inadequate human oversight / rubber-stamping of AI denial recommendations</td><td>Governance / Conduct</td><td>4&times;5</td><td>20</td><td>Mandatory second-line sign-off before every denial notice; monthly denial-sample audit; adjuster override-quality scoring</td><td>2&times;4</td><td>8</td><td>CPL</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R6</td><td>Adjuster override abuse to bypass fraud/SIU review</td><td>Conduct / Fraud</td><td>3&times;4</td><td>12</td><td>Override analytics dashboard; &gt;30% individual override-rate audit trigger; quarterly Internal Audit sample</td><td>2&times;3</td><td>6</td><td>IA</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R7</td><td>Security breach of the claims data store</td><td>Cyber</td><td>2&times;5</td><td>10</td><td>SOC 2 control set; annual third-party penetration test; incident response runbook</td><td>1&times;5</td><td>5</td><td>SEC</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R8</td><td>Insufficient explainability of denial reason codes (regulatory/legal exposure)</td><td>Compliance / Legal</td><td>3&times;4</td><td>12</td><td>Mandatory reason-code generation; legal-reviewed adverse-action template; quarterly reason-code audit</td><td>2&times;3</td><td>6</td><td>CPL</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R9</td><td>ACTA downtime during a CAT-event claim surge (business continuity)</td><td>Operational</td><td>3&times;3</td><td>9</td><td>Documented manual-triage fallback runbook; automatic failover; pre-hurricane-season load testing</td><td>2&times;2</td><td>4</td><td>MLE</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R10</td><td>Regulatory change — a new state DOI AI-in-insurance rule</td><td>Regulatory</td><td>3&times;3</td><td>9</td><td>Quarterly regulatory horizon-scan; compliance liaison in every licensed state; audit-cadence buffer capacity</td><td>2&times;2</td><td>4</td><td>CPL</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R11</td><td>Unauthorized model or threshold change bypassing change control</td><td>Governance / Security</td><td>2&times;5</td><td>10</td><td>RBAC-gated deployment pipeline tied to RACI Decisions #2/#3; tamper-evident audit log; quarterly access recertification</td><td>1&times;4</td><td>4</td><td>SEC</td><td><span class="badge ok">Within Appetite</span></td></tr>
+        <tr><td>R12</td><td>Reserve-estimate miscalibration causing systematic over/under-reserving</td><td>Financial / Model</td><td>3&times;4</td><td>12</td><td>Monthly reserve-variance report vs. actuarial benchmark; MRM revalidation triggered at 5% variance</td><td>2&times;3</td><td>6</td><td>MRM</td><td><span class="badge ok">Within Appetite</span></td></tr>
+      </table></div>
+
+      <div class="callout warning"><span class="co-title">Why R3's residual is not driven to &le;8</span> A single-vendor fraud-scoring dependency cannot be fully mitigated without either dual-sourcing (a multi-quarter build the Board has not funded) or building fraud scoring in-house (a scope decision beyond this program's charter). The CRO has accepted the residual 10 score with quarterly monitoring rather than let the register imply a mitigation exists that doesn't.</div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Owen Falk, Head of Model Risk Management</td><td>2026-08-27</td><td>O. Falk</td></tr>
+          <tr><td>Reviewed by</td><td>Dr. Amara Osei, Head of Data Science &amp; ML Engineering</td><td>2026-08-28</td><td>A. Osei</td></tr>
+          <tr><td>Approved by</td><td>Renata Kovic, Chief Risk Officer</td><td>2026-08-29</td><td>R. Kovic</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Risk Register v1.3 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-responsible" data-title="Responsible-AI Policy" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 5 of 7</div>
+  <h1>Responsible-AI Policy</h1>
+  <p class="lede">What ACTA is allowed to do, what it is never allowed to do, and the exact numeric conditions that pull a human into the loop — with a hard stop if that human doesn't act.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-responsible','Responsible_AI_Policy_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-responsible')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-responsible">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Responsible-AI Policy — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">Acceptable-use rules, prohibited uses, and the human-oversight triggers that govern every claim ACTA touches.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">AI Governance Council</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Purpose &amp; scope</h3>
+      <p>This Policy governs how ACTA may be used in claims triage at Aegis Mutual. It applies to every claim ACTA scores, every adjuster and SIU analyst who acts on its recommendations, and every engineer who changes its thresholds or retrains its models.</p>
+
+      <h3 class="docx-h">2. Acceptable use</h3>
+      <ul>
+        <li>ACTA MAY classify claim severity, produce a SentinelScore-derived fraud-risk indication, recommend a routing decision, and suggest an initial reserve estimate.</li>
+        <li>ACTA MAY auto-approve a claim under Fast-Track <strong>only</strong> when all three governing conditions hold simultaneously: confidence &ge; 0.90, reserve &lt; $25,000, and fraud score in the LOW band (&lt; 40).</li>
+        <li>ACTA MAY be used only for the claim types and states it has been validated and approved for under RACI Decision #8.</li>
+      </ul>
+
+      <h3 class="docx-h">3. Prohibited uses</h3>
+      <ul>
+        <li>ACTA MUST NOT autonomously deny a claim or communicate a denial without the human sign-off required in Section 4.</li>
+        <li>ACTA MUST NOT use a protected-class attribute, or a known proxy for one (e.g., ZIP code used in place of a legitimate risk factor), as a scoring input without documented, MRM-approved justification and quarterly bias testing.</li>
+        <li>ACTA MUST NOT be deployed to a claim type or state outside its validated scope without a new RACI Decision #8 approval.</li>
+        <li>ACTA MUST NOT be retrained on live production data without Model Risk Management's sign-off under RACI Decision #2.</li>
+      </ul>
+
+      <h3 class="docx-h">4. Human-oversight triggers — decision and escalation flow</h3>
+      <p>Every claim ACTA touches passes through this flow. The two shaded exits (Fast-Track auto-approval, and Approve &amp; set reserve) are the only points where a claim proceeds without a human decision already made in that specific case; every other path requires one.</p>
+      <div class="figure">
+        <svg viewBox="0 0 920 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Decision and escalation flow diagram for an ACTA-scored claim">
+          <defs><marker id="rfArrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <style>
+            .rn{fill:var(--surface);stroke:var(--border);stroke-width:1.5;}
+            .rd{fill:var(--berry-tint);stroke:var(--berry);stroke-width:1.5;}
+            .rg{fill:var(--leaf-tint);stroke:var(--leaf);stroke-width:1.5;}
+            .ra{fill:var(--amber-tint);stroke:var(--amber);stroke-width:1.5;}
+            .rc{fill:var(--cherry-tint);stroke:var(--cherry);stroke-width:1.5;}
+            .rt{font-family:Roboto,Arial,sans-serif;font-size:11.5px;fill:var(--text);font-weight:700;}
+            .rs{font-family:Roboto,Arial,sans-serif;font-size:9.5px;fill:var(--muted);}
+            .re{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#rfArrow);}
+          </style>
+          <rect class="rn" x="310" y="15" width="300" height="50" rx="8"/>
+          <text class="rt" x="460" y="36" text-anchor="middle">FNOL received</text>
+          <text class="rs" x="460" y="52" text-anchor="middle">ACTA scores fraud risk, confidence &amp; reserve</text>
+
+          <polygon class="rd" points="460,90 590,140 460,190 330,140"/>
+          <text class="rt" x="460" y="136" text-anchor="middle">Fraud score</text>
+          <text class="rt" x="460" y="150" text-anchor="middle">&ge; 70 (HIGH/CRITICAL)?</text>
+
+          <rect class="ra" x="650" y="115" width="250" height="55" rx="8"/>
+          <text class="rt" x="775" y="138" text-anchor="middle">Mandatory SIU review</text>
+          <text class="rs" x="775" y="155" text-anchor="middle">Never Fast-Tracked, regardless of amount</text>
+
+          <polygon class="rd" points="775,205 895,250 775,295 655,250"/>
+          <text class="rt" x="775" y="246" text-anchor="middle">Fraud</text>
+          <text class="rt" x="775" y="260" text-anchor="middle">confirmed?</text>
+
+          <rect class="rc" x="650" y="330" width="250" height="55" rx="8"/>
+          <text class="rt" x="775" y="353" text-anchor="middle">SIU case opened</text>
+          <text class="rs" x="775" y="370" text-anchor="middle">Compliance &amp; Legal notified</text>
+
+          <polygon class="rd" points="220,205 350,250 220,295 90,250"/>
+          <text class="rt" x="220" y="246" text-anchor="middle">Confidence &ge; 0.90 &amp;</text>
+          <text class="rt" x="220" y="260" text-anchor="middle">reserve &lt;$25k &amp; no fraud sig?</text>
+
+          <rect class="rg" x="20" y="330" width="230" height="55" rx="8"/>
+          <text class="rt" x="135" y="353" text-anchor="middle">Fast-Track auto-approval</text>
+          <text class="rs" x="135" y="370" text-anchor="middle">System-executed, fully logged</text>
+
+          <rect class="rn" x="290" y="330" width="270" height="55" rx="8"/>
+          <text class="rt" x="425" y="353" text-anchor="middle">Standard Adjuster Review</text>
+          <text class="rs" x="425" y="370" text-anchor="middle">Human decision required</text>
+
+          <polygon class="rd" points="425,420 550,465 425,510 300,465"/>
+          <text class="rt" x="425" y="461" text-anchor="middle">Adjuster recommends</text>
+          <text class="rt" x="425" y="475" text-anchor="middle">denial?</text>
+
+          <rect class="ra" x="500" y="545" width="270" height="55" rx="8"/>
+          <text class="rt" x="635" y="568" text-anchor="middle">Mandatory 2nd-line sign-off</text>
+          <text class="rs" x="635" y="585" text-anchor="middle">Compliance-reviewed adverse-action notice</text>
+
+          <rect class="rg" x="120" y="545" width="270" height="55" rx="8"/>
+          <text class="rt" x="255" y="568" text-anchor="middle">Approve &amp; set reserve</text>
+          <text class="rs" x="255" y="585" text-anchor="middle">Routed to ClaimPay</text>
+
+          <path class="re" d="M590,140 L650,142"/><text class="rs" x="600" y="128">Yes</text>
+          <path class="re" d="M330,140 L220,205"/><text class="rs" x="255" y="170">No</text>
+          <path class="re" d="M775,295 L775,330"/><text class="rs" x="790" y="315">Yes</text>
+          <path class="re" d="M655,250 L425,357"/><text class="rs" x="540" y="300">No — cleared</text>
+          <path class="re" d="M220,295 L135,330"/><text class="rs" x="150" y="315">Yes</text>
+          <path class="re" d="M220,295 L425,330"/><text class="rs" x="330" y="320">No</text>
+          <path class="re" d="M425,510 L635,545"/><text class="rs" x="560" y="530">Yes</text>
+          <path class="re" d="M300,465 L255,545"/><text class="rs" x="245" y="510">No</text>
+        </svg>
+        <figcaption>Every stage may also be interrupted by the emergency kill-switch (RACI Decision #6): the CRO can suspend ACTA at any point in this flow, falling back to fully manual triage for all in-flight and new claims.</figcaption>
+      </div>
+
+      <h3 class="docx-h">5. Trigger table (summary)</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Trigger</th><th>Numeric condition</th><th>Required role</th><th>Hard stop if ignored</th></tr>
+        <tr><td>Fraud referral</td><td>SentinelScore score &ge; 70</td><td>SIU Analyst</td><td>Routing decision cannot finalize without SIU disposition recorded</td></tr>
+        <tr><td>Denial sign-off</td><td>Any denial recommendation</td><td>Claims Operations (Compliance-reviewed template)</td><td>NotifyHub's send API rejects a denial notice with no sign-off record</td></tr>
+        <tr><td>Large reserve</td><td>Reserve/payout &ge; $50,000</td><td>Senior Claims Manager</td><td>ClaimPay will not release funds above the delegated authority limit without a second approval</td></tr>
+        <tr><td>Override anomaly</td><td>Individual override rate &gt; 30% / rolling 30 days</td><td>Model Risk Management</td><td>Automatic compliance-audit case opened; adjuster's queue flagged for review</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">6. Monitoring cadence</h3>
+      <p>Human sign-off compliance is tracked monthly and reported to the AI Governance Council; it has held at or near 100% since the trigger table above was hard-coded into the claim-status state machine rather than left as adjuster guidance.</p>
+      <div class="figure">
+        <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Human sign-off compliance rate by month, last six months">
+          <style>.rax{stroke:var(--border);stroke-width:1;} .rlbl{font-family:Roboto,Arial,sans-serif;font-size:9.5px;fill:var(--muted);} .rbar{fill:var(--leaf);}</style>
+          <line class="rax" x1="40" y1="10" x2="40" y2="160"/><line class="rax" x1="40" y1="160" x2="600" y2="160"/>
+          <line x1="40" y1="15" x2="600" y2="15" stroke="var(--cherry)" stroke-dasharray="4 3"/>
+          <text class="rlbl" x="4" y="18" style="fill:var(--cherry);">100%</text>
+          <text class="rlbl" x="4" y="90">50%</text><text class="rlbl" x="10" y="164">0%</text>
+          <rect class="rbar" x="70" y="18" width="60" height="142"/><text class="rlbl" x="80" y="178">Mar</text><text class="rlbl" x="82" y="12">98%</text>
+          <rect class="rbar" x="160" y="12" width="60" height="148"/><text class="rlbl" x="172" y="178">Apr</text><text class="rlbl" x="176" y="6">99%</text>
+          <rect class="rbar" x="250" y="8" width="60" height="152"/><text class="rlbl" x="264" y="178">May</text><text class="rlbl" x="264" y="2">100%</text>
+          <rect class="rbar" x="340" y="8" width="60" height="152"/><text class="rlbl" x="354" y="178">Jun</text><text class="rlbl" x="354" y="2">100%</text>
+          <rect class="rbar" x="430" y="12" width="60" height="148"/><text class="rlbl" x="444" y="178">Jul</text><text class="rlbl" x="448" y="6">99%</text>
+          <rect class="rbar" x="520" y="8" width="60" height="152"/><text class="rlbl" x="534" y="178">Aug</text><text class="rlbl" x="534" y="2">100%</text>
+        </svg>
+        <figcaption>Human sign-off compliance rate, last six months. The two sub-100% months (March, July) were each a single late-logged sign-off caught and corrected within 24 hours, not a missed sign-off — see the Audit Plan's AP-05 denial-sampling test.</figcaption>
+      </div>
+
+      <h3 class="docx-h">7. Violations</h3>
+      <p>A confirmed violation of Section 3 (Prohibited Uses) is escalated to the AI Governance Council within one business day. A pattern of violations by a single individual is referred to Human Resources and Compliance &amp; Legal jointly; a systemic violation (e.g., a threshold change that bypassed RACI Decision #3) triggers an immediate Model Risk Management review of every decision made since the bypass occurred.</p>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Sofia Marchetti, General Counsel &amp; Chief Compliance Officer</td><td>2026-08-27</td><td>S. Marchetti</td></tr>
+          <tr><td>Reviewed by</td><td>Priya Deshmukh, VP Claims Operations</td><td>2026-08-28</td><td>P. Deshmukh</td></tr>
+          <tr><td>Approved by</td><td>Renata Kovic, Chief Risk Officer &amp; AI Governance Council Chair</td><td>2026-08-29</td><td>R. Kovic</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Responsible-AI Policy v1.0 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-audit" data-title="Audit Plan" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 6 of 7</div>
+  <h1>Audit Plan</h1>
+  <p class="lede">Twelve control tests, each with a procedure, an evidence artifact, a named tester, and a due date. This is the document that turns every claim made elsewhere in this guide into something Internal Audit actually checks.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-audit','Audit_Plan_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-audit')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('audit')">Download CSV</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-audit">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Audit Plan — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">Control tests, evidence requirements, testers, schedule, and sign-off for the ACTA governance program.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">Internal Audit</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Control coverage</h3>
+      <div class="charts-2">
+        <div class="figure">
+          <svg viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Donut chart of control coverage: 85% implemented, 15% in progress">
+            <g transform="translate(130,105)">
+              <circle r="70" fill="none" stroke="var(--border)" stroke-width="26"/>
+              <circle r="70" fill="none" stroke="var(--leaf)" stroke-width="26" stroke-dasharray="373.5 439.6" stroke-dashoffset="0" transform="rotate(-90)"/>
+              <circle r="70" fill="none" stroke="var(--amber)" stroke-width="26" stroke-dasharray="65.9 439.6" stroke-dashoffset="-373.5" transform="rotate(-90)"/>
+              <text text-anchor="middle" y="-4" style="font-family:Roboto,Arial,sans-serif;font-size:26px;font-weight:700;fill:var(--text);">85%</text>
+              <text text-anchor="middle" y="18" style="font-family:Roboto,Arial,sans-serif;font-size:10.5px;fill:var(--muted);">Implemented</text>
+            </g>
+          </svg>
+          <figcaption>20 checklist obligations: 17 Implemented (85%, leaf), 3 In Progress (15%, amber), 0 Planned. Source: <a href="#doc-compliance">Compliance Checklist</a>.</figcaption>
+        </div>
+        <div class="figure">
+          <table style="width:100%;font-size:12.5px;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;"><span style="display:inline-block;width:11px;height:11px;background:var(--leaf);border-radius:2px;margin-right:6px;"></span>Implemented</td><td style="text-align:right;font-family:var(--font-mono);">17 / 20</td></tr>
+            <tr><td style="padding:6px 0;"><span style="display:inline-block;width:11px;height:11px;background:var(--amber);border-radius:2px;margin-right:6px;"></span>In Progress</td><td style="text-align:right;font-family:var(--font-mono);">3 / 20</td></tr>
+            <tr><td style="padding:6px 0;"><span style="display:inline-block;width:11px;height:11px;background:var(--border);border-radius:2px;margin-right:6px;"></span>Planned</td><td style="text-align:right;font-family:var(--font-mono);">0 / 20</td></tr>
+          </table>
+          <figcaption>The three In Progress items (SOC-06 PII deletion automation, ISO-A15 vendor reassessment refresh, GDPR-04 DSAR procedure extension) each carry an owner and are tracked to closure — see AP-06 below for the vendor item.</figcaption>
+        </div>
+      </div>
+
+      <h3 class="docx-h">2. Control test schedule</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Test ID</th><th>Control tested</th><th>Test procedure</th><th>Frequency</th><th>Evidence to collect</th><th>Tester</th><th>Next due</th><th>Status</th></tr>
+        <tr><td>AP-01</td><td>RBAC access to ACTA admin console (SOC-01, ISO-A9)</td><td>Sample 100% of privileged accounts; confirm least privilege &amp; MFA enforcement</td><td>Quarterly</td><td>Access review report + screenshots</td><td>IA</td><td>2026-10-15</td><td><span class="badge info">Scheduled</span></td></tr>
+        <tr><td>AP-02</td><td>Four-fifths disparate-impact test on fraud referral rate (R1)</td><td>Compare SIU referral rate across protected-class proxies vs. the majority group</td><td>Quarterly</td><td>Statistical test output; MRM sign-off memo</td><td>MRM</td><td>2026-09-30</td><td><span class="badge info">Scheduled</span></td></tr>
+        <tr><td>AP-03</td><td>Model performance &amp; drift test (SOC-04, R2)</td><td>Re-run the 500-claim golden evaluation set; compare precision/recall/AUC to baseline</td><td>Monthly</td><td>Model performance report</td><td>MLE (independently reviewed by MRM)</td><td>2026-09-05</td><td><span class="badge info">Scheduled</span></td></tr>
+        <tr><td>AP-04</td><td>Override-log completeness &amp; pattern review (R6)</td><td>Reconcile all overrides against the audit trail; flag any adjuster &gt;30% override rate</td><td>Monthly</td><td>Override analytics export</td><td>IA</td><td>2026-09-05</td><td><span class="badge info">Scheduled</span></td></tr>
+        <tr><td>AP-05</td><td>Denial-notice sampling review (GDPR-03, R5)</td><td>Sample 25 denial notices; confirm human sign-off, reason code, and legal-approved template</td><td>Monthly</td><td>Sampled case files; sign-off logs</td><td>CPL</td><td>2026-09-10</td><td><span class="badge info">Scheduled</span></td></tr>
+        <tr><td>AP-06</td><td>Vendor risk reassessment — SentinelScore &amp; DocScan (ISO-A15, R3)</td><td>Review vendor SOC 2 report, breach notifications, and SLA performance</td><td>Annual</td><td>Vendor risk assessment report</td><td>CO</td><td>2027-02-01</td><td><span class="badge warn">Not Due</span></td></tr>
+        <tr><td>AP-07</td><td>Disaster recovery / manual-triage failover test (SOC-03, R9)</td><td>Simulate an ACTA outage; confirm claims route to the manual queue within RTO</td><td>Annual</td><td>DR test report; RTO/RPO measurement</td><td>SEC</td><td>2027-01-15</td><td><span class="badge warn">Not Due</span></td></tr>
+        <tr><td>AP-08</td><td>Audit-log integrity / tamper-evidence check (ISO-A18)</td><td>Recompute the hash chain across a sampled log period; confirm no gaps</td><td>Quarterly</td><td>Hash-verification script output</td><td>SEC</td><td>2026-10-01</td><td><span class="badge info">Scheduled</span></td></tr>
+        <tr><td>AP-09</td><td>Model documentation currency check (model card, DPIA)</td><td>Confirm the model card and DPIA reflect the current version and thresholds</td><td>Semiannual</td><td>Updated model card; DPIA sign-off</td><td>MRM</td><td>2027-02-15</td><td><span class="badge warn">Not Due</span></td></tr>
+        <tr><td>AP-10</td><td>Adjuster &amp; SIU human-in-the-loop training completion</td><td>Confirm 100% of claims staff completed the current-year obligation training</td><td>Annual</td><td>LMS completion report</td><td>CO</td><td>2027-01-31</td><td><span class="badge warn">Not Due</span></td></tr>
+        <tr><td>AP-11</td><td>Penetration test of the ACTA application &amp; API layer (R7)</td><td>Third-party penetration test; remediate Critical/High findings within SLA</td><td>Annual</td><td>Pen test report; remediation tracker</td><td>External firm, managed by SEC</td><td>2027-03-01</td><td><span class="badge warn">Not Due</span></td></tr>
+        <tr><td>AP-12</td><td>Kill-switch tabletop exercise (RACI Decision #6)</td><td>Simulate an emergency suspension end-to-end; measure time-to-suspend</td><td>Semiannual</td><td>Tabletop exercise report</td><td>AGC</td><td>2027-02-20</td><td><span class="badge warn">Not Due</span></td></tr>
+      </table></div>
+
+      <div class="callout"><span class="co-title">Why monthly, not annual</span> AP-03, AP-04, and AP-05 run monthly rather than annually because each maps to a risk (R2, R6, R5) whose inherent score is 12 or higher — the Audit Plan's own test frequency is itself risk-weighted, not uniform across every control.</div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Harold Ibe, Director, Internal Audit</td><td>2026-08-27</td><td>H. Ibe</td></tr>
+          <tr><td>Reviewed by</td><td>Owen Falk, Head of Model Risk Management</td><td>2026-08-28</td><td>O. Falk</td></tr>
+          <tr><td>Approved by</td><td>Eleanor Bassett, Board Risk Committee Chair</td><td>2026-08-29</td><td>E. Bassett</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Audit Plan v1.0 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-operating" data-title="Operating Model & Cadence" data-crumb="Governance Documents">
+  <div class="eyebrow">Governance document 7 of 7</div>
+  <h1>Operating Model &amp; Cadence</h1>
+  <p class="lede">Four standing bodies, a fixed meeting rhythm, and an escalation path from the weekly working level up to the quarterly Board Risk Committee review — plus the one path that skips every level in an emergency.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-operating','Operating_Model_Cadence_ACTA')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-operating')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-operating">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Aegis Mutual Insurance &middot; AI Governance</div>
+      <h2>Operating Model &amp; Cadence — ACTA (Aegis Auto Claims Triage Assistant)</h2>
+      <div class="docx-sub">Standing bodies, meeting rhythm, review schedule, and the escalation path to the Board.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">AI Governance Council</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-29</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Standing bodies</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Body</th><th>Cadence</th><th>Chair</th><th>Core membership</th><th>Reviews</th></tr>
+        <tr><td>Claims AI Working Group</td><td>Weekly</td><td>Claims Operations Lead</td><td>MLE, adjuster/SIU representatives</td><td>Operational metrics, override queue, near-miss reports</td></tr>
+        <tr><td>Model Risk Committee</td><td>Bi-weekly</td><td>Head of Model Risk Management</td><td>MRM, MLE, Compliance &amp; Legal</td><td>Model performance, drift, bias-test results, pending threshold-change requests</td></tr>
+        <tr><td>AI Governance Council</td><td>Monthly</td><td>Chief Risk Officer</td><td>CRO, CO, MRM, CPL, SEC lead, IA (observer)</td><td>Governance KPIs, RACI Decisions #1/#3/#8/#9, escalations from the Model Risk Committee</td></tr>
+        <tr><td>Board Risk Committee</td><td>Quarterly</td><td>Independent Director (Eleanor Bassett)</td><td>Board members, CRO, Internal Audit Director</td><td>Risk Register exceptions, audit findings, kill-switch invocations, RACI Decisions #6/#10</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">2. Cadence &amp; escalation ladder</h3>
+      <div class="figure">
+        <svg viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Escalation ladder from the weekly working group to the quarterly Board Risk Committee, with an emergency bypass path">
+          <defs><marker id="opArrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <style>
+            .on{fill:var(--surface);stroke:var(--border);stroke-width:1.5;}
+            .ot{font-family:Roboto,Arial,sans-serif;font-size:12.5px;fill:var(--text);font-weight:700;}
+            .os{font-family:Roboto,Arial,sans-serif;font-size:10px;fill:var(--muted);}
+            .ofreq{font-family:'Roboto Mono',monospace;font-size:11px;fill:var(--berry);font-weight:700;}
+            .oe{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#opArrow);}
+            .oe-dash{stroke:var(--cherry);stroke-width:1.5;fill:none;stroke-dasharray:5 4;marker-end:url(#opArrow);}
+          </style>
+          <rect class="on" x="40" y="300" width="330" height="65" rx="8"/>
+          <text class="ot" x="205" y="325" text-anchor="middle">Claims AI Working Group</text>
+          <text class="os" x="205" y="342" text-anchor="middle">Operational review</text>
+          <text class="ofreq" x="205" y="358" text-anchor="middle">WEEKLY</text>
+
+          <rect class="on" x="40" y="215" width="330" height="65" rx="8"/>
+          <text class="ot" x="205" y="240" text-anchor="middle">Model Risk Committee</text>
+          <text class="os" x="205" y="257" text-anchor="middle">Independent model challenge</text>
+          <text class="ofreq" x="205" y="273" text-anchor="middle">BI-WEEKLY</text>
+
+          <rect class="on" x="40" y="130" width="330" height="65" rx="8"/>
+          <text class="ot" x="205" y="155" text-anchor="middle">AI Governance Council</text>
+          <text class="os" x="205" y="172" text-anchor="middle">Cross-functional steering</text>
+          <text class="ofreq" x="205" y="188" text-anchor="middle">MONTHLY</text>
+
+          <rect class="on" x="40" y="45" width="330" height="65" rx="8"/>
+          <text class="ot" x="205" y="70" text-anchor="middle">Board Risk Committee</text>
+          <text class="os" x="205" y="87" text-anchor="middle">Ultimate oversight authority</text>
+          <text class="ofreq" x="205" y="103" text-anchor="middle">QUARTERLY</text>
+
+          <path class="oe" d="M205,300 L205,280"/>
+          <path class="oe" d="M205,215 L205,195"/>
+          <path class="oe" d="M205,130 L205,110"/>
+
+          <rect class="on" x="520" y="130" width="300" height="70" rx="8" style="fill:var(--cherry-tint);stroke:var(--cherry);"/>
+          <text class="ot" x="670" y="155" text-anchor="middle" style="fill:var(--cherry);">Emergency kill-switch path</text>
+          <text class="os" x="670" y="172" text-anchor="middle">Any level may escalate directly</text>
+          <text class="os" x="670" y="186" text-anchor="middle">to the CRO — no cadence wait</text>
+
+          <path class="oe-dash" d="M370,332 C480,332 480,165 520,165"/>
+          <path class="oe-dash" d="M370,247 C480,247 480,165 520,165"/>
+          <path class="oe-dash" d="M370,162 L520,162"/>
+        </svg>
+        <figcaption>Solid arrows: routine escalation on the standing cadence above. Dashed red arrows: the emergency path — a risk or incident serious enough to warrant kill-switch consideration reaches the CRO immediately from any level, bypassing the normal weekly-to-quarterly rhythm entirely.</figcaption>
+      </div>
+
+      <h3 class="docx-h">3. Review schedule</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Review</th><th>Frequency</th><th>Owning body</th><th>Output</th></tr>
+        <tr><td>Governance KPI review</td><td>Monthly</td><td>AI Governance Council</td><td>KPI scorecard (see Governance KPIs) with variance commentary</td></tr>
+        <tr><td>Risk Register refresh</td><td>Quarterly</td><td>Model Risk Management, ratified by AGC</td><td>Updated inherent/residual scores; any appetite-tier changes flagged to the Board</td></tr>
+        <tr><td>Compliance Checklist refresh</td><td>Semiannual</td><td>Compliance &amp; Legal</td><td>Updated evidence links; any status downgrades escalated immediately, not held for the next cycle</td></tr>
+        <tr><td>Independent audit</td><td>Annual, plus ad hoc</td><td>Internal Audit, reporting directly to the Board Risk Committee</td><td>Audit opinion on the ACTA governance program as a whole</td></tr>
+        <tr><td>Framework review</td><td>Annual</td><td>AI Governance Council</td><td>Governance Framework re-approval or amendment</td></tr>
+      </table></div>
+
+      <div class="callout success"><span class="co-title">Why Internal Audit sits outside this ladder</span> Internal Audit does not report up through the Working Group &rarr; Model Risk Committee &rarr; Council chain it tests — it reports directly to the Board Risk Committee (see the Governance Framework's three-lines-of-defense diagram). That structural independence is what lets an audit finding about the Council's own decision-making reach the Board without passing through the Council first.</div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Renata Kovic, Chief Risk Officer</td><td>2026-08-28</td><td>R. Kovic</td></tr>
+          <tr><td>Reviewed by</td><td>Harold Ibe, Director, Internal Audit</td><td>2026-08-28</td><td>H. Ibe</td></tr>
+          <tr><td>Approved by</td><td>Eleanor Bassett, Board Risk Committee Chair</td><td>2026-08-29</td><td>E. Bassett</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — Governance Lead Field Guide, Week 11 Deep Dive</span>
+      <span>ACTA &middot; Operating Model &amp; Cadence v1.0 &middot; Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="faq" data-title="FAQ & Ask the guide" data-crumb="Help">
+  <div class="eyebrow">Help</div>
+  <h1>FAQ &amp; Ask the guide</h1>
+  <p class="lede">The most common questions, answered from this guide's own content. Click any question to open it in the Ask panel, or use the search box at the top for anything else.</p>
+  <div id="faqList"></div>
+</section>
+  </main>
+</div>
+
+<footer class="sitefoot">
+  Colaberry Enterprise AI Leadership Accelerator — Governance Lead Field Guide. Internal training material for the AI Solution Architect track. Case study entities (Aegis Mutual, ACTA, and all named staff) are fictional and constructed for instructional purposes.
+</footer>
+
+<button class="ask-fab" id="askFab">◆ Ask the guide</button>
+<div class="ask-panel" id="askPanel">
+  <div class="ask-head">
+    <div><strong>Ask the Field Guide</strong><span>Offline Q&amp;A — answers pulled from this document</span></div>
+    <button id="askClose">✕</button>
+  </div>
+  <div class="ask-body" id="askBody"></div>
+  <div class="ask-input">
+    <input type="text" id="askInput" placeholder="e.g. What triggers a mandatory human review?">
+    <button id="askSend">Ask</button>
+  </div>
+</div>
+
+<script id="deepdive-metadata" type="application/json">
+{
+  "guide_type": "Governance Lead Field Guide",
+  "curriculum_type": "deep_dive",
+  "week": 11,
+  "discipline": "Governance Lead",
+  "student_id": "fbeig2020",
+  "project_id": "ACTA-AI-GOVERNANCE",
+  "repository": "colaberry/aegis-auto-claims-triage",
+  "generated_by": "Claude Code",
+  "generated_date": "2026-08-29",
+  "version": "1.0.0",
+  "build_number": "CC-20260829-GOV-FG-1"
+}
+</script>
+
+<script>
+/* ====== Logo (Colaberry, official asset, embedded as base64) ====== */
+const LOGO_B64 = "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";
+
+/* ====== Utility helpers ====== */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function triggerDownload(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+}
+
+/* ====== Document export (Download HTML / Save as PDF) ====== */
+function downloadDoc(sectionId, filenameBase){
+  const el = document.getElementById('docxroot-'+sectionId);
+  if(!el) return;
+  const styleEl = document.querySelector('head style');
+  const css = styleEl ? styleEl.textContent : '';
+  const fontLinks = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">';
+  const themeAttr = document.documentElement.getAttribute('data-theme');
+  const htmlTag = themeAttr ? '<html lang="en" data-theme="'+themeAttr+'">' : '<html lang="en">';
+  const title = filenameBase.replace(/_/g,' ');
+  const doc = '<!DOCTYPE html>' + htmlTag +
+    '<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>' + escapeHtml(title) + ' | Colaberry</title>' + fontLinks +
+    '<style>' + css + '\nbody{background:var(--surface-alt);padding:36px 16px;}\n.docx-page{max-width:920px;margin:0 auto;}\n</style></head>' +
+    '<body>' + el.outerHTML + '</body></html>';
+  triggerDownload(filenameBase + '.html', doc, 'text/html');
+}
+
+function printDoc(sectionId){
+  document.querySelectorAll('section.page[data-printing]').forEach(s=>s.removeAttribute('data-printing'));
+  const sec = document.getElementById(sectionId);
+  if(!sec) return;
+  sec.setAttribute('data-printing','true');
+  document.body.classList.add('printing-doc');
+  function cleanup(){
+    document.body.classList.remove('printing-doc');
+    sec.removeAttribute('data-printing');
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
+
+/* ====== CSV export ====== */
+const CSV_DATA = {
+  raci: {
+    filename: 'ACTA_Decision_RACI',
+    headers: ['#','Decision','Responsible (R)','Accountable (A)','Consulted (C)','Informed (I)'],
+    rows: [
+      ['1','Approve initial production deployment of ACTA','MLE','AGC','MRM, CPL, SEC, CO','IA, Board Risk Committee'],
+      ['2','Approve a model retrain / version upgrade','MLE','MRM','CO, CPL','AGC, IA'],
+      ['3','Approve a fraud-score threshold or routing-rule change','MLE','CO','MRM, CPL','AGC'],
+      ['4','Approve a single-case human override of an AI recommendation','ADJ','ADJ','—','MRM (via override log)'],
+      ['5','Approve an override-policy or override-authority change','CO','MRM','CPL, AGC','IA'],
+      ['6','Invoke the emergency kill-switch (suspend ACTA)','CO, SEC (on-call)','CRO','AGC, MLE','IA, Board Risk Committee'],
+      ['7','Sign off a denial recommendation before claimant communication','ADJ','CO','CPL','MRM'],
+      ['8','Approve expansion of ACTA to a new claim type or state','MLE, CO','AGC','CPL, MRM, SEC','IA, Board Risk Committee'],
+      ['9','Approve model retirement / decommission','MLE','AGC','CO, MRM, CPL','IA'],
+      ['10','Approve a material change to the SentinelScore vendor contract','CO','CRO','SEC, CPL, MRM','AGC, IA']
+    ]
+  },
+  compliance: {
+    filename: 'ACTA_Compliance_Checklist',
+    headers: ['ID','Framework','Requirement','ACTA Control','Evidence','Owner','Status'],
+    rows: [
+      ['SOC-01','SOC 2 Security','Least-privilege, MFA-enforced access to the ACTA admin console','RBAC + MFA via Okta on all admin/config access','Quarterly access review report; Okta MFA policy export','SEC','Implemented'],
+      ['SOC-02','SOC 2 Security','Claims data encrypted at rest and in transit','AES-256 at rest (KMS-managed keys); TLS 1.2+ in transit','KMS key policy export; quarterly TLS scan report','SEC','Implemented'],
+      ['SOC-03','SOC 2 Availability','ACTA meets its uptime commitment with a documented failover','99.5% availability SLA; automatic failover to manual triage queue','Uptime dashboard export; annual DR test report','MLE','Implemented'],
+      ['SOC-04','SOC 2 Processing Integrity','Model output accuracy is monitored, not assumed','Monthly re-scoring of the 500-claim golden evaluation set; drift dashboard','Monthly model performance report','MLE','Implemented'],
+      ['SOC-05','SOC 2 Confidentiality','Production claims data never enters non-production environments','Environment segregation enforced at the data-pipeline level','Quarterly data environment segregation audit','SEC','Implemented'],
+      ['SOC-06','SOC 2 Privacy','Claimant PII retention and deletion schedule enforced','Automated retention/deletion job against the documented schedule','Retention policy document; deletion job execution logs','CPL','In Progress'],
+      ['ISO-A5','ISO 27001 Annex A.5','An AI acceptable-use policy is approved and published','Responsible-AI Policy, Council-approved and intranet-published','Signed policy document; publish log','AGC','Implemented'],
+      ['ISO-A8','ISO 27001 Annex A.8','ACTA is a tracked, inventoried asset','ACTA listed in the enterprise AI system register with owner and risk tier','AI system register extract','MRM','Implemented'],
+      ['ISO-A9','ISO 27001 Annex A.9','Role-based access to model configuration and thresholds','RBAC matrix gating who can change fraud-score thresholds or routing rules','RBAC matrix; access-change ticket sample','SEC','Implemented'],
+      ['ISO-A12','ISO 27001 Annex A.12','Change management gate for model deployments','Deployment pipeline requires a signed-off RACI Decision #1/#2/#3 ticket','Deployment approval ticket sample tied to RACI record','MLE','Implemented'],
+      ['ISO-A14','ISO 27001 Annex A.14','Independent validation before production','MRM validates accuracy, bias, and robustness before any production release','MRM model validation report','MRM','Implemented'],
+      ['ISO-A15','ISO 27001 Annex A.15','Third-party AI vendor risk assessed','Annual SentinelScore & DocScan vendor AI risk assessment','Vendor risk assessment report','CO','In Progress'],
+      ['ISO-A16','ISO 27001 Annex A.16','A tested AI incident response runbook exists','Kill-switch and manual-triage-fallback runbook, tabletop-tested','Tabletop exercise report','SEC','Implemented'],
+      ['ISO-A18','ISO 27001 Annex A.18','Audit logs are retained and tamper-evident','Hash-chained append-only audit log for overrides, sign-offs, threshold changes','Log retention configuration; hash-chain integrity check output','MLE','Implemented'],
+      ['GDPR-01','GDPR (voluntary)','Lawful basis documented for automated claims processing','Legitimate-interest/contract-performance basis recorded per processing activity','Records of Processing Activities (RoPA) entry','CPL','Implemented'],
+      ['GDPR-02','GDPR (voluntary)','A Data Protection Impact Assessment (DPIA) exists and is current','DPIA completed at launch, refreshed annually or on material change','Signed DPIA; annual refresh log','CPL','Implemented'],
+      ['GDPR-03','GDPR (voluntary)','Art. 22 safeguard — no claimant faces a solely automated denial','Mandatory human sign-off before any denial notice, no exceptions','Sign-off log covering 100% of denials','CO','Implemented'],
+      ['GDPR-04','GDPR (voluntary)','Data subject access/correction/erasure requests are handled','DSAR procedure extended to cover ACTA-derived scores and routing history','DSAR procedure document; sample response file','CPL','In Progress'],
+      ['GDPR-05','GDPR (voluntary)','Data minimization in document extraction','DocScan OCR extracts only the fields ACTA triage logic consumes','Field-level data-minimization review','MLE','Implemented'],
+      ['NAIC-01','Insurance Regulatory (NAIC)','Alignment with the NAIC Model Bulletin on the Use of AI Systems','This Framework, bias testing, and vendor oversight collectively satisfy the Bulletin','Cross-reference memo, refreshed per state filing cycle','CPL','Implemented']
+    ]
+  },
+  risk: {
+    filename: 'ACTA_Risk_Register',
+    headers: ['ID','Risk','Category','Inherent L','Inherent I','Inherent Score','Mitigation','Residual L','Residual I','Residual Score','Owner','Appetite Status'],
+    rows: [
+      ['R1','Algorithmic bias in SentinelScore fraud referral (disparate impact on protected class)','Fairness / Ethics','4','5','20','Quarterly four-fifths adverse-impact testing; mandatory human SIU review of every HIGH/CRITICAL referral; published model card bias disclosure','2','4','8','MRM','Within Appetite'],
+      ['R2','Model/data drift after a catastrophic weather event claim surge','Model / Operational','4','4','16','Real-time drift dashboard; monthly recalibration review; CAT-event manual-triage runbook','2','3','6','MLE','Within Appetite'],
+      ['R3','Vendor concentration — SentinelScore is the sole fraud-scoring provider','Third-Party / Vendor','3','5','15','Contractual SLA with exit clause; quarterly vendor risk reassessment; documented manual-fallback scoring procedure','2','5','10','CO','Accepted with Monitoring'],
+      ['R4','Claimant PII/PHI exposure in bodily-injury claim attachments','Privacy / Security','3','5','15','Encryption; DLP scanning of DocScan extracts; retention limits; DPIA','2','4','8','SEC','Within Appetite'],
+      ['R5','Inadequate human oversight / rubber-stamping of AI denial recommendations','Governance / Conduct','4','5','20','Mandatory second-line sign-off before every denial notice; monthly denial-sample audit; adjuster override-quality scoring','2','4','8','CPL','Within Appetite'],
+      ['R6','Adjuster override abuse to bypass fraud/SIU review','Conduct / Fraud','3','4','12','Override analytics dashboard; >30% individual override-rate audit trigger; quarterly Internal Audit sample','2','3','6','IA','Within Appetite'],
+      ['R7','Security breach of the claims data store','Cyber','2','5','10','SOC 2 control set; annual third-party penetration test; incident response runbook','1','5','5','SEC','Within Appetite'],
+      ['R8','Insufficient explainability of denial reason codes (regulatory/legal exposure)','Compliance / Legal','3','4','12','Mandatory reason-code generation; legal-reviewed adverse-action template; quarterly reason-code audit','2','3','6','CPL','Within Appetite'],
+      ['R9','ACTA downtime during a CAT-event claim surge (business continuity)','Operational','3','3','9','Documented manual-triage fallback runbook; automatic failover; pre-hurricane-season load testing','2','2','4','MLE','Within Appetite'],
+      ['R10','Regulatory change — a new state DOI AI-in-insurance rule','Regulatory','3','3','9','Quarterly regulatory horizon-scan; compliance liaison in every licensed state; audit-cadence buffer capacity','2','2','4','CPL','Within Appetite'],
+      ['R11','Unauthorized model or threshold change bypassing change control','Governance / Security','2','5','10','RBAC-gated deployment pipeline tied to RACI Decisions #2/#3; tamper-evident audit log; quarterly access recertification','1','4','4','SEC','Within Appetite'],
+      ['R12','Reserve-estimate miscalibration causing systematic over/under-reserving','Financial / Model','3','4','12','Monthly reserve-variance report vs. actuarial benchmark; MRM revalidation triggered at 5% variance','2','3','6','MRM','Within Appetite']
+    ]
+  },
+  audit: {
+    filename: 'ACTA_Audit_Plan',
+    headers: ['Test ID','Control Tested','Test Procedure','Frequency','Evidence to Collect','Responsible Tester','Next Due Date','Sign-off Status'],
+    rows: [
+      ['AP-01','RBAC access to ACTA admin console (SOC-01, ISO-A9)','Sample 100% of privileged accounts; confirm least privilege & MFA enforcement','Quarterly','Access review report + screenshots','IA','2026-10-15','Scheduled'],
+      ['AP-02','Four-fifths disparate-impact test on fraud referral rate (R1)','Compare SIU referral rate across protected-class proxies vs. the majority group','Quarterly','Statistical test output; MRM sign-off memo','MRM','2026-09-30','Scheduled'],
+      ['AP-03','Model performance & drift test (SOC-04, R2)','Re-run the 500-claim golden evaluation set; compare precision/recall/AUC to baseline','Monthly','Model performance report','MLE (reviewed by MRM)','2026-09-05','Scheduled'],
+      ['AP-04','Override-log completeness & pattern review (R6)','Reconcile all overrides against the audit trail; flag any adjuster >30% override rate','Monthly','Override analytics export','IA','2026-09-05','Scheduled'],
+      ['AP-05','Denial-notice sampling review (GDPR-03, R5)','Sample 25 denial notices; confirm human sign-off, reason code, legal-approved template','Monthly','Sampled case files; sign-off logs','CPL','2026-09-10','Scheduled'],
+      ['AP-06','Vendor risk reassessment — SentinelScore & DocScan (ISO-A15, R3)','Review vendor SOC 2 report, breach notifications, and SLA performance','Annual','Vendor risk assessment report','CO','2027-02-01','Not Due'],
+      ['AP-07','Disaster recovery / manual-triage failover test (SOC-03, R9)','Simulate an ACTA outage; confirm claims route to the manual queue within RTO','Annual','DR test report; RTO/RPO measurement','SEC','2027-01-15','Not Due'],
+      ['AP-08','Audit-log integrity / tamper-evidence check (ISO-A18)','Recompute the hash chain across a sampled log period; confirm no gaps','Quarterly','Hash-verification script output','SEC','2026-10-01','Scheduled'],
+      ['AP-09','Model documentation currency check (model card, DPIA)','Confirm the model card and DPIA reflect the current version and thresholds','Semiannual','Updated model card; DPIA sign-off','MRM','2027-02-15','Not Due'],
+      ['AP-10','Adjuster & SIU human-in-the-loop training completion','Confirm 100% of claims staff completed the current-year obligation training','Annual','LMS completion report','CO','2027-01-31','Not Due'],
+      ['AP-11','Penetration test of the ACTA application & API layer (R7)','Third-party penetration test; remediate Critical/High findings within SLA','Annual','Pen test report; remediation tracker','External firm, managed by SEC','2027-03-01','Not Due'],
+      ['AP-12','Kill-switch tabletop exercise (RACI Decision #6)','Simulate an emergency suspension end-to-end; measure time-to-suspend','Semiannual','Tabletop exercise report','AGC','2027-02-20','Not Due']
+    ]
+  }
+};
+function csvEscape(v){
+  v = String(v);
+  if(/[",\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function downloadCSV(kind){
+  const d = CSV_DATA[kind];
+  if(!d) return;
+  const lines = [d.headers.map(csvEscape).join(',')].concat(d.rows.map(r=>r.map(csvEscape).join(',')));
+  triggerDownload(d.filename + '.csv', lines.join('\r\n'), 'text/csv');
+}
+
+/* ====== Search ====== */
+let SEARCH_INDEX = [];
+function buildSearchIndex(){
+  SEARCH_INDEX = Array.from(document.querySelectorAll('section.page')).map(el=>({
+    id: el.id,
+    title: el.getAttribute('data-title') || el.id,
+    crumb: el.getAttribute('data-crumb') || '',
+    text: el.textContent.replace(/\s+/g,' ').trim()
+  }));
+}
+function scoreItem(item, q, words){
+  const title = item.title.toLowerCase();
+  const text = item.text.toLowerCase();
+  let score = 0;
+  if(title.includes(q)) score += 50;
+  words.forEach(w=>{
+    if(!w) return;
+    if(title.includes(w)) score += 8;
+    if(text.includes(w)) score += 2;
+  });
+  return score;
+}
+function renderSearchResults(scored, q){
+  const resultsEl = document.getElementById('searchResults');
+  if(scored.length === 0){
+    resultsEl.innerHTML = '<div class="sr-empty">No matches. Try &ldquo;RACI&rdquo;, &ldquo;risk appetite&rdquo;, &ldquo;SOC 2&rdquo;, or ask the guide below.</div>';
+  } else {
+    resultsEl.innerHTML = scored.map(({item})=>{
+      const lowerText = item.text.toLowerCase();
+      const idx = lowerText.indexOf(q);
+      let snippet;
+      if(idx >= 0){
+        const start = Math.max(0, idx - 40);
+        snippet = (start > 0 ? '...' : '') + item.text.substring(start, idx + q.length + 60) + '...';
+      } else {
+        snippet = item.text.substring(0, 110) + '...';
+      }
+      return '<div class="sr-item" data-target="' + item.id + '">' +
+        '<div class="sr-title">' + escapeHtml(item.title) + '</div>' +
+        '<div class="sr-crumb">' + escapeHtml(item.crumb) + '</div>' +
+        '<div class="sr-snippet">' + escapeHtml(snippet) + '</div></div>';
+    }).join('');
+  }
+  resultsEl.classList.add('show');
+  resultsEl.querySelectorAll('.sr-item').forEach(node=>{
+    node.addEventListener('click', ()=>{
+      goToSection(node.getAttribute('data-target'));
+      resultsEl.classList.remove('show');
+      document.getElementById('searchBox').value = '';
+    });
+  });
+}
+function doSearch(raw){
+  const q = raw.trim().toLowerCase();
+  const resultsEl = document.getElementById('searchResults');
+  if(q.length < 2){ resultsEl.classList.remove('show'); resultsEl.innerHTML=''; return; }
+  const words = q.split(/\s+/).filter(Boolean);
+  const scored = SEARCH_INDEX
+    .map(item => ({item, score: scoreItem(item, q, words)}))
+    .filter(x => x.score > 0)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 8);
+  renderSearchResults(scored, q);
+}
+function goToSection(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('sidenav').classList.remove('open');
+}
+
+/* ====== Nav active-state + mobile toggle ====== */
+function setupNavObserver(){
+  const links = Array.from(document.querySelectorAll('.sidenav a.nav-link'));
+  const map = {};
+  links.forEach(l=>{ map[l.getAttribute('href').slice(1)] = l; });
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const link = map[entry.target.id];
+      if(!link) return;
+      if(entry.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, {rootMargin: '-64px 0px -70% 0px', threshold: 0});
+  document.querySelectorAll('section.page').forEach(sec=>observer.observe(sec));
+}
+function setupNavClicks(){
+  document.querySelectorAll('.sidenav a.nav-link').forEach(link=>{
+    link.addEventListener('click', (e)=>{
+      const href = link.getAttribute('href');
+      if(href.startsWith('#')){
+        e.preventDefault();
+        goToSection(href.slice(1));
+      }
+    });
+  });
+}
+
+/* ====== Theme toggle ====== */
+function applyStoredTheme(){
+  try{
+    const saved = localStorage.getItem('fg-theme');
+    if(saved === 'light' || saved === 'dark') document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effectiveCurrent = current || (prefersDark ? 'dark' : 'light');
+  const next = effectiveCurrent === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try{ localStorage.setItem('fg-theme', next); }catch(e){}
+}
+
+/* ====== Ask the Guide — offline Q&A ====== */
+const QA_BANK = [
+  { q: "What is the difference between governance and management?", keywords: ["governance","management","difference","versus","vs"],
+    a: "Management asks 'is it working right now?' and is owned by Claims Operations and ML Engineering. Governance asks 'is it allowed to be working this way, and can we prove it later?' and is owned by the AI Governance Council and Model Risk Management. A system can have excellent management and zero governance at the same time.",
+    link: "tp-govmgmt" },
+  { q: "What is RACI?", keywords: ["raci","responsible","accountable","consulted","informed"],
+    a: "Responsible does the work; Accountable owns the outcome (exactly one role per decision — the single most important rule); Consulted is asked for input beforehand; Informed is told after the fact. See the full Decision RACI for ACTA's ten governed decisions.",
+    link: "doc-raci" },
+  { q: "Who is accountable for approving ACTA's initial production deployment?", keywords: ["deploy","deployment","initial","production","accountable","approve"],
+    a: "The AI Governance Council (AGC), chaired by the CRO. ML Engineering is Responsible for the readiness package; Model Risk Management, Compliance & Legal, IT Security, and Claims Operations are Consulted; Internal Audit and the Board Risk Committee are Informed.",
+    link: "doc-raci" },
+  { q: "Who can invoke the kill-switch?", keywords: ["kill","switch","killswitch","suspend","emergency"],
+    a: "The Chief Risk Officer (CRO) is Accountable for invoking the emergency kill-switch that suspends ACTA; Claims Operations or IT Security on-call are Responsible for executing it. Any level of the operating model can escalate directly to the CRO, bypassing the normal weekly-to-quarterly cadence.",
+    link: "doc-raci" },
+  { q: "What is a risk appetite?", keywords: ["risk","appetite","threshold","tolerance"],
+    a: "The Board-approved line for how much residual risk the organization will tolerate before escalating. ACTA's appetite has three tiers: residual score ≤8 is Within Appetite (standing monitoring), 9–14 is Accepted with Monitoring (CRO sign-off required), and ≥15 Exceeds Appetite (immediate mitigation plan, Board notified within 5 business days).",
+    link: "tp-risk" },
+  { q: "What is the difference between inherent and residual risk?", keywords: ["inherent","residual","difference"],
+    a: "Inherent risk is the score before any mitigation exists. Residual risk is what's left after the mitigation is actually running. The gap between the two is the entire justification for the mitigation's existence — a risk register with no gap between inherent and residual hasn't proven its controls do anything.",
+    link: "doc-risk" },
+  { q: "What is ACTA's highest risk?", keywords: ["highest","biggest","worst","risk","top"],
+    a: "Two risks tie for the highest inherent score of 20: algorithmic bias in SentinelScore's fraud referral (R1) and inadequate human oversight / rubber-stamping of denial recommendations (R5). Both are brought down to a residual score of 8 (Within Appetite) through quarterly bias testing and mandatory second-line sign-off, respectively.",
+    link: "doc-risk" },
+  { q: "Why isn't the vendor concentration risk fully mitigated?", keywords: ["vendor","concentration","sentinelscore","sole","single"],
+    a: "R3 (SentinelScore is the sole fraud-scoring vendor) sits at a residual score of 10 — Accepted with Monitoring, not Within Appetite — because fully eliminating it would require dual-sourcing or building fraud scoring in-house, neither of which the Board has funded. The CRO accepted the residual risk with quarterly monitoring rather than let the register imply a mitigation that doesn't exist.",
+    link: "doc-risk" },
+  { q: "What triggers a mandatory human review?", keywords: ["trigger","human","oversight","review","mandatory"],
+    a: "Four triggers: a SentinelScore fraud score ≥70 routes to mandatory SIU review; any denial recommendation requires second-line sign-off before the notice is sent; a reserve or payout ≥$50,000 requires Senior Claims Manager approval; and any single adjuster's override rate exceeding 30% in a rolling 30 days triggers a compliance audit.",
+    link: "tp-responsible" },
+  { q: "What is ACTA's Fast-Track auto-approval threshold?", keywords: ["fast-track","fasttrack","threshold","auto-approve","autoapprove","25000","confidence"],
+    a: "All three conditions must hold: model confidence ≥0.90, reserve estimate under $25,000, and a SentinelScore fraud score in the LOW band (under 40 of 100). Any fraud score ≥70 is routed to SIU for mandatory human review instead — never Fast-Tracked, regardless of confidence or reserve size.",
+    link: "case-study" },
+  { q: "What does SOC 2 actually check?", keywords: ["soc2","soc","2","trust","service","criteria"],
+    a: "Five Trust Service Criteria verified by an independent auditor: Security, Availability, Processing Integrity, Confidentiality, and Privacy. For an AI system like ACTA, Confidentiality (claims data) and Processing Integrity (model output accuracy) get the most examiner attention.",
+    link: "tp-compliance" },
+  { q: "What does ISO 27001 actually check?", keywords: ["iso","27001","annex"],
+    a: "An information security management system standard; Annex A lists control domains — access control, supplier relationships, operations security, incident management, compliance — that must be addressed and evidenced. ACTA, SentinelScore, and DocScan are explicitly in-scope assets under Aegis Mutual's ISO 27001 certification.",
+    link: "tp-compliance" },
+  { q: "Does GDPR apply to a US auto insurer?", keywords: ["gdpr","europe","eu","privacy","voluntary"],
+    a: "Aegis Mutual has voluntarily adopted GDPR-style automated-decision-making safeguards as an internal best-practice bar, partly driven by EU reinsurance partners' data-sharing requirements. The core safeguard — Article 22's ban on a purely automated decision with legal effect absent meaningful human review — maps directly onto ACTA's mandatory-sign-off design.",
+    link: "tp-compliance" },
+  { q: "What is the four-fifths rule?", keywords: ["four-fifths","4/5","disparate","impact","eeoc"],
+    a: "A standard adverse-impact test: if a protected group's selection (or in ACTA's case, fraud-referral) rate is less than 80% of the majority group's rate, that's evidence of disparate impact. ACTA's current ratio is 0.91, above the 0.80 target; a drop below 0.80 would trigger immediate model suspension pending review.",
+    link: "kpis" },
+  { q: "What makes an audit trail real evidence, not just a log?", keywords: ["audit","trail","evidence","log","immutable","tamper"],
+    a: "Two properties: immutable/tamper-evident (every entry is hash-chained, so editing a past entry breaks the chain visibly) and attributable (every entry names a specific person or system, a timestamp, and the decision made). 'We log everything' isn't evidence — retrievability under audit is.",
+    link: "tp-audit" },
+  { q: "How many governance documents are there and what do they cover?", keywords: ["documents","how","many","seven","list"],
+    a: "Seven: Governance Framework, Decision RACI, Compliance Checklist, Risk Register, Responsible-AI Policy, Audit Plan, and Operating Model & Cadence. Each downloads as styled HTML, prints to PDF, and the four tabular ones (RACI, Compliance, Risk, Audit) also export to CSV.",
+    link: "documents-overview" },
+  { q: "How do I download a document from this guide?", keywords: ["download","export","pdf","csv","save"],
+    a: "Open any of the seven governance documents and use the buttons above it: 'Download HTML' saves a standalone, fully-styled copy; 'Save as PDF' opens your browser's print dialog scoped to just that document; the four tabular documents also offer a CSV export button.",
+    link: "documents-overview" },
+  { q: "What standing bodies govern ACTA and how often do they meet?", keywords: ["standing","bodies","cadence","meet","meeting","frequency"],
+    a: "Four: the Claims AI Working Group meets weekly, the Model Risk Committee bi-weekly, the AI Governance Council monthly (chaired by the CRO), and the Board Risk Committee quarterly. Internal Audit sits outside this ladder, reporting directly to the Board rather than up through the chain it audits.",
+    link: "doc-operating" },
+  { q: "What should I check when reviewing an AI-generated governance artifact?", keywords: ["review","checklist","architect","lens","approve","evaluate"],
+    a: "Seven checks: exactly one Accountable per decision, every risk has a number not an adjective, every human-oversight trigger has a threshold and a hard stop, every compliance obligation has an evidence entry, residual risk is shown alongside inherent, every control names its test schedule, and nothing reads as 'everything is fine' — a register with no uncomfortable numbers hasn't been stress-tested.",
+    link: "review-lens" },
+  { q: "What is ACTA?", keywords: ["acta","aegis","case","study","claims","triage"],
+    a: "ACTA (Aegis Auto Claims Triage Assistant) is Aegis Mutual's AI claims-triage system — it classifies severity, produces a SentinelScore fraud-risk score, recommends routing (Fast-Track, Adjuster Review, or SIU referral), and estimates an initial reserve for every new auto claim, roughly 4,200 per week. A human adjuster always retains override authority; ACTA never closes a claim on its own.",
+    link: "case-study" },
+  { q: "Who signs off on ACTA's governance documents?", keywords: ["approve","approval","sign","off","who"],
+    a: "The AI Governance Council (chaired by CRO Renata Kovic) approves most documents; the Board Risk Committee (chaired by Eleanor Bassett) approves the Audit Plan and the Operating Model & Cadence. Each document also names a Prepared-by and Reviewed-by role in its sign-off block.",
+    link: "documents-overview" }
+];
+const STOPWORDS = new Set(['the','a','an','is','are','what','how','do','does','we','our','to','of','in','for','on','and','or','be','can','i','you','your','this','that','it','with','if','when']);
+function tokenize(s){
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);
+}
+function scoreQA(qa, tokens){
+  let score = 0;
+  const qLower = qa.q.toLowerCase();
+  tokens.forEach(t=>{
+    if(STOPWORDS.has(t)) return;
+    if(qa.keywords.includes(t)) score += 5;
+    if(qLower.includes(t)) score += 2;
+  });
+  return score;
+}
+function findAnswer(query){
+  const tokens = tokenize(query);
+  if(tokens.length === 0) return null;
+  const scored = QA_BANK.map(qa=>({qa, score: scoreQA(qa, tokens)})).sort((a,b)=>b.score - a.score);
+  if(scored[0].score === 0) return null;
+  return scored[0].qa;
+}
+function suggestChipsHtml(){
+  const picks = [QA_BANK[1], QA_BANK[4], QA_BANK[8], QA_BANK[13]];
+  return '<div class="ask-suggest">' + picks.map(qa=>
+    '<button type="button" onclick="askAsk(' + "'" + qa.q.replace(/'/g,"\\'") + "'" + ')">' + escapeHtml(qa.q) + '</button>'
+  ).join('') + '</div>';
+}
+function askAppendMsg(role, html){
+  const body = document.getElementById('askBody');
+  const div = document.createElement('div');
+  div.className = 'ask-msg ' + role;
+  div.innerHTML = '<div class="bubble">' + html + '</div>';
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function askAsk(query){
+  if(!query || !query.trim()) return;
+  askAppendMsg('user', escapeHtml(query));
+  const match = findAnswer(query);
+  if(match){
+    let html = match.a;
+    if(match.link){
+      html += ' <br><a href="#' + match.link + '" onclick="document.getElementById(\'askPanel\').classList.remove(\'open\')">Open full section &rarr;</a>';
+    }
+    askAppendMsg('bot', html);
+  } else {
+    askAppendMsg('bot', "I couldn't find an exact match in the guide for that. Try the search box above, or one of these:" + suggestChipsHtml());
+  }
+}
+function openAsk(){
+  const panel = document.getElementById('askPanel');
+  panel.classList.add('open');
+  if(!panel.dataset.greeted){
+    askAppendMsg('bot', "Ask me anything about ACTA's governance &mdash; RACI, risk appetite, compliance mapping, human-oversight triggers, or the documents. I answer from this guide's own content, offline." + suggestChipsHtml());
+    panel.dataset.greeted = '1';
+  }
+  document.getElementById('askInput').focus();
+}
+function closeAsk(){
+  document.getElementById('askPanel').classList.remove('open');
+}
+
+/* ====== FAQ list ====== */
+function renderFaqList(){
+  const el = document.getElementById('faqList');
+  if(!el) return;
+  el.innerHTML = QA_BANK.slice(0, 16).map((qa,i)=>
+    '<div class="faq-item" data-qa="' + i + '"><h4>' + escapeHtml(qa.q) + '</h4><p>Click to see the answer in Ask the guide.</p></div>'
+  ).join('');
+  el.querySelectorAll('.faq-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const i = +item.getAttribute('data-qa');
+      openAsk();
+      askAsk(QA_BANK[i].q);
+    });
+  });
+}
+
+/* ====== Bootstrap ====== */
+document.addEventListener('DOMContentLoaded', function(){
+  applyStoredTheme();
+
+  document.querySelectorAll('img.needs-logo').forEach(img=>{
+    img.src = 'data:image/png;base64,' + LOGO_B64;
+  });
+
+  buildSearchIndex();
+  renderFaqList();
+  setupNavObserver();
+  setupNavClicks();
+
+  const searchBox = document.getElementById('searchBox');
+  const searchResults = document.getElementById('searchResults');
+  searchBox.addEventListener('input', (e)=> doSearch(e.target.value));
+  searchBox.addEventListener('focus', (e)=> { if(e.target.value.trim().length >= 2) doSearch(e.target.value); });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.searchwrap')) searchResults.classList.remove('show');
+  });
+
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+  document.getElementById('navToggle').addEventListener('click', ()=>{
+    document.getElementById('sidenav').classList.toggle('open');
+  });
+
+  document.getElementById('askFab').addEventListener('click', openAsk);
+  document.getElementById('askClose').addEventListener('click', closeAsk);
+  document.getElementById('askSend').addEventListener('click', ()=>{
+    const input = document.getElementById('askInput');
+    askAsk(input.value);
+    input.value = '';
+  });
+  document.getElementById('askInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      const input = e.target;
+      askAsk(input.value);
+      input.value = '';
+    }
+  });
+});
+</script>
+
+</body>
+</html>
+
+
+
+
+

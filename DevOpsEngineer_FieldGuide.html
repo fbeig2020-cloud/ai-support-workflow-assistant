@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Engineer Field Guide | Colaberry</title>
+<meta name="description" content="Colaberry Enterprise AI Leadership Accelerator — DevOps Engineer Field Guide for the AI Solution Architect track, built around the CareQueue API case study.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --cherry:#FB2832;
+  --berry:#367895;
+  --leaf:#5BA63C;
+  --amber:#E8920C;
+  --text:#1A1A1A;
+  --muted:#6B6B6B;
+  --border:#E4E4E3;
+  --surface:#FFFFFF;
+  --surface-alt:#F8F8F7;
+  --berry-tint:#EAF3F6;
+  --leaf-tint:#EDF6E8;
+  --amber-tint:#FDF2E1;
+  --cherry-tint:#FEEAEB;
+  --shadow: 0 1px 2px rgba(26,26,26,.06), 0 4px 16px rgba(26,26,26,.06);
+  --radius: 10px;
+  --font-body:'Roboto', system-ui, Arial, sans-serif;
+  --font-mono:'Roboto Mono','Consolas',monospace;
+  --sidenav-w: 292px;
+  --topbar-h: 64px;
+}
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --cherry:#FF5960; --berry:#5EA9C4; --leaf:#8AC759;
+    --text:#F0F0EE; --muted:#A8A8A5; --border:#2B2B2B;
+    --surface:#171717; --surface-alt:#0F0F0F;
+    --berry-tint:#122A33; --leaf-tint:#16260F; --amber-tint:#2E2107; --cherry-tint:#33131A;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 20px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --cherry:#FF5960; --berry:#5EA9C4; --leaf:#8AC759;
+  --text:#F0F0EE; --muted:#A8A8A5; --border:#2B2B2B;
+  --surface:#171717; --surface-alt:#0F0F0F;
+  --berry-tint:#122A33; --leaf-tint:#16260F; --amber-tint:#2E2107; --cherry-tint:#33131A;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 20px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  color:var(--text);
+  background:var(--surface-alt);
+  font-size:15px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-body); color:var(--berry); font-weight:700; line-height:1.25;}
+a{color:var(--berry);}
+code,pre,.mono{font-family:var(--font-mono);}
+.container{max-width:980px;}
+::selection{background:var(--cherry-tint);}
+
+/* ============ TOPBAR ============ */
+.topbar{
+  position:fixed; top:0; left:0; right:0; height:var(--topbar-h);
+  background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:16px; padding:0 18px; z-index:100;
+  box-shadow:var(--shadow);
+}
+.topbar .brand{display:flex; align-items:center; gap:10px; min-width:180px;}
+.topbar .brand img{height:38px; display:block;}
+.topbar .brand-title{font-weight:700; color:var(--berry); font-size:14px; letter-spacing:.2px; line-height:1.15;}
+.topbar .brand-title small{display:block; font-weight:400; color:var(--muted); font-size:11px;}
+.navtoggle{display:none; background:none; border:1px solid var(--border); border-radius:8px; width:36px; height:36px; color:var(--text); font-size:18px; cursor:pointer;}
+.searchwrap{flex:1; max-width:560px; position:relative;}
+.searchbox{
+  width:100%; padding:10px 14px 10px 38px; border-radius:999px; border:1px solid var(--border);
+  background:var(--surface-alt); color:var(--text); font-family:var(--font-body); font-size:14px; outline:none;
+}
+.searchbox:focus{border-color:var(--berry); background:var(--surface);}
+.searchwrap::before{
+  content:"⌕"; position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:17px; font-weight:700;
+}
+.search-results{
+  position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; box-shadow:var(--shadow); max-height:420px; overflow-y:auto; display:none; z-index:200;
+}
+.search-results.show{display:block;}
+.search-results .sr-item{padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer;}
+.search-results .sr-item:last-child{border-bottom:none;}
+.search-results .sr-item:hover{background:var(--berry-tint);}
+.search-results .sr-title{font-weight:700; color:var(--text); font-size:13.5px;}
+.search-results .sr-title mark{background:var(--amber-tint); color:var(--text); padding:0 2px; border-radius:2px;}
+.search-results .sr-crumb{color:var(--muted); font-size:11.5px; margin-top:2px;}
+.search-results .sr-snippet{color:var(--muted); font-size:12.5px; margin-top:3px;}
+.search-results .sr-empty{padding:16px; color:var(--muted); font-size:13px; text-align:center;}
+.topbar-actions{display:flex; align-items:center; gap:8px;}
+.iconbtn{
+  background:var(--surface-alt); border:1px solid var(--border); color:var(--text); border-radius:8px;
+  width:36px; height:36px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center;
+}
+.iconbtn:hover{border-color:var(--berry);}
+
+/* ============ SHELL / LAYOUT ============ */
+.shell{display:flex; padding-top:var(--topbar-h); min-height:100vh;}
+.sidenav{
+  position:fixed; top:var(--topbar-h); left:0; bottom:0; width:var(--sidenav-w);
+  background:var(--surface); border-right:1px solid var(--border); overflow-y:auto; padding:16px 0 60px;
+  z-index:80;
+}
+.sidenav .nav-group{margin-bottom:6px;}
+.sidenav .nav-group-title{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); font-weight:700;
+  padding:14px 20px 6px;
+}
+.sidenav a.nav-link{
+  display:block; padding:8px 20px; color:var(--text); text-decoration:none; font-size:13.6px;
+  border-left:3px solid transparent;
+}
+.sidenav a.nav-link:hover{background:var(--berry-tint); color:var(--berry);}
+.sidenav a.nav-link.active{border-left-color:var(--cherry); background:var(--berry-tint); color:var(--berry); font-weight:700;}
+.sidenav a.nav-link.doc-link::before{content:"⬇ "; color:var(--muted); font-size:11px;}
+.content{margin-left:var(--sidenav-w); flex:1; padding:32px 40px 120px; max-width:1180px;}
+
+@media (max-width: 980px){
+  .navtoggle{display:flex; align-items:center; justify-content:center;}
+  .sidenav{transform:translateX(-100%); transition:transform .2s ease; box-shadow:var(--shadow);}
+  .sidenav.open{transform:translateX(0);}
+  .content{margin-left:0; padding:24px 18px 120px;}
+  .topbar .brand-title{display:none;}
+}
+
+/* ============ CONTENT TYPOGRAPHY ============ */
+section.page{padding-top:14px; margin-bottom:8px; scroll-margin-top:80px;}
+section.page h1{font-size:28px; margin:0 0 6px;}
+section.page > .eyebrow{color:var(--cherry); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.09em; margin-bottom:6px;}
+section.page .lede{color:var(--muted); font-size:15.5px; max-width:760px; margin-bottom:22px;}
+.subsection{scroll-margin-top:80px; margin:34px 0;}
+.subsection h2{font-size:20px; border-bottom:2px solid var(--border); padding-bottom:8px; margin-bottom:14px;}
+.subsection h3{font-size:15.5px; color:var(--text); margin:18px 0 8px;}
+hr.rule{border:none; border-top:1px solid var(--border); margin:36px 0;}
+
+p{margin:0 0 12px;}
+ul,ol{margin:0 0 14px; padding-left:22px;}
+li{margin-bottom:5px;}
+
+/* callouts */
+.callout{border-radius:8px; padding:14px 16px; margin:14px 0; border-left:4px solid var(--berry); background:var(--berry-tint); font-size:13.8px;}
+.callout.success{border-color:var(--leaf); background:var(--leaf-tint);}
+.callout.warning{border-color:var(--amber); background:var(--amber-tint);}
+.callout.critical{border-color:var(--cherry); background:var(--cherry-tint);}
+.callout .co-title{font-weight:700; display:block; margin-bottom:3px; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em;}
+.callout.success .co-title{color:var(--leaf);}
+.callout.warning .co-title{color:var(--amber);}
+.callout.critical .co-title{color:var(--cherry);}
+.callout:not(.success):not(.warning):not(.critical) .co-title{color:var(--berry);}
+
+/* tables */
+.tablewrap{overflow-x:auto; margin:14px 0; border:1px solid var(--border); border-radius:8px;}
+table{border-collapse:collapse; width:100%; font-size:13.3px; min-width:520px;}
+table th{background:var(--berry); color:#fff; text-align:left; padding:9px 12px; font-weight:700; white-space:nowrap;}
+table td{padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top;}
+table tr:nth-child(even) td{background:var(--surface-alt);}
+table td code{background:var(--surface-alt); padding:1px 5px; border-radius:4px; font-size:12px;}
+.badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em;}
+.badge.sev-high, .badge.crit{background:var(--cherry-tint); color:var(--cherry);}
+.badge.sev-med, .badge.warn{background:var(--amber-tint); color:var(--amber);}
+.badge.sev-low, .badge.ok{background:var(--leaf-tint); color:var(--leaf);}
+.badge.info{background:var(--berry-tint); color:var(--berry);}
+
+/* code blocks */
+pre.code{background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:14px 16px; overflow-x:auto; font-size:12.6px; line-height:1.55; color:var(--text);}
+pre.code .cm{color:var(--muted);}
+
+/* diagrams / charts container */
+.figure{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; margin:16px 0;}
+.figure svg{width:100%; height:auto; display:block;}
+.figure figcaption{color:var(--muted); font-size:12.5px; margin-top:10px; text-align:center;}
+.chart-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:16px 0;}
+@media (max-width:860px){.chart-row{grid-template-columns:repeat(2,1fr);}}
+.charts-2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+@media (max-width:860px){.charts-2{grid-template-columns:1fr;}}
+
+/* ============ DOCUMENT (docx) STYLES — shared with export ============ */
+.doctools{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 18px;}
+.btn{
+  display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; font-size:13px; font-weight:700;
+  border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; text-decoration:none;
+  font-family:var(--font-body);
+}
+.btn.primary{background:var(--cherry); border-color:var(--cherry); color:#fff;}
+.btn.primary:hover{filter:brightness(0.94);}
+.btn.ghost:hover{border-color:var(--berry); color:var(--berry);}
+.btn.leaf{border-color:var(--leaf); color:var(--leaf);}
+
+.docx-page{background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:10px;}
+.docx-cover{padding:34px 38px 26px; border-bottom:1px solid var(--border); background:linear-gradient(135deg, var(--berry-tint), var(--surface) 60%);}
+.docx-cover .docx-logo{height:34px; margin-bottom:18px; display:block;}
+.docx-cover .docx-kicker{color:var(--cherry); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.09em; margin-bottom:8px;}
+.docx-cover h2{font-size:25px; margin:0 0 6px; color:var(--text); border:none; padding:0;}
+.docx-cover .docx-sub{color:var(--muted); font-size:14px; max-width:640px;}
+.docx-control{display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-bottom:1px solid var(--border);}
+.docx-control div{padding:12px 16px; border-right:1px solid var(--border);}
+.docx-control div:last-child{border-right:none;}
+.docx-control .dc-label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:3px;}
+.docx-control .dc-value{font-size:13px; font-weight:700; color:var(--text); font-family:var(--font-mono);}
+@media (max-width:760px){.docx-control{grid-template-columns:repeat(2,1fr);} .docx-control div{border-bottom:1px solid var(--border);}}
+.docx-body{padding:30px 38px;}
+.docx-body h3.docx-h{font-size:17px; color:var(--berry); border-bottom:2px solid var(--border); padding-bottom:7px; margin:26px 0 12px;}
+.docx-body h3.docx-h:first-child{margin-top:0;}
+.docx-body h4{font-size:14px; color:var(--text); margin:16px 0 6px;}
+.docx-signoff{margin-top:28px;}
+.docx-signoff table th{background:var(--text);}
+:root[data-theme="dark"] .docx-signoff table th, :root:not([data-theme="light"]) .docx-signoff table th{color:#111;}
+.docx-footer{padding:14px 38px; border-top:1px solid var(--border); background:var(--surface-alt); display:flex; justify-content:space-between; color:var(--muted); font-size:11px; flex-wrap:wrap; gap:6px;}
+.docx-footer strong{color:var(--text);}
+
+/* KPI tiles */
+.kpi-tile{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+.kpi-tile .kpi-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700;}
+.kpi-tile .kpi-value{font-family:var(--font-mono); font-size:26px; font-weight:700; margin:6px 0 2px; color:var(--text);}
+.kpi-tile .kpi-trend{font-size:12px; font-weight:700;}
+.kpi-tile .kpi-trend.up{color:var(--leaf);}
+.kpi-tile .kpi-trend.down.good{color:var(--leaf);}
+.kpi-tile .kpi-trend.down.bad{color:var(--cherry);}
+.kpi-tile .kpi-band{font-size:11px; color:var(--muted); margin-top:6px;}
+
+/* FAQ / Ask */
+.faq-item{border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:10px; background:var(--surface); cursor:pointer;}
+.faq-item h4{margin:0 0 4px; font-size:14px; color:var(--text);}
+.faq-item p{margin:0; color:var(--muted); font-size:13px;}
+.faq-item:hover{border-color:var(--berry);}
+
+.ask-fab{
+  position:fixed; right:24px; bottom:24px; z-index:150; background:var(--cherry); color:#fff; border:none;
+  border-radius:999px; padding:14px 20px; font-weight:700; font-size:14px; box-shadow:var(--shadow); cursor:pointer;
+  display:flex; align-items:center; gap:8px; font-family:var(--font-body);
+}
+.ask-panel{
+  position:fixed; right:24px; bottom:88px; width:380px; max-width:calc(100vw - 32px); max-height:70vh; background:var(--surface);
+  border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); z-index:150; display:none; flex-direction:column; overflow:hidden;
+}
+.ask-panel.open{display:flex;}
+.ask-head{background:var(--berry); color:#fff; padding:14px 16px; display:flex; justify-content:space-between; align-items:center;}
+.ask-head strong{font-size:14px;}
+.ask-head span{font-size:11.5px; opacity:.85; display:block;}
+.ask-head button{background:none; border:none; color:#fff; font-size:16px; cursor:pointer;}
+.ask-body{padding:14px 16px; overflow-y:auto; flex:1; font-size:13.3px;}
+.ask-msg{margin-bottom:12px;}
+.ask-msg.user{text-align:right;}
+.ask-msg .bubble{display:inline-block; padding:9px 13px; border-radius:12px; max-width:88%; text-align:left; font-size:13px;}
+.ask-msg.user .bubble{background:var(--berry); color:#fff; border-bottom-right-radius:3px;}
+.ask-msg.bot .bubble{background:var(--surface-alt); border:1px solid var(--border); border-bottom-left-radius:3px;}
+.ask-msg .bubble a{color:var(--cherry); font-weight:700;}
+.ask-suggest{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.ask-suggest button{background:var(--surface-alt); border:1px solid var(--border); border-radius:999px; padding:5px 11px; font-size:11.5px; cursor:pointer; color:var(--text); font-family:var(--font-body);}
+.ask-suggest button:hover{border-color:var(--berry); color:var(--berry);}
+.ask-input{display:flex; gap:8px; padding:12px; border-top:1px solid var(--border);}
+.ask-input input{flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--border); font-family:var(--font-body); font-size:13px; background:var(--surface-alt); color:var(--text);}
+.ask-input button{background:var(--cherry); color:#fff; border:none; border-radius:8px; padding:0 14px; font-weight:700; cursor:pointer;}
+
+footer.sitefoot{margin-left:var(--sidenav-w); padding:24px 40px 60px; color:var(--muted); font-size:12px; border-top:1px solid var(--border);}
+@media (max-width:980px){footer.sitefoot{margin-left:0;}}
+
+/* print handling: hide everything except the active printable doc when printing a single document */
+@media print{
+  .topbar,.sidenav,.ask-fab,.ask-panel,.doctools,.navtoggle,footer.sitefoot{display:none !important;}
+  body.printing-doc .content > *{display:none !important;}
+  body.printing-doc .content > section.page[data-printing="true"]{display:block !important;}
+  body.printing-doc .content > section.page[data-printing="true"] .doctools{display:none !important;}
+  .content{margin-left:0 !important; padding:0 !important;}
+  .docx-page{box-shadow:none !important; border:none !important;}
+  a[href]::after{content:"";}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="navtoggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+  <div class="brand">
+    <img class="needs-logo" alt="Colaberry logo">
+    <span class="brand-title">DevOps Field Guide<small>Enterprise AI Leadership Accelerator</small></span>
+  </div>
+  <div class="searchwrap">
+    <input type="text" class="searchbox" id="searchBox" placeholder="Search the guide — try &quot;rollback&quot;, &quot;SLO&quot;, &quot;canary&quot;…" autocomplete="off">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <div class="topbar-actions">
+    <button class="iconbtn" id="themeToggle" title="Toggle dark mode">◑</button>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidenav" id="sidenav">
+    <div class="nav-group">
+      <div class="nav-group-title">Orientation</div>
+      <a class="nav-link" href="#home" data-nav>Welcome &amp; how to use this guide</a>
+      <a class="nav-link" href="#case-study" data-nav>The case study: CareQueue API</a>
+      <a class="nav-link" href="#why-devops" data-nav>Why DevOps exists</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">The 20% to Know</div>
+      <a class="nav-link" href="#tp-cicd" data-nav>CI/CD pipelines</a>
+      <a class="nav-link" href="#tp-brr" data-nav>Build / release / run</a>
+      <a class="nav-link" href="#tp-iac" data-nav>Infrastructure as Code</a>
+      <a class="nav-link" href="#tp-env" data-nav>Environments &amp; parity</a>
+      <a class="nav-link" href="#tp-containers" data-nav>Containers</a>
+      <a class="nav-link" href="#tp-deploy" data-nav>Deployment strategies</a>
+      <a class="nav-link" href="#tp-rollback" data-nav>Rollback</a>
+      <a class="nav-link" href="#tp-monitoring" data-nav>Monitoring, logging &amp; alerting</a>
+      <a class="nav-link" href="#tp-slo" data-nav>SLIs, SLOs &amp; error budgets</a>
+      <a class="nav-link" href="#tp-incident" data-nav>Incident response &amp; runbooks</a>
+      <a class="nav-link" href="#tp-12factor" data-nav>The twelve-factor idea</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Architect's Judgment</div>
+      <a class="nav-link" href="#good-vs-bad" data-nav>Good vs. bad delivery</a>
+      <a class="nav-link" href="#dora" data-nav>The DORA metrics</a>
+      <a class="nav-link" href="#review-lens" data-nav>The architect's review lens</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Delivery Documents</div>
+      <a class="nav-link" href="#documents-overview" data-nav>About these documents</a>
+      <a class="nav-link doc-link" href="#doc-exec" data-nav>Executive summary</a>
+      <a class="nav-link doc-link" href="#doc-cicd" data-nav>CI/CD pipeline design</a>
+      <a class="nav-link doc-link" href="#doc-iac" data-nav>Infrastructure-as-code plan</a>
+      <a class="nav-link doc-link" href="#doc-env" data-nav>Environment strategy</a>
+      <a class="nav-link doc-link" href="#doc-runbook" data-nav>Deployment runbook</a>
+      <a class="nav-link doc-link" href="#doc-rollback" data-nav>Rollback plan</a>
+      <a class="nav-link doc-link" href="#doc-monitoring" data-nav>Monitoring &amp; alerting plan</a>
+      <a class="nav-link doc-link" href="#doc-slo" data-nav>SLO / error-budget sheet</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Help</div>
+      <a class="nav-link" href="#faq" data-nav>FAQ &amp; Ask the guide</a>
+    </div>
+  </nav>
+
+  <main class="content" id="content">
+<section class="page" id="home" data-title="Welcome" data-crumb="Orientation">
+  <div class="eyebrow">Colaberry Enterprise AI Leadership Accelerator</div>
+  <h1>DevOps Engineer Field Guide</h1>
+  <p class="lede">Everything an AI Solution Architect needs from DevOps — not to build the pipeline yourself, but to direct the agents and engineers who do, evaluate what comes back, and know exactly where to plant your signature on the approval line.</p>
+
+  <div class="callout">
+    <span class="co-title">How this guide works</span>
+    This is a knowledge base, not a slide deck. Use the <strong>search box</strong> at the top to jump straight to a term. Use <strong>Ask the guide</strong> (bottom right) to type a plain-language question — it answers from this document's own content, offline, with no external service involved. Use the left nav to browse by topic or to open one of the eight delivery documents, each of which is a real, downloadable artifact styled to Colaberry's document standard.
+  </div>
+
+  <div class="subsection">
+    <h2>What "the 20%" means here</h2>
+    <p>You will never personally write a Terraform module or tune a Kubernetes liveness probe. An AI coding agent, or an engineer working alongside one, will do that. Your job is to know enough of the discipline that you can:</p>
+    <ul>
+      <li><strong>Direct</strong> — write a directive precise enough that an agent cannot quietly skip the hard parts (rollback, secrets, idempotency, monitoring).</li>
+      <li><strong>Evaluate</strong> — read a pipeline, a Terraform plan, or a runbook and tell working from merely plausible-looking.</li>
+      <li><strong>Approve</strong> — sign off on a release with a specific number in mind (an SLO, an error budget, a rollback trigger) instead of a feeling.</li>
+    </ul>
+    <p>The remainder of this guide teaches the concepts once, then applies every one of them to a single running example so the abstractions stay load-bearing rather than decorative.</p>
+  </div>
+</section>
+
+<section class="page" id="case-study" data-title="The case study: CareQueue API" data-crumb="Orientation">
+  <div class="eyebrow">Running example — used in every document below</div>
+  <h1>CareQueue API — Meridian Health Network</h1>
+  <p class="lede">One fictional service, carried through every diagram, runbook, and number in this guide, so that "the CI/CD pipeline" and "the SLO" always mean the same concrete thing.</p>
+
+  <div class="subsection">
+    <h2>The business situation</h2>
+    <p><strong>Meridian Health Network</strong> operates 12 outpatient clinics and a telehealth line across three states. Patients currently reach a human triage nurse by phone to be routed to the right department — a bottleneck during flu season and a source of missed-care complaints. Meridian is putting a new service into production to fix it.</p>
+    <p><strong>CareQueue API</strong> is a real-time triage and routing microservice. A patient (or a nurse on their behalf) submits symptoms through the patient portal or the telehealth app; CareQueue scores urgency, checks clinician and department availability across the 12 clinics, and returns a routing decision — see a clinician now, book same-day, or route to telehealth — in under a second.</p>
+  </div>
+
+  <div class="subsection">
+    <h2>Why this is a good DevOps teaching case</h2>
+    <ul>
+      <li><strong>Failure has a face.</strong> A bad deploy that misroutes an urgent case is not an abstract SLA breach — it is a patient safety incident. That raises the bar on rollback speed and canary discipline in a way a marketing site never would.</li>
+      <li><strong>Regulated data.</strong> Symptom text and routing history touch PHI, which forces real answers on secrets management, environment parity, and who is allowed to see production data — not hand-waving.</li>
+      <li><strong>Real traffic shape.</strong> Predictable daytime peaks, a flu-season spike, and a telehealth surge give the monitoring and SLO sections actual numbers to work with instead of placeholders.</li>
+    </ul>
+  </div>
+
+  <div class="subsection">
+    <h2>System at a glance</h2>
+    <div class="figure">
+      <svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CareQueue architecture diagram">
+        <defs>
+          <marker id="arrow1" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="var(--muted)"/></marker>
+        </defs>
+        <style>
+          .n{fill:var(--surface);stroke:var(--border);stroke-width:1.5;rx:8;}
+          .nt{font-family:Roboto, Arial, sans-serif;font-size:12px;fill:var(--text);font-weight:700;}
+          .ns{font-family:Roboto, Arial, sans-serif;font-size:10px;fill:var(--muted);}
+          .edge{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#arrow1);}
+          .grp{fill:none;stroke:var(--border);stroke-width:1;stroke-dasharray:4 3;rx:10;}
+          .grplabel{font-family:Roboto, Arial, sans-serif;font-size:10px;fill:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+        </style>
+        <rect class="n" x="20" y="30" width="150" height="56" style="fill:var(--berry-tint);stroke:var(--berry);"/>
+        <text class="nt" x="35" y="55">Patient Portal /</text><text class="nt" x="35" y="70">Telehealth App</text>
+
+        <rect class="n" x="230" y="30" width="150" height="56"/>
+        <text class="nt" x="248" y="55">API Gateway</text><text class="ns" x="248" y="70">TLS · auth · rate limit</text>
+
+        <rect class="grp" x="440" y="10" width="270" height="200"/>
+        <text class="grplabel" x="450" y="26">EKS cluster — careq-prod</text>
+
+        <rect class="n" x="460" y="40" width="230" height="50" style="fill:var(--leaf-tint);stroke:var(--leaf);"/>
+        <text class="nt" x="475" y="60">CareQueue Service (pods)</text><text class="ns" x="475" y="75">Node.js · Argo Rollouts canary</text>
+
+        <rect class="n" x="460" y="105" width="230" height="50"/>
+        <text class="nt" x="475" y="125">Triage Scoring Engine</text><text class="ns" x="475" y="140">Rules + risk model, in-process</text>
+
+        <rect class="n" x="460" y="170" width="230" height="30" style="fill:var(--surface-alt);"/>
+        <text class="nt" x="475" y="190" style="font-size:10.5px;">Observability sidecar → Prometheus</text>
+
+        <rect class="n" x="230" y="270" width="150" height="56"/>
+        <text class="nt" x="248" y="292">RDS Postgres</text><text class="ns" x="248" y="307">Multi-AZ · patient &amp; routing data</text>
+
+        <rect class="n" x="460" y="270" width="150" height="56"/>
+        <text class="nt" x="478" y="292">ElastiCache</text><text class="ns" x="478" y="307">Redis · queue &amp; session state</text>
+
+        <rect class="n" x="20" y="270" width="150" height="56" style="fill:var(--berry-tint);stroke:var(--berry);"/>
+        <text class="nt" x="35" y="292">Clinician Queue</text><text class="ns" x="35" y="307">Dashboard, 12 clinics</text>
+
+        <rect class="n" x="720" y="140" width="160" height="70" style="fill:var(--surface-alt);"/>
+        <text class="nt" x="735" y="162">Grafana + PagerDuty</text><text class="ns" x="735" y="177">Dashboards, alerts,</text><text class="ns" x="735" y="190">on-call escalation</text>
+
+        <path class="edge" d="M170,58 L230,58"/>
+        <path class="edge" d="M380,58 L460,65"/>
+        <path class="edge" d="M380,58 L230,270" />
+        <path class="edge" d="M575,90 L575,105"/>
+        <path class="edge" d="M575,155 L575,170"/>
+        <path class="edge" d="M460,150 L230,290" />
+        <path class="edge" d="M460,170 L610,175" />
+        <path class="edge" d="M690,175 L720,175"/>
+        <path class="edge" d="M575,220 L575,270" />
+        <path class="edge" d="M230,298 L170,298"/>
+      </svg>
+      <figcaption>Simplified C4-style container view. The gateway, service, scoring engine, and datastores sit inside the production EKS cluster; the observability sidecar ships metrics to Grafana, which drives PagerDuty alerts.</figcaption>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <tr><th>Attribute</th><th>Detail</th></tr>
+      <tr><td>Service name</td><td><code>careq-api</code></td></tr>
+      <tr><td>Language / runtime</td><td>Node.js 20, TypeScript, Express</td></tr>
+      <tr><td>Packaging</td><td>Multi-stage Docker image, distroless runtime layer</td></tr>
+      <tr><td>Orchestration</td><td>Amazon EKS (Kubernetes), GitOps via Argo CD, progressive delivery via Argo Rollouts</td></tr>
+      <tr><td>Datastores</td><td>Amazon RDS for PostgreSQL (Multi-AZ in prod), Amazon ElastiCache for Redis</td></tr>
+      <tr><td>IaC</td><td>Terraform, remote state in S3 with DynamoDB locking</td></tr>
+      <tr><td>CI/CD</td><td>GitHub Actions</td></tr>
+      <tr><td>Observability</td><td>Prometheus, Grafana, PagerDuty, structured JSON logs to CloudWatch</td></tr>
+      <tr><td>Product owner</td><td>Priya Nair</td></tr>
+      <tr><td>SRE lead</td><td>Marcus Chen</td></tr>
+      <tr><td>Engineering sponsor</td><td>Dana Whitfield, VP Engineering</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="page" id="why-devops" data-title="Why DevOps exists" data-crumb="Orientation">
+  <div class="eyebrow">Orientation</div>
+  <h1>Why DevOps exists</h1>
+  <p class="lede">DevOps is the answer to a specific, recurring failure: the team that builds software and the team that runs it had different incentives, different tools, and a wall between them.</p>
+
+  <div class="subsection">
+    <h2>The wall it replaced</h2>
+    <p>Before DevOps, "Dev" was rewarded for shipping features and "Ops" was rewarded for nothing changing. Releases were rare, manual, and terrifying — a hand-off across a wall of tickets, with each side blaming the other when a 2 a.m. deploy went wrong. The fix was not a tool; it was collapsing the incentive split: the people who build a system also carry the pager for it, so the pressure to write reliable, observable, reversible code comes from inside the team, not from an external QA gate.</p>
+  </div>
+
+  <div class="subsection">
+    <h2>What changed in practice</h2>
+    <ul>
+      <li><strong>Frequency over heroics.</strong> Small, frequent releases replace rare, big-bang ones — a mis-scored triage case reaches one canary cohort for ten minutes, not every patient for a week.</li>
+      <li><strong>Automation over tribal knowledge.</strong> The deploy procedure lives in a pipeline definition and a runbook file, not in one engineer's memory.</li>
+      <li><strong>Telemetry over guesswork.</strong> You find out CareQueue's p95 latency degraded from a dashboard and an alert, not from a clinician complaint three days later.</li>
+      <li><strong>Reversibility over caution.</strong> Because rollback is fast and safe, teams can move fast on the way forward — the two are not in tension, they are the same investment.</li>
+    </ul>
+  </div>
+
+  <div class="callout success">
+    <span class="co-title">Why this matters for you specifically</span>
+    As an AI Solution Architect, you inherit the DevOps mindset even though you will not carry the pager. Every directive you write for an agent should assume the agent's first draft is optimistic — no rollback path, no failure handling, secrets stapled into a config file. Your review lens is where the DevOps discipline actually gets enforced.
+  </div>
+</section>
+
+<section class="page" id="tp-cicd" data-title="CI/CD pipelines" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>CI/CD pipelines</h1>
+  <p class="lede">Continuous Integration merges and validates code constantly; Continuous Delivery keeps it always in a releasable state; Continuous Deployment pushes every passing change to production automatically. CareQueue uses CI + Delivery, with a human approval gate before the production canary — appropriate given the patient-safety blast radius.</p>
+  <div class="subsection">
+    <h3>What a pipeline actually is</h3>
+    <p>A pipeline is a chain of gates, not a single script. Each stage exists to catch a specific class of failure cheaply, before it reaches a stage where it is expensive: a syntax error is cheap to catch at <em>build</em>; a broken triage score is cheap to catch at <em>unit test</em>; a bad interaction between CareQueue and Postgres is cheap to catch at <em>integration test</em>; and a genuinely surprising production behavior is cheapest to catch at a 10% <em>canary</em> instead of 100% of traffic.</p>
+    <h3>What good looks like</h3>
+    <ul>
+      <li>Every stage is automated and reversible — no stage where a human types a command from memory.</li>
+      <li>One build artifact (one container image, one tag) is promoted across every environment. Nothing is rebuilt for staging vs. prod.</li>
+      <li>Gates fail closed: if the security scan can't run, the pipeline stops — it does not skip to deploy.</li>
+      <li>Rollback is a pipeline action, not a separate manual runbook improvised under pressure.</li>
+    </ul>
+    <div class="callout warning"><span class="co-title">Reviewer's trap</span> An agent-generated pipeline that "looks complete" but rebuilds the image separately per environment has silently broken the one-artifact rule — staging and prod are no longer guaranteed to run the same bits. See the full <a href="#doc-cicd">CI/CD Pipeline Design</a> for the CareQueue implementation.</div>
+  </div>
+</section>
+
+<section class="page" id="tp-brr" data-title="Build / release / run" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Build, release, run separation</h1>
+  <p class="lede">Three distinct stages that must never collapse into one step, borrowed from the twelve-factor app methodology.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Stage</th><th>What happens</th><th>CareQueue example</th></tr>
+    <tr><td>Build</td><td>Source is compiled into an executable artifact</td><td><code>docker build</code> produces <code>careq-api:sha-8f2c1a</code>, pushed to ECR once</td></tr>
+    <tr><td>Release</td><td>A build is combined with environment-specific config</td><td>The image tag is bound to staging's or prod's Helm <code>values.yaml</code> (DB endpoint, feature flags, replica count) — never rebuilt</td></tr>
+    <tr><td>Run</td><td>The release executes in an environment</td><td>Kubernetes schedules the pods; the running process holds no state that build/release don't already know about</td></tr>
+  </table></div>
+  <div class="callout"><span class="co-title">Why it matters</span> If a bug appears only in prod, this separation tells you where to look: is it the artifact (same everywhere — a real code bug) or the release (environment-specific config — check secrets, flags, resource limits)? Collapsing the stages destroys that diagnostic power.</div>
+</section>
+
+<section class="page" id="tp-iac" data-title="Infrastructure as Code" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Infrastructure as Code (IaC)</h1>
+  <p class="lede">Infrastructure — networks, clusters, databases, IAM roles — is defined in version-controlled declarative files (Terraform, in CareQueue's case), not clicked together in a console.</p>
+  <ul>
+    <li><strong>Reviewable.</strong> A VPC change goes through the same pull-request review as application code.</li>
+    <li><strong>Reproducible.</strong> Standing up a fourth environment is <code>terraform apply</code> with a new variable file, not a week of console archaeology.</li>
+    <li><strong>Diffable.</strong> <code>terraform plan</code> shows exactly what will change before it changes — the architect's approval point.</li>
+    <li><strong>Drift-detectable.</strong> If someone hand-edits a security group in the console, the next plan shows the drift instead of hiding it.</li>
+  </ul>
+  <div class="callout critical"><span class="co-title">Non-negotiable</span> Secrets never live in Terraform state or variable files in plaintext. CareQueue pulls DB credentials and API keys from AWS Secrets Manager at deploy time — see the full <a href="#doc-iac">Infrastructure-as-Code Plan</a>.</div>
+</section>
+
+<section class="page" id="tp-env" data-title="Environments & parity" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Environments and parity</h1>
+  <p class="lede">Dev, staging, and production should differ only in scale and data — never in kind. "It worked in staging" should mean something.</p>
+  <ul>
+    <li><strong>Same artifact everywhere.</strong> The container image promoted to prod is byte-identical to what passed staging.</li>
+    <li><strong>Same topology, smaller scale.</strong> Staging runs the same Helm chart as prod with fewer replicas and smaller instance types — not a different architecture.</li>
+    <li><strong>Data parity without data risk.</strong> Staging uses de-identified, synthetic-shaped data at realistic volume; only prod touches real PHI.</li>
+    <li><strong>Config parity, value difference.</strong> The same environment variables exist in every tier; only their values differ, and they come from the environment, never from hardcoded branches in code.</li>
+  </ul>
+  <p>Full detail, including the environment matrix (downloadable as CSV), lives in the <a href="#doc-env">Environment Strategy</a> document.</p>
+</section>
+
+<section class="page" id="tp-containers" data-title="Containers" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Containers</h1>
+  <p class="lede">A container packages CareQueue's code, runtime, and dependencies into one immutable, portable unit — the thing that actually moves through build → release → run.</p>
+  <ul>
+    <li><strong>Immutability.</strong> Once built, an image is never patched in place; a fix means a new image with a new tag.</li>
+    <li><strong>Small surface.</strong> CareQueue's runtime image is a distroless final layer — no shell, no package manager, minimal CVE surface.</li>
+    <li><strong>Orchestration does the rest.</strong> Kubernetes (EKS) handles scheduling, restarts, scaling, and health-check-driven traffic routing so the container itself stays dumb and disposable.</li>
+  </ul>
+  <div class="callout"><span class="co-title">Review question</span> "Can this container be killed and replaced right now with zero data loss?" If the honest answer is no, state is leaking into the container that belongs in Postgres or Redis instead.</div>
+</section>
+
+<section class="page" id="tp-deploy" data-title="Deployment strategies" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Deployment strategies</h1>
+  <p class="lede">How a new version reaches users without an outage or a leap of faith. CareQueue combines two of these.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Strategy</th><th>How it works</th><th>Used when</th><th>CareQueue usage</th></tr>
+    <tr><td><strong>Rolling</strong></td><td>Old pods are replaced by new ones a few at a time</td><td>Low-risk, backward-compatible changes</td><td>Default Kubernetes behavior between rollout stages</td></tr>
+    <tr><td><strong>Blue-green</strong></td><td>A full parallel "green" environment is stood up; traffic cuts over all at once; "blue" stays warm for instant rollback</td><td>Changes that are hard to run half-old/half-new — e.g. a schema cutover</td><td>Reserved for releases paired with a breaking DB migration</td></tr>
+    <tr><td><strong>Canary</strong></td><td>New version takes a small traffic slice (10%), is watched against automated success criteria, then progressively takes more (50% → 100%)</td><td>Default for behavior changes where blast radius should be minimized first</td><td>Standard path for every CareQueue release via Argo Rollouts</td></tr>
+  </table></div>
+  <div class="figure">
+    <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Canary deployment sequence">
+      <style>.n{fill:var(--surface);stroke:var(--border);stroke-width:1.5;} .nt{font-family:Roboto,Arial;font-size:11.5px;fill:var(--text);font-weight:700;} .ns{font-family:Roboto,Arial;font-size:10px;fill:var(--muted);} .lane{font-family:Roboto,Arial;font-size:10.5px;fill:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}</style>
+      <text class="lane" x="10" y="20">LB</text>
+      <text class="lane" x="10" y="90">v1 (stable)</text>
+      <text class="lane" x="10" y="160">v2 (canary)</text>
+      <line x1="90" y1="15" x2="740" y2="15" stroke="var(--border)"/>
+      <line x1="90" y1="85" x2="740" y2="85" stroke="var(--border)"/>
+      <line x1="90" y1="155" x2="740" y2="155" stroke="var(--border)"/>
+      <rect class="n" x="120" y="65" width="120" height="40" style="fill:var(--berry-tint);"/><text class="nt" x="140" y="90">100% traffic</text>
+      <rect class="n" x="280" y="65" width="100" height="40" style="fill:var(--berry-tint);"/><text class="nt" x="298" y="90">90%</text>
+      <rect class="n" x="280" y="135" width="100" height="40" style="fill:var(--leaf-tint);stroke:var(--leaf);"/><text class="nt" x="303" y="160">10%</text>
+      <rect class="n" x="420" y="65" width="90" height="40" style="fill:var(--berry-tint);"/><text class="nt" x="440" y="90">50%</text>
+      <rect class="n" x="420" y="135" width="90" height="40" style="fill:var(--leaf-tint);stroke:var(--leaf);"/><text class="nt" x="440" y="160">50%</text>
+      <rect class="n" x="550" y="135" width="170" height="40" style="fill:var(--leaf-tint);stroke:var(--leaf);"/><text class="nt" x="575" y="160">100% — v2 is now stable</text>
+      <text class="ns" x="285" y="50">Analysis: error rate, p95 latency — 10 min</text>
+      <text class="ns" x="425" y="50">Analysis passes again — 10 min</text>
+      <text class="ns" x="555" y="120">Old v1 pods scaled down</text>
+    </svg>
+    <figcaption>Argo Rollouts canary sequence used for every CareQueue production release. A failed analysis window at any stage triggers automatic rollback to 100% v1.</figcaption>
+  </div>
+</section>
+
+<section class="page" id="tp-rollback" data-title="Rollback" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Rollback</h1>
+  <p class="lede">A rollback is only as good as the plan written before you needed it. It has three parts, and an agent will happily skip two of them if not told otherwise.</p>
+  <ul>
+    <li><strong>Trigger</strong> — a specific, monitored condition (error rate, latency, failed health check) that starts the rollback, ideally automatically.</li>
+    <li><strong>Target</strong> — the exact previous version to return to, known in advance (the last known-good tag), not "whatever was there before."</li>
+    <li><strong>Data safety</strong> — the hard part. Code can roll back instantly; a database migration that dropped a column cannot. CareQueue enforces the <em>expand-contract</em> pattern so every migration is backward-compatible with the prior code version.</li>
+  </ul>
+  <div class="callout critical"><span class="co-title">The question that catches bad plans</span> "If we roll back the code, will the currently-deployed database schema still work with the old version?" If the answer is no, the release is not actually rollback-safe — see the full <a href="#doc-rollback">Rollback Plan</a>.</div>
+</section>
+
+<section class="page" id="tp-monitoring" data-title="Monitoring, logging & alerting" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Monitoring, logging, and alerting</h1>
+  <p class="lede">Three different jobs, often confused. Monitoring tells you something is wrong. Logging tells you why. Alerting tells the right human, fast enough to matter.</p>
+  <ul>
+    <li><strong>Monitoring / metrics</strong> — numeric time series: request rate, error rate, latency, queue depth. Cheap to query, good for dashboards and alert thresholds.</li>
+    <li><strong>Logging</strong> — structured events with context, used to diagnose a specific incident after an alert fires. CareQueue logs JSON with a correlation ID that traces one patient submission end-to-end.</li>
+    <li><strong>Alerting</strong> — a rule that turns a metric threshold into a page. Alert on <em>symptoms</em> the patient or business feels (elevated error rate, slow triage response), not on <em>causes</em> (CPU is at 80%) — causes are for the dashboard you check after the page.</li>
+  </ul>
+  <div class="callout warning"><span class="co-title">Reviewer's trap</span> A pipeline or service with no alert owner is a service nobody actually watches. Every row in the <a href="#doc-monitoring">Alert Catalog</a> names a person or on-call rotation, never just a channel.</div>
+</section>
+
+<section class="page" id="tp-slo" data-title="SLIs, SLOs & error budgets" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>SLIs, SLOs, and error budgets</h1>
+  <p class="lede">The vocabulary that turns "make it reliable" into a number you can hold an agent — or a vendor — accountable to.</p>
+  <ul>
+    <li><strong>SLI (Service Level Indicator)</strong> — a measured quantity, e.g. "% of triage requests answered under 800ms."</li>
+    <li><strong>SLO (Service Level Objective)</strong> — the target for that indicator, e.g. "99.9% of requests, measured monthly." Never promise 100% — it is unachievable and it deletes the ability to take any risk at all.</li>
+    <li><strong>Error budget</strong> — the inverse of the SLO: 0.1% of a month is roughly 43 minutes CareQueue is allowed to be unavailable. That budget is a resource the team spends deliberately — a risky release, a chaos-test — not an accident to be ashamed of.</li>
+    <li><strong>Burn rate</strong> — how fast the budget is being consumed. A fast burn (would exhaust the month's budget in hours) pages someone now; a slow burn creates a ticket.</li>
+  </ul>
+  <p>Real numbers, real burn-rate alert thresholds, and the budget policy live in the <a href="#doc-slo">SLO / Error-Budget Sheet</a>.</p>
+</section>
+
+<section class="page" id="tp-incident" data-title="Incident response & runbooks" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>Incident response and runbooks</h1>
+  <p class="lede">A runbook is a rehearsed procedure, written before the incident, so that 2 a.m. decision-making is reduced to "follow step 4."</p>
+  <ul>
+    <li><strong>Detect</strong> — an alert fires against a named SLI.</li>
+    <li><strong>Triage</strong> — an on-call engineer confirms severity and opens an incident channel.</li>
+    <li><strong>Mitigate</strong> — the fastest safe action, usually rollback, not a forward fix under pressure.</li>
+    <li><strong>Resolve &amp; communicate</strong> — status updates on a fixed cadence to stakeholders (for CareQueue: clinical operations lead is notified within 15 minutes of a Sev-1).</li>
+    <li><strong>Postmortem</strong> — blameless, written within 48 hours, produces action items with owners — not just "be more careful."</li>
+  </ul>
+  <p>The step-by-step release procedure for CareQueue is the <a href="#doc-runbook">Deployment Runbook</a>; the failure-path counterpart is the <a href="#doc-rollback">Rollback Plan</a>.</p>
+</section>
+
+<section class="page" id="tp-12factor" data-title="The twelve-factor idea" data-crumb="The 20% to Know">
+  <div class="eyebrow">The 20% to know</div>
+  <h1>The twelve-factor idea</h1>
+  <p class="lede">A set of conventions for building software that is easy to deploy, scale, and hand off between environments. You do not need to memorize all twelve; know the handful that show up in every review.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Factor</th><th>Rule</th><th>CareQueue check</th></tr>
+    <tr><td>Config</td><td>Config lives in the environment, never in code</td><td>DB endpoint, feature flags come from env vars / Secrets Manager, not <code>config.prod.ts</code></td></tr>
+    <tr><td>Dependencies</td><td>Explicitly declared, never assumed present on the host</td><td><code>package.json</code> pinned; container has no globally installed tools</td></tr>
+    <tr><td>Processes</td><td>Stateless; state lives in a backing service</td><td>Triage session state lives in Redis, not in pod memory — any pod can be killed anytime</td></tr>
+    <tr><td>Disposability</td><td>Fast startup, graceful shutdown on SIGTERM</td><td>Pods drain in-flight requests within a 10s grace period before termination</td></tr>
+    <tr><td>Logs</td><td>Treated as event streams to stdout, not files the app manages</td><td>JSON to stdout, collected by Fluent Bit into CloudWatch</td></tr>
+    <tr><td>Dev/prod parity</td><td>Keep environments as similar as possible</td><td>Same Helm chart, same image, across dev/staging/prod — see <a href="#doc-env">Environment Strategy</a></td></tr>
+  </table></div>
+</section>
+
+<section class="page" id="good-vs-bad" data-title="Good vs. bad delivery" data-crumb="Architect's Judgment">
+  <div class="eyebrow">Architect's judgment</div>
+  <h1>Good vs. bad delivery</h1>
+  <p class="lede">Both a good and a bad release can look identical in a demo. The difference shows up in the seams — what happens when something goes wrong.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Signal</th><th>Bad delivery</th><th>Good delivery</th></tr>
+    <tr><td>Release size</td><td>Big-bang, weeks of changes bundled</td><td>Small, frequent, one logical change per release</td></tr>
+    <tr><td>Deploy method</td><td>Manual SSH + script run from memory</td><td>Pipeline-triggered, identical steps every time</td></tr>
+    <tr><td>Artifact</td><td>Rebuilt per environment ("works on my staging")</td><td>One artifact promoted unchanged across environments</td></tr>
+    <tr><td>Secrets</td><td>In a config file committed to the repo, or pasted in Slack</td><td>In Secrets Manager, injected at deploy time, redacted in logs</td></tr>
+    <tr><td>Rollback</td><td>"We'll figure it out if it breaks"</td><td>Pre-defined trigger, target version, and data-safety check</td></tr>
+    <tr><td>Alerts</td><td>Alert on CPU/memory, no named owner</td><td>Alert on user-facing symptom, routed to a named on-call</td></tr>
+    <tr><td>Reliability target</td><td>"100% uptime" (unfalsifiable, incentivizes hiding incidents)</td><td>A specific SLO with a tracked, spendable error budget</td></tr>
+    <tr><td>Migrations</td><td>Destructive, coupled tightly to the code release</td><td>Expand-contract, backward-compatible, independently rollback-safe</td></tr>
+  </table></div>
+  <div class="callout success"><span class="co-title">The one-line test</span> Good delivery survives a bad Tuesday. If every row above only works when nothing goes wrong, it is not delivery — it is a demo.</div>
+</section>
+
+<section class="page" id="dora" data-title="The DORA metrics" data-crumb="Architect's Judgment">
+  <div class="eyebrow">Architect's judgment</div>
+  <h1>The DORA metrics</h1>
+  <p class="lede">Four measures, from Google's DevOps Research and Assessment program, that correlate with high-performing engineering organizations. They matter because they measure the pipeline's real behavior, not its intentions. Figures below are CareQueue's trailing 90-day snapshot.</p>
+
+  <div class="chart-row">
+    <div class="kpi-tile">
+      <div class="kpi-label">Deployment frequency</div>
+      <div class="kpi-value">18<span style="font-size:14px;color:var(--muted);">/wk</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,24 20,20 40,22 60,14 80,10 100,6 120,4" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend up">▲ up from 11/wk</div>
+      <div class="kpi-band">Elite band: on-demand (multiple/day)</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Lead time for changes</div>
+      <div class="kpi-value">3.2<span style="font-size:14px;color:var(--muted);">hrs</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,6 20,8 40,10 60,14 80,18 100,20 120,22" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend down good">▼ improved from 9.5 hrs</div>
+      <div class="kpi-band">High band: &lt; 1 day</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Change failure rate</div>
+      <div class="kpi-value">6.5<span style="font-size:14px;color:var(--muted);">%</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,10 20,12 40,9 60,14 80,12 100,10 120,8" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend down good">▼ improved from 11%</div>
+      <div class="kpi-band">Elite/High band: 0–15%</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">MTTR</div>
+      <div class="kpi-value">22<span style="font-size:14px;color:var(--muted);">min</span></div>
+      <svg viewBox="0 0 120 30" width="100%" height="30"><polyline points="0,22 20,18 40,16 60,12 80,10 100,8 120,6" fill="none" stroke="var(--leaf)" stroke-width="2"/></svg>
+      <div class="kpi-trend down good">▼ improved from 54 min</div>
+      <div class="kpi-band">Elite band: &lt; 1 hour</div>
+    </div>
+  </div>
+
+  <div class="callout success"><span class="co-title">Reading the snapshot</span> CareQueue sits between the High and Elite DORA bands: fast recovery and low failure rate are the strongest signals — canary deployment and automated rollback are doing their job. Deployment frequency is the metric with the most remaining headroom.</div>
+
+  <div class="charts-2">
+    <div class="figure">
+      <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Deployments per week, last 8 weeks">
+        <style>.ax{stroke:var(--border);stroke-width:1;} .lbl{font-family:Roboto,Arial;font-size:9.5px;fill:var(--muted);} .bar{fill:var(--berry);}</style>
+        <line class="ax" x1="30" y1="10" x2="30" y2="160"/><line class="ax" x1="30" y1="160" x2="350" y2="160"/>
+        <text class="lbl" x="4" y="14">22</text><text class="lbl" x="4" y="88">11</text><text class="lbl" x="8" y="164">0</text>
+        <g>
+          <rect class="bar" x="40" y="78" width="26" height="82"/><text class="lbl" x="44" y="175">W1</text>
+          <rect class="bar" x="76" y="57" width="26" height="103"/><text class="lbl" x="80" y="175">W2</text>
+          <rect class="bar" x="112" y="112" width="26" height="48"/><text class="lbl" x="116" y="175">W3</text>
+          <rect class="bar" x="148" y="24" width="26" height="136"/><text class="lbl" x="152" y="175">W4</text>
+          <rect class="bar" x="184" y="65" width="26" height="95"/><text class="lbl" x="188" y="175">W5</text>
+          <rect class="bar" x="220" y="0" width="26" height="160"/><text class="lbl" x="224" y="175">W6</text>
+          <rect class="bar" x="256" y="36" width="26" height="124"/><text class="lbl" x="260" y="175">W7</text>
+          <rect class="bar" x="292" y="0" width="30" height="160" style="fill:var(--cherry);"/><text class="lbl" x="296" y="175">W8</text>
+        </g>
+      </svg>
+      <figcaption>Deployments per week (last 8 weeks). Week 8 (current, highlighted) — 22 deploys.</figcaption>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="p95 triage latency trend vs SLO threshold">
+        <style>.ax{stroke:var(--border);stroke-width:1;} .lbl{font-family:Roboto,Arial;font-size:9.5px;fill:var(--muted);}</style>
+        <line class="ax" x1="34" y1="10" x2="34" y2="160"/><line class="ax" x1="34" y1="160" x2="350" y2="160"/>
+        <text class="lbl" x="2" y="14">1000ms</text><text class="lbl" x="2" y="88">500ms</text><text class="lbl" x="10" y="164">0</text>
+        <line x1="34" y1="34" x2="350" y2="34" stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text class="lbl" x="280" y="28" style="fill:var(--amber);font-weight:700;">SLO 800ms</text>
+        <polyline points="50,84 100,68 150,78 200,92 250,86 300,102 340,96" fill="none" stroke="var(--berry)" stroke-width="2.5"/>
+        <circle cx="50" cy="84" r="3" fill="var(--berry)"/><circle cx="100" cy="68" r="3" fill="var(--berry)"/><circle cx="150" cy="78" r="3" fill="var(--berry)"/>
+        <circle cx="200" cy="92" r="3" fill="var(--berry)"/><circle cx="250" cy="86" r="3" fill="var(--berry)"/><circle cx="300" cy="102" r="3" fill="var(--berry)"/><circle cx="340" cy="96" r="3" fill="var(--berry)"/>
+      </svg>
+      <figcaption>p95 triage-scoring latency, 30-day trend — consistently under the 800ms SLO threshold.</figcaption>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="review-lens" data-title="The architect's review lens" data-crumb="Architect's Judgment">
+  <div class="eyebrow">Architect's judgment</div>
+  <h1>The architect's review lens</h1>
+  <p class="lede">A fast checklist for reading any AI-generated pipeline, IaC plan, or runbook before you sign off on it.</p>
+  <ol>
+    <li><strong>One artifact, many environments?</strong> If the pipeline rebuilds per environment, reject it.</li>
+    <li><strong>Where are the secrets?</strong> Grep the diff for anything that looks like a key, token, or connection string. If found, reject.</li>
+    <li><strong>What is the rollback trigger, in numbers?</strong> "We'll monitor it" is not a trigger. An error-rate percentage and a time window are.</li>
+    <li><strong>Does a migration in this release break the previous version?</strong> If yes, it must ship as two releases (expand, then contract), not one.</li>
+    <li><strong>Who does the alert page, by name or rotation?</strong> A Slack channel with no owner is not an alert route.</li>
+    <li><strong>Is the SLO a real number below 100%?</strong> If it says "100% uptime," send it back.</li>
+    <li><strong>Can I find the four failure-first answers?</strong> What happens if this fails, does it retry, what's the recovery path, and what failure modes are explicitly out of scope.</li>
+  </ol>
+  <div class="callout"><span class="co-title">Use this now</span> Every document below was built to pass this checklist. Read one, then re-run the checklist against it yourself — that's the exercise.</div>
+</section>
+
+<section class="page" id="documents-overview" data-title="About these documents" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery documents</div>
+  <h1>Eight documents, one release</h1>
+  <p class="lede">These are not summaries — they are the actual artifacts a DevOps engineer would produce and a Solution Architect would approve for the CareQueue API launch. Each one is downloadable as a standalone, fully-styled HTML deliverable; each prints cleanly to PDF; the tabular ones also export to CSV for Excel.</p>
+  <div class="tablewrap"><table>
+    <tr><th>#</th><th>Document</th><th>Answers</th></tr>
+    <tr><td>1</td><td><a href="#doc-exec">Executive Summary</a></td><td>Why this matters, what it costs, what could go wrong — one page</td></tr>
+    <tr><td>2</td><td><a href="#doc-cicd">CI/CD Pipeline Design</a></td><td>Every stage from commit to production, and every gate that can stop it</td></tr>
+    <tr><td>3</td><td><a href="#doc-iac">Infrastructure-as-Code Plan</a></td><td>What Terraform owns, how state and secrets are handled</td></tr>
+    <tr><td>4</td><td><a href="#doc-env">Environment Strategy</a></td><td>How dev/staging/prod stay in parity and how a build is promoted</td></tr>
+    <tr><td>5</td><td><a href="#doc-runbook">Deployment Runbook</a></td><td>The exact steps a human follows to ship a release</td></tr>
+    <tr><td>6</td><td><a href="#doc-rollback">Rollback Plan</a></td><td>What triggers a rollback and how data stays safe</td></tr>
+    <tr><td>7</td><td><a href="#doc-monitoring">Monitoring &amp; Alerting Plan</a></td><td>What's measured, who gets paged, and on what threshold</td></tr>
+    <tr><td>8</td><td><a href="#doc-slo">SLO / Error-Budget Sheet</a></td><td>The actual reliability number and how the team spends it</td></tr>
+  </table></div>
+</section>
+
+<section class="page" id="doc-exec" data-title="Executive Summary" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 1 of 8</div>
+  <h1>Executive Summary</h1>
+  <p class="lede">One page, board-ready: why CareQueue is going to production, what it costs to run safely, and what could still go wrong.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-exec','Executive_Summary_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-exec')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-exec">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Executive Brief</div>
+      <h2>CareQueue API — Production Launch, Executive Summary</h2>
+      <div class="docx-sub">A plain-language brief for sponsors and clinical operations leadership on scope, reliability posture, and risk.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">DevOps / SRE</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">What is going into production</h3>
+      <p>CareQueue API replaces phone-based triage with a real-time service that scores patient-reported symptoms and routes patients to the right department across Meridian's 12 clinics and the telehealth line, in under one second per request. It launches to 100% of Meridian's patient portal traffic following a staged canary rollout.</p>
+
+      <h3 class="docx-h">Why now</h3>
+      <p>Phone triage bottlenecks during peak season are the leading driver of missed-care complaints in Meridian's Q2 patient experience survey. CareQueue is projected to cut median time-to-routing from 8 minutes to under 30 seconds.</p>
+
+      <h3 class="docx-h">Reliability commitment</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Commitment</th><th>Target</th></tr>
+        <tr><td>Monthly availability</td><td>99.9% (≈ 43 minutes of allowed downtime per month)</td></tr>
+        <tr><td>Triage response time</td><td>95% of requests scored in under 800ms</td></tr>
+        <tr><td>Recovery time from a bad release</td><td>Under 5 minutes via automated canary rollback</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">Delivery approach</h3>
+      <p>Releases ship in small, frequent increments through an automated pipeline with a staged canary rollout (10% → 50% → 100% of traffic), each stage gated on live error-rate and latency analysis. A failing stage rolls back automatically without a page needing to be sent first. See the <a href="#doc-cicd">CI/CD Pipeline Design</a> and <a href="#doc-rollback">Rollback Plan</a> for full detail.</p>
+
+      <h3 class="docx-h">Risk posture</h3>
+      <ul>
+        <li><strong>Patient safety:</strong> mitigated by canary rollout limiting any bad release to 10% of traffic for a monitored 10-minute window before wider exposure.</li>
+        <li><strong>PHI exposure:</strong> mitigated by environment separation — only production holds real patient data, encrypted at rest and in transit; secrets are never stored in code.</li>
+        <li><strong>Vendor / cloud dependency:</strong> AWS multi-AZ deployment for the database tier; documented recovery path if a region-level event occurs.</li>
+      </ul>
+
+      <h3 class="docx-h">Investment ask</h3>
+      <p>No new spend beyond the existing AWS and observability budget lines. Ongoing cost is one 0.5 FTE SRE rotation share for on-call coverage of CareQueue alongside existing services.</p>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-26</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>Priya Nair, Product Owner</td><td>2026-08-27</td><td>P. Nair</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · Executive Summary v1.0 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-cicd" data-title="CI/CD Pipeline Design" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 2 of 8</div>
+  <h1>CI/CD Pipeline Design</h1>
+  <p class="lede">Build, test, release, and deploy stages, gates, and rollback for CareQueue API.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-cicd','CICD_Pipeline_Design_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-cicd')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-cicd">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Engineering Deliverable</div>
+      <h2>CI/CD Pipeline Design — CareQueue API</h2>
+      <div class="docx-sub">The complete path from a merged pull request to production traffic, including every automated gate and the rollback path.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.2</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">DevOps Engineering</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Purpose &amp; scope</h3>
+      <p>This document defines the automated pipeline that takes CareQueue API source code from a merged change on <code>main</code> to production traffic. It covers build, test, security, packaging, promotion, progressive deployment, and rollback. It applies to the <code>careq-api</code> repository only; shared platform pipelines are documented separately.</p>
+
+      <h3 class="docx-h">2. Design principles</h3>
+      <ul>
+        <li>One immutable artifact is built once and promoted unchanged through every environment.</li>
+        <li>Every gate fails closed — a gate that cannot run stops the pipeline rather than being skipped.</li>
+        <li>No manual-only deploy path exists to production; the pipeline is the only route.</li>
+        <li>Rollback is automatic on failed canary analysis, not dependent on a human noticing first.</li>
+        <li>Secrets are injected at deploy time from AWS Secrets Manager; none are present in the repository, pipeline logs, or container image.</li>
+      </ul>
+
+      <h3 class="docx-h">3. Pipeline stages</h3>
+      <div class="figure">
+        <svg viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CI/CD pipeline flow diagram">
+          <defs><marker id="arrowc" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <style>
+            .st{fill:var(--surface);stroke:var(--border);stroke-width:1.4;}
+            .stg{fill:var(--leaf-tint);stroke:var(--leaf);stroke-width:1.4;}
+            .stc{fill:var(--cherry-tint);stroke:var(--cherry);stroke-width:1.4;}
+            .stb{fill:var(--berry-tint);stroke:var(--berry);stroke-width:1.4;}
+            .t{font-family:Roboto,Arial;font-size:10.5px;fill:var(--text);font-weight:700;}
+            .s{font-family:Roboto,Arial;font-size:8.8px;fill:var(--muted);}
+            .e{stroke:var(--muted);stroke-width:1.4;fill:none;marker-end:url(#arrowc);}
+            .er{stroke:var(--cherry);stroke-width:1.4;fill:none;marker-end:url(#arrowc);stroke-dasharray:4 3;}
+          </style>
+          <rect class="st" x="10" y="20" width="98" height="52"/><text class="t" x="20" y="42">Commit /</text><text class="t" x="20" y="55">PR merge</text>
+          <rect class="st" x="128" y="20" width="98" height="52"/><text class="t" x="138" y="42">Build</text><text class="s" x="138" y="57">docker build, tsc</text>
+          <rect class="st" x="246" y="20" width="98" height="52"/><text class="t" x="256" y="42">Unit test</text><text class="s" x="256" y="57">Jest, 80% gate</text>
+          <rect class="st" x="364" y="20" width="108" height="52"/><text class="t" x="374" y="42">Security scan</text><text class="s" x="374" y="57">Trivy, gitleaks, audit</text>
+          <rect class="stb" x="492" y="20" width="98" height="52"/><text class="t" x="502" y="42">Package</text><text class="s" x="502" y="57">tag = git SHA → ECR</text>
+          <rect class="st" x="610" y="20" width="98" height="52"/><text class="t" x="620" y="42">Deploy: dev</text><text class="s" x="620" y="57">auto, on merge</text>
+          <rect class="st" x="728" y="20" width="108" height="52"/><text class="t" x="738" y="42">Integration test</text><text class="s" x="738" y="57">Postgres+Redis, contract</text>
+          <rect class="stb" x="856" y="20" width="108" height="52"/><text class="t" x="866" y="42">Manual approval</text><text class="s" x="866" y="57">SRE lead gate</text>
+
+          <rect class="st" x="10" y="110" width="98" height="52"/><text class="t" x="20" y="132">Deploy: stage</text>
+          <rect class="st" x="128" y="110" width="108" height="52"/><text class="t" x="138" y="132">Load test</text><text class="s" x="138" y="147">k6, 500 concurrent</text>
+          <rect class="stg" x="256" y="110" width="98" height="52"/><text class="t" x="266" y="132">Canary 10%</text><text class="s" x="266" y="147">prod traffic slice</text>
+          <rect class="stg" x="374" y="110" width="128" height="52"/><text class="t" x="384" y="132">Automated analysis</text><text class="s" x="384" y="147">err rate &lt;1%, p95&lt;800ms</text>
+          <rect class="stg" x="522" y="110" width="98" height="52"/><text class="t" x="534" y="132">Canary 50%</text>
+          <rect class="stg" x="640" y="110" width="98" height="52"/><text class="t" x="652" y="132">100% rollout</text>
+          <rect class="st" x="758" y="110" width="108" height="52"/><text class="t" x="768" y="132">Smoke test</text><text class="s" x="768" y="147">post-deploy checks</text>
+          <rect class="stb" x="886" y="110" width="84" height="52"/><text class="t" x="896" y="132">Notify</text><text class="s" x="896" y="147">Slack + PD</text>
+
+          <rect class="stc" x="374" y="210" width="128" height="52"/><text class="t" x="392" y="232">Automatic</text><text class="t" x="392" y="245">rollback</text>
+
+          <path class="e" d="M108,46 L128,46"/><path class="e" d="M226,46 L246,46"/><path class="e" d="M344,46 L364,46"/>
+          <path class="e" d="M472,46 L492,46"/><path class="e" d="M590,46 L610,46"/><path class="e" d="M708,46 L728,46"/><path class="e" d="M836,46 L856,46"/>
+          <path class="e" d="M905,72 L59,110" /> <path class="e" d="M108,136 L128,136"/><path class="e" d="M236,136 L256,136"/>
+          <path class="e" d="M354,136 L374,136"/><path class="e" d="M502,136 L522,136"/><path class="e" d="M620,136 L640,136"/>
+          <path class="e" d="M738,136 L758,136"/><path class="e" d="M866,136 L886,136"/>
+          <path class="er" d="M438,162 L438,210"/>
+          <path class="er" d="M586,162 L500,210"/>
+          <path class="er" d="M374,236 L108,146"/>
+          <text class="s" x="380" y="270" style="fill:var(--cherry);font-weight:700;">Failed analysis at any canary stage → automatic rollback to last stable version, page on-call</text>
+        </svg>
+        <figcaption>Full CareQueue pipeline: build → test → security → package → dev → integration test → approval gate → staging → load test → canary progression → notify, with automatic rollback from any failed analysis window.</figcaption>
+      </div>
+
+      <div class="tablewrap"><table>
+        <tr><th>#</th><th>Stage</th><th>What runs</th><th>Gate to proceed</th><th>On failure</th></tr>
+        <tr><td>1</td><td>Build</td><td><code>npm ci</code>, <code>tsc --noEmit</code>, ESLint, multi-stage <code>docker build</code></td><td>Compiles clean, zero lint errors</td><td>Pipeline stops, PR marked failing</td></tr>
+        <tr><td>2</td><td>Unit test</td><td>Jest across <code>services/</code> and <code>intelligence/</code>-equivalent triage-scoring logic</td><td>All pass, coverage ≥ 80% on changed files</td><td>Pipeline stops</td></tr>
+        <tr><td>3</td><td>Security scan</td><td>Trivy image scan, <code>npm audit</code>, <code>gitleaks</code> secret scan</td><td>Zero critical/high CVEs, zero secrets detected</td><td>Pipeline stops; critical CVE pages security channel</td></tr>
+        <tr><td>4</td><td>Package</td><td>Image tagged with immutable git SHA, pushed to ECR, signed</td><td>Push succeeds, signature verified</td><td>Retry ×2 with backoff, then fail pipeline</td></tr>
+        <tr><td>5</td><td>Deploy — dev</td><td>Argo CD syncs the new tag to the dev namespace automatically</td><td>Pods reach <code>Ready</code> within 90s</td><td>Auto-revert dev to prior tag</td></tr>
+        <tr><td>6</td><td>Integration test</td><td>Ephemeral Postgres + Redis containers; contract tests against the triage-scoring API</td><td>All contract tests pass</td><td>Pipeline stops before staging</td></tr>
+        <tr><td>7</td><td>Manual approval</td><td>SRE lead reviews the diff and test summary in the PR</td><td>Explicit approval recorded</td><td>Pipeline pauses indefinitely (no default proceed)</td></tr>
+        <tr><td>8</td><td>Deploy — staging</td><td>Same Helm chart, same image tag, staging <code>values.yaml</code></td><td>Health checks green</td><td>Auto-revert staging</td></tr>
+        <tr><td>9</td><td>Load test</td><td>k6 simulates 500 concurrent triage submissions</td><td>p95 &lt; 800ms, zero 5xx</td><td>Pipeline stops before prod</td></tr>
+        <tr><td>10</td><td>Canary 10%</td><td>Argo Rollouts shifts 10% of prod traffic to the new version</td><td>10-minute automated analysis window opens</td><td>—</td></tr>
+        <tr><td>11</td><td>Automated analysis</td><td>Prometheus query: error rate, p95 latency, pod restart count</td><td>Error rate &lt; 1%, p95 &lt; 800ms sustained</td><td><strong>Automatic rollback</strong> to 100% prior version</td></tr>
+        <tr><td>12</td><td>Canary 50% → 100%</td><td>Progressive traffic shift, each stage re-runs the analysis window</td><td>Same thresholds as stage 11</td><td>Automatic rollback from any stage</td></tr>
+        <tr><td>13</td><td>Smoke test &amp; notify</td><td>Post-deploy synthetic triage request; Slack + PagerDuty change event posted</td><td>Smoke request returns a valid routing decision</td><td>Page SRE on-call; does not auto-rollback (release already stable at 100%)</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">4. Rollback within the pipeline</h3>
+      <p>Rollback is a first-class pipeline action, not a separate manual procedure. Argo Rollouts holds the previous ReplicaSet warm during the entire canary sequence specifically so reverting is a traffic-weight change, not a redeploy. Full trigger conditions, target-version selection, and data-safety rules are in the <a href="#doc-rollback">Rollback Plan</a>.</p>
+
+      <h3 class="docx-h">5. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if this fails?</td><td>The pipeline halts at the failing gate; nothing downstream executes; the failing stage is visible in the PR status checks.</td></tr>
+        <tr><td>Will it retry?</td><td>Only the ECR push retries (2 attempts, exponential backoff). All test and analysis gates are non-retrying by design — a flaky-looking failure must be diagnosed, not silently re-run.</td></tr>
+        <tr><td>Recovery path if retries exhausted?</td><td>Pipeline run is marked failed; engineer fixes and re-pushes. No dead-letter queue applies to pipeline runs — the source of truth is the failing commit.</td></tr>
+        <tr><td>Failure modes explicitly out of scope</td><td>Simultaneous multi-region AWS outage during a deploy window; concurrent pipeline runs against the same commit (blocked by GitHub Actions concurrency groups, not handled by this document).</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-24</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>DevOps Engineering Team</td><td>2026-08-26</td><td>Reviewed in PR #482</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · CI/CD Pipeline Design v1.2 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-iac" data-title="Infrastructure-as-Code Plan" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 3 of 8</div>
+  <h1>Infrastructure-as-Code Plan</h1>
+  <p class="lede">What Terraform owns, how modules are structured, and how state and secrets are handled for CareQueue's infrastructure.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-iac','Infrastructure_as_Code_Plan_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-iac')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-iac">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Engineering Deliverable</div>
+      <h2>Infrastructure-as-Code Plan — CareQueue API</h2>
+      <div class="docx-sub">Terraform module layout, state management, secrets handling, and drift control for the CareQueue infrastructure footprint.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.1</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">DevOps Engineering</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Scope</h3>
+      <p>All CareQueue cloud infrastructure — networking, the EKS cluster, datastores, IAM, and secrets scaffolding — is defined in Terraform under <code>infra/careq/</code>. Nothing in this footprint is created or modified through the AWS console outside of a documented break-glass emergency, which requires a same-day retroactive Terraform import.</p>
+
+      <h3 class="docx-h">2. Module layout</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Module</th><th>Owns</th><th>Notes</th></tr>
+        <tr><td><code>network/</code></td><td>VPC, public/private subnets across 3 AZs, NAT gateways, route tables</td><td>Shared module, one instantiation per environment</td></tr>
+        <tr><td><code>eks/</code></td><td>EKS control plane, managed node groups, cluster autoscaler config</td><td>Prod runs 3 AZ-spread node groups; dev/stage run 1</td></tr>
+        <tr><td><code>rds/</code></td><td>RDS for PostgreSQL instance, parameter group, subnet group</td><td>Multi-AZ in prod only; automated backups, 7-day retention (35 in prod)</td></tr>
+        <tr><td><code>elasticache/</code></td><td>Redis replication group for queue/session state</td><td>Multi-AZ with automatic failover in prod</td></tr>
+        <tr><td><code>ecr/</code></td><td>Container registry, image scan-on-push, lifecycle policy (keep last 30 tags)</td><td>Single shared repo across all environments</td></tr>
+        <tr><td><code>iam/</code></td><td>Least-privilege roles per environment: pipeline deploy role, pod IRSA roles</td><td>No environment's role can assume another's</td></tr>
+        <tr><td><code>secrets/</code></td><td>Secrets Manager secret scaffolding (DB creds, third-party API keys) and rotation Lambdas</td><td>Terraform creates the secret ARN and rotation schedule; never the secret value</td></tr>
+        <tr><td><code>observability/</code></td><td>Prometheus/Grafana workspace, PagerDuty service + escalation policy wiring</td><td>Alert rule definitions live in <a href="#doc-monitoring">Monitoring &amp; Alerting Plan</a>, applied via this module</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">3. State management</h3>
+      <ul>
+        <li>Remote state in a dedicated S3 bucket (<code>meridian-tfstate-careq</code>), versioned, with server-side encryption (SSE-KMS).</li>
+        <li>State locking via a DynamoDB table (<code>tfstate-locks</code>) — prevents two engineers or two pipeline runs from applying concurrently.</li>
+        <li>Separate state files per environment (<code>dev</code>, <code>staging</code>, <code>prod</code>) using Terraform workspaces; prod state additionally requires MFA-protected role assumption to apply.</li>
+      </ul>
+
+      <h3 class="docx-h">4. Change flow</h3>
+      <ol>
+        <li>Engineer or agent opens a PR against <code>infra/careq/</code>.</li>
+        <li>CI runs <code>terraform fmt -check</code>, <code>terraform validate</code>, and <code>terraform plan</code>, posting the plan output as a PR comment.</li>
+        <li>A human (DevOps Engineering) reviews the plan diff — this is the architect's approval point for infrastructure change.</li>
+        <li>On merge, <code>terraform apply</code> runs automatically for dev and staging; production apply requires a second manual approval.</li>
+        <li>Nightly drift-detection job runs <code>terraform plan</code> against all three environments and posts any unexpected diff to the DevOps Slack channel.</li>
+      </ol>
+
+      <h3 class="docx-h">5. Secrets management</h3>
+      <div class="callout critical"><span class="co-title">Non-negotiable</span> No secret value is ever written to a <code>.tf</code>, <code>.tfvars</code>, or state file in plaintext. Terraform provisions the Secrets Manager entry and its rotation policy; the actual DB password and API keys are generated at first-boot by the rotation Lambda and read by the application via the AWS SDK at runtime, never baked into the image or Helm values.</div>
+      <div class="tablewrap"><table>
+        <tr><th>Secret</th><th>Storage</th><th>Rotation</th><th>Consumed by</th></tr>
+        <tr><td>RDS master credentials</td><td>Secrets Manager, KMS-encrypted</td><td>Automatic, every 30 days</td><td>CareQueue service via IRSA-scoped IAM role</td></tr>
+        <tr><td>Third-party geocoding API key (clinic routing)</td><td>Secrets Manager</td><td>Manual, on vendor rotation notice</td><td>CareQueue service</td></tr>
+        <tr><td>PagerDuty integration key</td><td>Secrets Manager</td><td>Manual, on incident-response tooling change</td><td>Alertmanager</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">6. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if <code>terraform apply</code> fails mid-run?</td><td>Terraform's own state tracking leaves resources in a known partial state; the next <code>plan</code> shows exactly what remains. No manual state surgery is performed without a second engineer present.</td></tr>
+        <tr><td>Will it retry?</td><td>The pipeline does not auto-retry <code>apply</code> — infrastructure changes are re-run deliberately after diagnosis, never in a blind retry loop.</td></tr>
+        <tr><td>Recovery path?</td><td>Roll forward with a corrective PR; for prod-impacting failures, escalate to DevOps Engineering on-call per the <a href="#doc-monitoring">Monitoring &amp; Alerting Plan</a>.</td></tr>
+        <tr><td>Out of scope</td><td>Cross-region disaster recovery automation (tracked as a separate future initiative, not yet built for CareQueue).</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-23</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>DevOps Engineering Team</td><td>2026-08-25</td><td>Reviewed in PR #467</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · Infrastructure-as-Code Plan v1.1 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-env" data-title="Environment Strategy" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 4 of 8</div>
+  <h1>Environment Strategy</h1>
+  <p class="lede">How dev, staging, and production stay in parity, and how one build is promoted across all three.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-env','Environment_Strategy_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-env')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('env')">Export Environment Matrix (CSV)</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-env">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Engineering Deliverable</div>
+      <h2>Environment Strategy — CareQueue API</h2>
+      <div class="docx-sub">Parity rules across local, dev, staging, and production, and the promotion path a single build takes through them.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">DevOps Engineering</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Parity principle</h3>
+      <p>Every CareQueue environment runs the exact same container image and the exact same Helm chart version. The only permitted differences are scale (replica count, instance size), data (synthetic vs. de-identified vs. real), and configuration values (never configuration <em>structure</em>). If a bug is environment-specific, it must trace to one of those three axes — never to different code.</p>
+
+      <h3 class="docx-h">2. Environment matrix</h3>
+      <div class="tablewrap" id="csv-table-env"><table>
+        <tr><th>Environment</th><th>AWS Account</th><th>Cluster / Namespace</th><th>Database</th><th>Replicas</th><th>Data Type</th><th>Access</th><th>Deploy Trigger</th></tr>
+        <tr><td>Local</td><td>N/A — Docker Compose</td><td>N/A</td><td>Postgres container, ephemeral</td><td>1</td><td>Synthetic fixtures</td><td>Individual engineer</td><td>Manual, on demand</td></tr>
+        <tr><td>Dev</td><td>meridian-dev</td><td>careq-dev namespace, shared dev EKS</td><td>RDS single-AZ, db.t4g.medium</td><td>2</td><td>Synthetic, seeded nightly</td><td>All engineers, all agents</td><td>Automatic on merge to main</td></tr>
+        <tr><td>Staging</td><td>meridian-stage</td><td>careq-stage namespace, dedicated EKS node group</td><td>RDS single-AZ, db.r6g.large</td><td>3</td><td>De-identified subset of prod, refreshed weekly</td><td>Engineering + QA, SRE approval to access data exports</td><td>Automatic after dev integration tests pass</td></tr>
+        <tr><td>Production</td><td>meridian-prod</td><td>careq-prod namespace, dedicated EKS cluster</td><td>RDS Multi-AZ, db.r6g.xlarge</td><td>6 (autoscale 6-14)</td><td>Real patient data (PHI), encrypted at rest and in transit</td><td>SRE on-call + break-glass audit log; no standing engineer access</td><td>Canary rollout after manual approval gate</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">3. Promotion flow</h3>
+      <div class="figure">
+        <svg viewBox="0 0 760 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Environment promotion map">
+          <defs><marker id="arrowe" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--muted)"/></marker></defs>
+          <style>.n{fill:var(--surface);stroke:var(--border);stroke-width:1.5;} .t{font-family:Roboto,Arial;font-size:12px;fill:var(--text);font-weight:700;} .s{font-family:Roboto,Arial;font-size:9.5px;fill:var(--muted);} .e{stroke:var(--muted);stroke-width:1.5;fill:none;marker-end:url(#arrowe);} .gate{font-family:Roboto,Arial;font-size:9px;fill:var(--berry);font-weight:700;}</style>
+          <rect class="n" x="10" y="60" width="140" height="60" style="fill:var(--surface-alt);"/><text class="t" x="26" y="88">careq-api</text><text class="s" x="26" y="103">sha-8f2c1a, one image</text>
+          <rect class="n" x="230" y="20" width="130" height="50" style="fill:var(--berry-tint);"/><text class="t" x="250" y="42">Dev</text><text class="s" x="250" y="57">auto-deployed</text>
+          <rect class="n" x="430" y="20" width="130" height="50" style="fill:var(--berry-tint);"/><text class="t" x="448" y="42">Staging</text><text class="s" x="448" y="57">integration + load test</text>
+          <rect class="n" x="610" y="20" width="140" height="50" style="fill:var(--leaf-tint);stroke:var(--leaf);"/><text class="t" x="632" y="42">Production</text><text class="s" x="632" y="57">canary 10→50→100%</text>
+          <path class="e" d="M150,80 L230,50"/>
+          <path class="e" d="M360,45 L430,45"/><text class="gate" x="365" y="35">gate: tests pass</text>
+          <path class="e" d="M560,45 L610,45"/><text class="gate" x="565" y="35">gate: SRE approval</text>
+          <text class="s" x="150" y="145" style="font-size:10px;">Same image tag travels unchanged left to right — only the Helm values file differs per environment.</text>
+        </svg>
+        <figcaption>One build, three gates, zero rebuilds.</figcaption>
+      </div>
+
+      <h3 class="docx-h">4. Configuration &amp; feature flags</h3>
+      <p>All environment-specific values are injected via Kubernetes ConfigMaps and Secrets at deploy time, sourced from per-environment Helm <code>values-{env}.yaml</code> files and Secrets Manager. New behavior ships dark behind a feature flag in the config service, enabled first in dev, then staging, then a small percentage of production clinics before a full rollout — decoupling <em>deploy</em> from <em>release</em>.</p>
+
+      <h3 class="docx-h">5. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if staging and prod drift apart?</td><td>Nightly Terraform and Helm diff jobs flag any structural drift; a failing diff blocks the next promotion until resolved.</td></tr>
+        <tr><td>Will it retry?</td><td>Deploy-to-dev retries twice on transient cluster errors; staging and prod deploys do not auto-retry — a failure there requires a human look.</td></tr>
+        <tr><td>Recovery path?</td><td>Re-run the specific promotion stage from the pipeline UI once the root cause is fixed; no environment is ever hand-patched to "catch up."</td></tr>
+        <tr><td>Out of scope</td><td>Multi-region active-active environments — CareQueue currently runs single-region with Multi-AZ resilience only.</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-22</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>DevOps Engineering Team</td><td>2026-08-25</td><td>Reviewed in PR #471</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · Environment Strategy v1.0 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-runbook" data-title="Deployment Runbook" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 5 of 8</div>
+  <h1>Deployment Runbook</h1>
+  <p class="lede">The exact, step-by-step procedure a release captain follows to ship a CareQueue release to production.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-runbook','Deployment_Runbook_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-runbook')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-runbook">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Operations Runbook</div>
+      <h2>Deployment Runbook — CareQueue API</h2>
+      <div class="docx-sub">Followed by the on-call release captain for every production release. Written so a junior engineer can execute it without improvising.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.3</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">SRE On-Call Rotation</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Pre-conditions</h3>
+      <ul>
+        <li>PR has passed all CI/CD gates through the manual approval stage (see <a href="#doc-cicd">CI/CD Pipeline Design</a>).</li>
+        <li>Release window is open — CareQueue releases are avoided during clinic peak hours (Mon–Fri 8–10am and 4–6pm local) unless the change is a Sev-1 hotfix.</li>
+        <li>Release captain has confirmed the current error-budget status is healthy (see <a href="#doc-slo">SLO / Error-Budget Sheet</a>) — do not ship a risky release against an exhausted budget.</li>
+      </ul>
+
+      <div class="callout warning"><span class="co-title">Freeze condition</span> If the monthly error budget has under 20% remaining, only Sev-1 fixes may deploy; all other releases wait for budget reset or an explicit VP Engineering override.</div>
+
+      <h3 class="docx-h">2. Step-by-step procedure</h3>
+      <ol>
+        <li><strong>Announce.</strong> Post in <code>#careq-releases</code>: version tag, change summary, rollback tag, expected canary duration (~30 min end to end).</li>
+        <li><strong>Confirm staging health.</strong> Check the Grafana "CareQueue — Staging" dashboard for green SLIs over the last hour.</li>
+        <li><strong>Trigger canary.</strong> In the CI/CD pipeline UI, click <em>Promote to Production</em> on the approved run. This applies the Argo Rollout at 10% traffic automatically.</li>
+        <li><strong>Watch the 10% window (10 min).</strong> Monitor the "CareQueue — Canary Analysis" Grafana panel: error rate, p95 latency, pod restarts. Do not proceed manually — Argo Rollouts' automated analysis gates the next stage.</li>
+        <li><strong>Confirm auto-promotion to 50%.</strong> Verify in the Argo Rollouts UI that the rollout advanced; watch the same panel for another 10-minute window.</li>
+        <li><strong>Confirm auto-promotion to 100%.</strong> Verify final rollout status is <code>Healthy</code> and traffic weight is 100% on the new ReplicaSet.</li>
+        <li><strong>Run the post-deploy smoke test.</strong> Pipeline auto-fires a synthetic triage request; confirm it returns a valid routing decision in the pipeline logs.</li>
+        <li><strong>Close the loop.</strong> Post in <code>#careq-releases</code>: "Release <version> complete, 100% traffic, SLIs nominal." Update the release log.</li>
+      </ol>
+
+      <h3 class="docx-h">3. Verification checklist</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Check</th><th>Expected result</th></tr>
+        <tr><td>Error rate (5 min rolling)</td><td>&lt; 1%</td></tr>
+        <tr><td>p95 triage-scoring latency</td><td>&lt; 800ms</td></tr>
+        <tr><td>Pod restart count since deploy</td><td>0</td></tr>
+        <tr><td>Synthetic smoke request</td><td>Returns HTTP 200 with a valid routing payload</td></tr>
+        <tr><td>Clinician queue dashboard</td><td>Loads and reflects the new routing decisions in real time</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">4. When to abort</h3>
+      <p>If any verification check fails during the canary window, do not wait for automated rollback to confirm — trigger it immediately: see the <a href="#doc-rollback">Rollback Plan</a> for the exact command and communication steps.</p>
+
+      <h3 class="docx-h">5. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if the release captain is unreachable mid-canary?</td><td>Argo Rollouts' automated analysis continues independent of any human — a bad canary rolls back with no human action required.</td></tr>
+        <tr><td>Will it retry?</td><td>The pipeline promotion step itself is not retried automatically; the captain re-triggers manually after confirming root cause.</td></tr>
+        <tr><td>Recovery path?</td><td>Escalate to SRE on-call via PagerDuty if the release captain cannot resolve within 15 minutes of an abort.</td></tr>
+        <tr><td>Out of scope</td><td>Coordinated multi-service releases (CareQueue ships independently; cross-service release trains are not yet defined).</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-20</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>SRE On-Call Rotation</td><td>2026-08-24</td><td>Reviewed in team walkthrough</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · Deployment Runbook v1.3 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-rollback" data-title="Rollback Plan" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 6 of 8</div>
+  <h1>Rollback Plan</h1>
+  <p class="lede">Triggers, target version, and data safety for reversing a bad CareQueue release.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-rollback','Rollback_Plan_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-rollback')">Save as PDF</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-rollback">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Operations Runbook</div>
+      <h2>Rollback Plan — CareQueue API</h2>
+      <div class="docx-sub">What triggers a rollback, exactly which version it targets, and how patient data stays safe through the reversal.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.2</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">SRE On-Call Rotation</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Rollback triggers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Trigger</th><th>Threshold</th><th>Mechanism</th></tr>
+        <tr><td>Error rate</td><td>&gt; 2% of requests over 5 minutes</td><td>Automatic — Argo Rollouts analysis template</td></tr>
+        <tr><td>Latency</td><td>p95 &gt; 1.5s over 5 minutes</td><td>Automatic — Argo Rollouts analysis template</td></tr>
+        <tr><td>Failed health checks</td><td>Any pod failing readiness 3× consecutively</td><td>Automatic — Kubernetes + Argo Rollouts</td></tr>
+        <tr><td>Manual trigger</td><td>On-call judgment — e.g. a correctness bug not caught by the above (a routing decision is medically wrong but fast and low-error-rate)</td><td>Manual — release captain or SRE on-call runs the rollback command</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">2. Target version selection</h3>
+      <p>The rollback target is always the immediately preceding stable tag — the ReplicaSet Argo Rollouts kept warm through the canary window, identified by its git SHA. The on-call engineer never guesses; the target is read directly from the Rollout object's <code>status.stableRS</code> field, which is the single source of truth.</p>
+      <pre class="code"># Identify the current stable ReplicaSet and roll back to it
+kubectl argo rollouts get rollout careq-api -n careq-prod
+kubectl argo rollouts undo careq-api -n careq-prod
+kubectl argo rollouts status careq-api -n careq-prod --watch</pre>
+
+      <h3 class="docx-h">3. Data safety</h3>
+      <p>Rolling back code is instant; rolling back a database schema is not always possible. CareQueue enforces the <strong>expand-contract</strong> migration pattern specifically so that every code rollback is safe against the currently-deployed schema:</p>
+      <ul>
+        <li><strong>Expand:</strong> a migration adds a new column/table without removing the old one. This ships and is fully deployed <em>before</em> any code that depends on it.</li>
+        <li><strong>Migrate:</strong> the new code version reads/writes the new structure while remaining tolerant of the old one during the transition window.</li>
+        <li><strong>Contract:</strong> only once the new code has been stable in production for a full release cycle does a separate, later migration remove the old structure.</li>
+      </ul>
+      <div class="callout critical"><span class="co-title">Rule</span> No single release both changes application behavior and performs a destructive schema change (drop column, drop table, non-nullable column with no default). If a directive to an agent implies both in one release, split it into two releases before it ships.</div>
+
+      <h3 class="docx-h">4. Rollback procedure</h3>
+      <ol>
+        <li>Confirm the trigger condition against the Grafana "CareQueue — Canary Analysis" dashboard (or accept the automatic trigger already firing).</li>
+        <li>If manual: run the <code>kubectl argo rollouts undo</code> command above.</li>
+        <li>Confirm traffic weight returns to 100% on the prior stable ReplicaSet within 5 minutes.</li>
+        <li>Post in <code>#careq-releases</code> and page the on-call SRE lead if not already engaged.</li>
+        <li>Open an incident ticket; freeze further CareQueue releases until root cause is identified.</li>
+        <li>Within 48 hours, complete a blameless postmortem with action items and owners.</li>
+      </ol>
+
+      <h3 class="docx-h">5. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if this fails?</td><td>If <code>rollouts undo</code> does not converge within 5 minutes, the on-call engineer manually scales the prior ReplicaSet directly via <code>kubectl scale</code> as a break-glass fallback.</td></tr>
+        <tr><td>Will it retry?</td><td>The undo command is safe to re-run — it is idempotent against the current Rollout state.</td></tr>
+        <tr><td>Recovery path if all else fails?</td><td>Declare a Sev-1, engage VP Engineering, and consider taking CareQueue out of the routing path entirely (fail open to the legacy phone-triage queue) while the platform is stabilized.</td></tr>
+        <tr><td>Out of scope</td><td>Point-in-time database restore for data corruption (not a code-rollback scenario — covered separately by Meridian's RDS backup/restore procedure).</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-21</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>SRE On-Call Rotation</td><td>2026-08-25</td><td>Reviewed in team walkthrough</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · Rollback Plan v1.2 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-monitoring" data-title="Monitoring & Alerting Plan" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 7 of 8</div>
+  <h1>Monitoring &amp; Alerting Plan</h1>
+  <p class="lede">SLIs, dashboards, and the alert catalog that keeps CareQueue watched by the right person at the right threshold.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-monitoring','Monitoring_Alerting_Plan_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-monitoring')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('alerts')">Export Alert Catalog (CSV)</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-monitoring">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Engineering Deliverable</div>
+      <h2>Monitoring &amp; Alerting Plan — CareQueue API</h2>
+      <div class="docx-sub">What is measured, how it is displayed, and exactly who gets paged when a symptom crosses threshold.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.1</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">SRE On-Call Rotation</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. Service Level Indicators (SLIs)</h3>
+      <div class="tablewrap"><table>
+        <tr><th>SLI</th><th>Definition</th><th>Source</th></tr>
+        <tr><td>Availability</td><td>% of requests returning a valid HTTP response within timeout</td><td>Prometheus, via Envoy/ALB access logs</td></tr>
+        <tr><td>Latency</td><td>p95 time from request receipt to routing decision returned</td><td>Prometheus histogram, instrumented in-service</td></tr>
+        <tr><td>Error rate</td><td>% of requests returning 5xx or a timeout</td><td>Prometheus, ALB + application metrics</td></tr>
+        <tr><td>Queue depth</td><td>Number of triage requests awaiting clinician assignment</td><td>Redis-backed gauge metric</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">2. Dashboards</h3>
+      <ul>
+        <li><strong>CareQueue — Production Overview:</strong> availability, error rate, p95/p99 latency, request volume, all with 30-day trend.</li>
+        <li><strong>CareQueue — Canary Analysis:</strong> side-by-side stable vs. canary ReplicaSet metrics, used exclusively during releases.</li>
+        <li><strong>CareQueue — Clinic Operations:</strong> queue depth and routing volume per clinic, used by clinical operations leadership (not an engineering audience).</li>
+      </ul>
+
+      <h3 class="docx-h">3. Alert catalog</h3>
+      <div class="tablewrap" id="csv-table-alerts"><table>
+        <tr><th>Alert</th><th>Symptom / SLI</th><th>Threshold</th><th>Severity</th><th>Owner</th><th>Channel</th></tr>
+        <tr><td>CareQueueHighErrorRate</td><td>Error rate</td><td>&gt; 2% for 5 min</td><td>Sev-1</td><td>SRE on-call</td><td>PagerDuty (page)</td></tr>
+        <tr><td>CareQueueLatencyDegraded</td><td>p95 latency</td><td>&gt; 1.5s for 5 min</td><td>Sev-1</td><td>SRE on-call</td><td>PagerDuty (page)</td></tr>
+        <tr><td>CareQueueSlowBurn</td><td>Error-budget burn rate</td><td>6× burn rate over 6 hours</td><td>Sev-2</td><td>SRE on-call</td><td>Slack #careq-alerts, ticket</td></tr>
+        <tr><td>CareQueueFastBurn</td><td>Error-budget burn rate</td><td>14.4× burn rate over 1 hour</td><td>Sev-1</td><td>SRE on-call</td><td>PagerDuty (page)</td></tr>
+        <tr><td>CareQueueQueueDepthHigh</td><td>Queue depth</td><td>&gt; 150 pending triage requests</td><td>Sev-2</td><td>Clinical Operations Lead + SRE on-call</td><td>Slack #careq-alerts</td></tr>
+        <tr><td>CareQueuePodCrashLoop</td><td>Pod restarts</td><td>&gt; 3 restarts in 10 min for any pod</td><td>Sev-2</td><td>SRE on-call</td><td>Slack #careq-alerts</td></tr>
+        <tr><td>CareQueueCanaryAnalysisFailed</td><td>Canary analysis template</td><td>Any analysis run fails</td><td>Sev-2</td><td>Release captain + SRE on-call</td><td>Slack #careq-releases, PagerDuty (low-urgency)</td></tr>
+        <tr><td>CareQueueDBConnectionSaturation</td><td>RDS connection pool utilization</td><td>&gt; 85% for 10 min</td><td>Sev-2</td><td>SRE on-call</td><td>Slack #careq-alerts</td></tr>
+      </table></div>
+
+      <div class="callout"><span class="co-title">Design rule</span> Every alert above fires on a symptom the patient, clinician, or business feels — never on a raw resource metric like CPU in isolation. Resource metrics live on dashboards for root-cause diagnosis after a symptom alert has already paged someone.</div>
+
+      <h3 class="docx-h">4. Escalation path</h3>
+      <p>Sev-1 pages the primary SRE on-call immediately via PagerDuty; no acknowledgment within 5 minutes auto-escalates to the secondary on-call, then to the SRE lead (Marcus Chen). Sev-2 opens a ticket and posts to Slack; if unacknowledged for 30 minutes during business hours, it escalates to the SRE lead.</p>
+
+      <h3 class="docx-h">5. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if Prometheus itself is down?</td><td>A dead-man's-switch alert (<code>CareQueueMetricsPipelineDown</code>) fires from an independent external heartbeat check if no metrics are received for 5 minutes.</td></tr>
+        <tr><td>Will it retry?</td><td>Alertmanager retries PagerDuty delivery with backoff up to 3 times before falling back to a direct SMS to the on-call phone.</td></tr>
+        <tr><td>Recovery path?</td><td>SRE lead maintains the on-call runbook index; every alert in the catalog links to a specific remediation runbook, avoiding "figure it out live."</td></tr>
+        <tr><td>Out of scope</td><td>Business-metric alerting (e.g. daily triage volume anomalies) — owned by the Product Owner's analytics dashboard, not this plan.</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-19</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>SRE On-Call Rotation</td><td>2026-08-24</td><td>Reviewed in team walkthrough</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · Monitoring &amp; Alerting Plan v1.1 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="doc-slo" data-title="SLO / Error-Budget Sheet" data-crumb="Delivery Documents">
+  <div class="eyebrow">Delivery document 8 of 8</div>
+  <h1>SLO / Error-Budget Sheet</h1>
+  <p class="lede">The actual reliability numbers CareQueue is held to, and how the team is allowed to spend the resulting error budget.</p>
+  <div class="doctools">
+    <button class="btn primary" onclick="downloadDoc('doc-slo','SLO_Error_Budget_Sheet_CareQueue')">Download HTML</button>
+    <button class="btn ghost" onclick="printDoc('doc-slo')">Save as PDF</button>
+    <button class="btn leaf" onclick="downloadCSV('slo')">Export SLO Sheet (CSV)</button>
+  </div>
+
+  <div class="docx-page" id="docxroot-doc-slo">
+    <div class="docx-cover">
+      <img class="docx-logo needs-logo" alt="Colaberry logo">
+      <div class="docx-kicker">Meridian Health Network · Engineering Deliverable</div>
+      <h2>SLO / Error-Budget Sheet — CareQueue API</h2>
+      <div class="docx-sub">Concrete reliability targets, the resulting error budget, current burn, and the policy that governs how it is spent.</div>
+    </div>
+    <div class="docx-control">
+      <div><span class="dc-label">Version</span><span class="dc-value">1.0</span></div>
+      <div><span class="dc-label">Owner</span><span class="dc-value">SRE On-Call Rotation</span></div>
+      <div><span class="dc-label">Status</span><span class="dc-value">Approved</span></div>
+      <div><span class="dc-label">Date</span><span class="dc-value">2026-08-28</span></div>
+      <div><span class="dc-label">Classification</span><span class="dc-value">Internal</span></div>
+    </div>
+    <div class="docx-body">
+      <h3 class="docx-h">1. SLOs and error budgets</h3>
+      <div class="tablewrap" id="csv-table-slo"><table>
+        <tr><th>SLI</th><th>SLO Target</th><th>Measurement Window</th><th>Error Budget</th><th>Current Burn (this month)</th><th>Budget Policy</th></tr>
+        <tr><td>Availability</td><td>99.9%</td><td>Rolling 30 days</td><td>43.2 minutes/month</td><td>14.7 minutes (34%)</td><td>Freeze non-critical releases below 20% remaining</td></tr>
+        <tr><td>Triage latency (p95)</td><td>&lt; 800ms for 99% of requests</td><td>Rolling 30 days</td><td>1% of requests may exceed 800ms</td><td>0.6% of requests exceeded</td><td>Investigate at 0.8%; freeze feature releases at 1%</td></tr>
+        <tr><td>Canary rollback recovery</td><td>&lt; 5 minutes to restore 100% stable traffic</td><td>Per-incident</td><td>N/A (operational target, not budgeted)</td><td>Last incident: 3m 40s</td><td>Any breach triggers a runbook review</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">2. Error-budget burn this month</h3>
+      <div class="charts-2">
+        <div class="figure">
+          <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Error budget donut chart, 34 percent consumed">
+            <g transform="translate(110,110)">
+              <circle r="70" fill="none" stroke="var(--border)" stroke-width="24"/>
+              <circle r="70" fill="none" stroke="var(--berry)" stroke-width="24" stroke-dasharray="149.5 439.8" stroke-dashoffset="0" transform="rotate(-90)"/>
+              <circle r="70" fill="none" stroke="var(--leaf)" stroke-width="24" stroke-dasharray="290.3 439.8" stroke-dashoffset="-149.5" transform="rotate(-90)"/>
+              <text text-anchor="middle" y="-2" style="font-family:Roboto,Arial;font-size:26px;font-weight:700;fill:var(--text);">34%</text>
+              <text text-anchor="middle" y="20" style="font-family:Roboto,Arial;font-size:11px;fill:var(--muted);">budget consumed</text>
+            </g>
+          </svg>
+          <figcaption><span style="color:var(--berry);font-weight:700;">■</span> Consumed (14.7 of 43.2 min) &nbsp; <span style="color:var(--leaf);font-weight:700;">■</span> Remaining (28.5 min)</figcaption>
+        </div>
+        <div class="figure">
+          <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Error budget burn-down over the month">
+            <style>.ax{stroke:var(--border);stroke-width:1;} .lbl{font-family:Roboto,Arial;font-size:9.5px;fill:var(--muted);}</style>
+            <line class="ax" x1="34" y1="10" x2="34" y2="160"/><line class="ax" x1="34" y1="160" x2="350" y2="160"/>
+            <text class="lbl" x="2" y="14">43m</text><text class="lbl" x="2" y="88">22m</text><text class="lbl" x="14" y="164">0</text>
+            <polyline points="34,20 90,34 150,52 200,74 250,86 300,100 340,108" fill="none" stroke="var(--leaf)" stroke-width="2.5"/>
+            <line x1="34" y1="160" x2="350" y2="20" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+            <text class="lbl" x="270" y="30">ideal linear burn</text>
+            <text class="lbl" x="290" y="115" style="fill:var(--leaf);font-weight:700;">actual — under budget</text>
+          </svg>
+          <figcaption>Remaining budget vs. an ideal linear burn-down. CareQueue is currently burning slower than the straight-line pace, which is the healthy direction.</figcaption>
+        </div>
+      </div>
+
+      <h3 class="docx-h">3. Burn-rate alerting</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Burn type</th><th>Window</th><th>Rate</th><th>Response</th></tr>
+        <tr><td>Fast burn</td><td>1 hour</td><td>14.4× — would exhaust the monthly budget in ~2 days if sustained</td><td>Page immediately (Sev-1)</td></tr>
+        <tr><td>Slow burn</td><td>6 hours</td><td>6× — would exhaust the monthly budget in ~5 days if sustained</td><td>Ticket + Slack (Sev-2)</td></tr>
+      </table></div>
+
+      <h3 class="docx-h">4. Error-budget policy</h3>
+      <ul>
+        <li><strong>&gt; 50% remaining:</strong> normal release cadence, including experimental features behind flags.</li>
+        <li><strong>20–50% remaining:</strong> proceed, but the release captain flags any release that trades reliability for speed (e.g. skipping the 50% canary stage) for SRE lead sign-off.</li>
+        <li><strong>&lt; 20% remaining:</strong> freeze all non-Sev-1 releases; engineering time shifts to reliability work until the budget recovers or the month resets.</li>
+        <li><strong>Budget exhausted:</strong> production changes require VP Engineering approval regardless of severity, except an active Sev-1 fix.</li>
+      </ul>
+      <div class="callout success"><span class="co-title">Why 99.9%, not 100%</span> A 100% SLO is unfalsifiable and removes the ability to take any deliberate risk — including the canary releases that make the pipeline safer overall. 99.9% is a real, defensible number Meridian's clinical operations team has agreed matches patient-safety expectations for a routing aid that still has a human fallback.</div>
+
+      <h3 class="docx-h">5. Failure-first answers</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr><td>What happens if the budget is exhausted mid-incident?</td><td>The incident response continues regardless — the policy governs new releases, not active mitigation.</td></tr>
+        <tr><td>Will it retry?</td><td>Not applicable — budget tracking is a continuous rolling calculation, not a retryable operation.</td></tr>
+        <tr><td>Recovery path?</td><td>Budget resets on a rolling 30-day window, so sustained good behavior recovers headroom day by day rather than waiting for a calendar reset.</td></tr>
+        <tr><td>Out of scope</td><td>Multi-service, org-wide error-budget aggregation — each Meridian service tracks its own budget independently.</td></tr>
+      </table></div>
+
+      <div class="docx-signoff">
+        <h3 class="docx-h">Sign-off</h3>
+        <div class="tablewrap"><table>
+          <tr><th>Role</th><th>Name</th><th>Date</th><th>Signature</th></tr>
+          <tr><td>Prepared by</td><td>Marcus Chen, SRE Lead</td><td>2026-08-18</td><td>M. Chen</td></tr>
+          <tr><td>Reviewed by</td><td>Priya Nair, Product Owner</td><td>2026-08-23</td><td>P. Nair</td></tr>
+          <tr><td>Approved by</td><td>Dana Whitfield, VP Engineering</td><td>2026-08-28</td><td>D. Whitfield</td></tr>
+        </table></div>
+      </div>
+    </div>
+    <div class="docx-footer">
+      <span><strong>Colaberry</strong> — DevOps Engineer Field Guide, Week 10 Deep Dive</span>
+      <span>CareQueue API · SLO / Error-Budget Sheet v1.0 · Page 1 of 1</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="faq" data-title="FAQ & Ask the guide" data-crumb="Help">
+  <div class="eyebrow">Help</div>
+  <h1>FAQ &amp; Ask the guide</h1>
+  <p class="lede">Click any question to see the answer, or open <strong>Ask the guide</strong> in the bottom-right corner and type your own — it matches your question against this document's own content and answers offline, with no external service.</p>
+  <div id="faqList"></div>
+</section>
+  </main>
+</div>
+
+<footer class="sitefoot">
+  Colaberry Enterprise AI Leadership Accelerator — DevOps Engineer Field Guide. Internal training material for the AI Solution Architect track. Case study entities (Meridian Health Network, CareQueue API, and all named staff) are fictional and constructed for instructional purposes.
+</footer>
+
+<button class="ask-fab" id="askFab">◆ Ask the guide</button>
+<div class="ask-panel" id="askPanel">
+  <div class="ask-head">
+    <div><strong>Ask the Field Guide</strong><span>Offline Q&amp;A — answers pulled from this document</span></div>
+    <button id="askClose">✕</button>
+  </div>
+  <div class="ask-body" id="askBody"></div>
+  <div class="ask-input">
+    <input type="text" id="askInput" placeholder="e.g. What triggers a rollback?">
+    <button id="askSend">Ask</button>
+  </div>
+</div>
+
+<script id="deepdive-metadata" type="application/json">
+{
+  "guide_type": "DevOps Engineer Field Guide",
+  "curriculum_type": "deep_dive",
+  "week": 10,
+  "discipline": "DevOps Engineer",
+  "student_id": "fbeig2020",
+  "project_id": "colaberry-accelerator-week10-devops-fieldguide",
+  "repository": "github.com/fbeig2020-cloud/architect-workspace",
+  "generated_by": "Claude Code",
+  "generated_date": "2026-08-28",
+  "version": "1.0.0",
+  "build_number": "CC-20260828-DEVOPS-FG-1"
+}
+</script>
+
+<script>
+/* ====== Logo (Colaberry, official asset, embedded as base64) ====== */
+const LOGO_B64 = "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";
+
+/* ====== Utility helpers ====== */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function triggerDownload(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+}
+
+/* ====== Document export (Download HTML / Save as PDF) ====== */
+function downloadDoc(sectionId, filenameBase){
+  const el = document.getElementById('docxroot-'+sectionId);
+  if(!el) return;
+  const styleEl = document.querySelector('head style');
+  const css = styleEl ? styleEl.textContent : '';
+  const fontLinks = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">';
+  const themeAttr = document.documentElement.getAttribute('data-theme');
+  const htmlTag = themeAttr ? '<html lang="en" data-theme="'+themeAttr+'">' : '<html lang="en">';
+  const title = filenameBase.replace(/_/g,' ');
+  const doc = '<!DOCTYPE html>' + htmlTag +
+    '<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>' + escapeHtml(title) + ' | Colaberry</title>' + fontLinks +
+    '<style>' + css + '\nbody{background:var(--surface-alt);padding:36px 16px;}\n.docx-page{max-width:920px;margin:0 auto;}\n</style></head>' +
+    '<body>' + el.outerHTML + '</body></html>';
+  triggerDownload(filenameBase + '.html', doc, 'text/html');
+}
+
+function printDoc(sectionId){
+  document.querySelectorAll('section.page[data-printing]').forEach(s=>s.removeAttribute('data-printing'));
+  const sec = document.getElementById(sectionId);
+  if(!sec) return;
+  sec.setAttribute('data-printing','true');
+  document.body.classList.add('printing-doc');
+  function cleanup(){
+    document.body.classList.remove('printing-doc');
+    sec.removeAttribute('data-printing');
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
+
+/* ====== CSV export ====== */
+const CSV_DATA = {
+  env: {
+    filename: 'CareQueue_Environment_Matrix',
+    headers: ['Environment','AWS Account','Cluster / Namespace','Database','Replicas','Data Type','Access','Deploy Trigger'],
+    rows: [
+      ['Local','N/A - Docker Compose','N/A','Postgres container, ephemeral','1','Synthetic fixtures','Individual engineer','Manual, on demand'],
+      ['Dev','meridian-dev','careq-dev namespace, shared dev EKS','RDS single-AZ, db.t4g.medium','2','Synthetic, seeded nightly','All engineers, all agents','Automatic on merge to main'],
+      ['Staging','meridian-stage','careq-stage namespace, dedicated EKS node group','RDS single-AZ, db.r6g.large','3','De-identified subset of prod, refreshed weekly','Engineering + QA, SRE approval to access data exports','Automatic after dev integration tests pass'],
+      ['Production','meridian-prod','careq-prod namespace, dedicated EKS cluster','RDS Multi-AZ, db.r6g.xlarge','6 (autoscale 6-14)','Real patient data (PHI), encrypted at rest and in transit','SRE on-call + break-glass audit log; no standing engineer access','Canary rollout after manual approval gate']
+    ]
+  },
+  alerts: {
+    filename: 'CareQueue_Alert_Catalog',
+    headers: ['Alert','Symptom / SLI','Threshold','Severity','Owner','Channel'],
+    rows: [
+      ['CareQueueHighErrorRate','Error rate','> 2% for 5 min','Sev-1','SRE on-call','PagerDuty (page)'],
+      ['CareQueueLatencyDegraded','p95 latency','> 1.5s for 5 min','Sev-1','SRE on-call','PagerDuty (page)'],
+      ['CareQueueSlowBurn','Error-budget burn rate','6x burn rate over 6 hours','Sev-2','SRE on-call','Slack #careq-alerts, ticket'],
+      ['CareQueueFastBurn','Error-budget burn rate','14.4x burn rate over 1 hour','Sev-1','SRE on-call','PagerDuty (page)'],
+      ['CareQueueQueueDepthHigh','Queue depth','> 150 pending triage requests','Sev-2','Clinical Operations Lead + SRE on-call','Slack #careq-alerts'],
+      ['CareQueuePodCrashLoop','Pod restarts','> 3 restarts in 10 min for any pod','Sev-2','SRE on-call','Slack #careq-alerts'],
+      ['CareQueueCanaryAnalysisFailed','Canary analysis template','Any analysis run fails','Sev-2','Release captain + SRE on-call','Slack #careq-releases, PagerDuty (low-urgency)'],
+      ['CareQueueDBConnectionSaturation','RDS connection pool utilization','> 85% for 10 min','Sev-2','SRE on-call','Slack #careq-alerts']
+    ]
+  },
+  slo: {
+    filename: 'CareQueue_SLO_Error_Budget_Sheet',
+    headers: ['SLI','SLO Target','Measurement Window','Error Budget','Current Burn (this month)','Budget Policy'],
+    rows: [
+      ['Availability','99.9%','Rolling 30 days','43.2 minutes/month','14.7 minutes (34%)','Freeze non-critical releases below 20% remaining'],
+      ['Triage latency (p95)','< 800ms for 99% of requests','Rolling 30 days','1% of requests may exceed 800ms','0.6% of requests exceeded','Investigate at 0.8%; freeze feature releases at 1%'],
+      ['Canary rollback recovery','< 5 minutes to restore 100% stable traffic','Per-incident','N/A (operational target, not budgeted)','Last incident: 3m 40s','Any breach triggers a runbook review']
+    ]
+  }
+};
+function csvEscape(v){
+  v = String(v);
+  if(/[",\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function downloadCSV(kind){
+  const d = CSV_DATA[kind];
+  if(!d) return;
+  const lines = [d.headers.map(csvEscape).join(',')].concat(d.rows.map(r=>r.map(csvEscape).join(',')));
+  triggerDownload(d.filename + '.csv', lines.join('\r\n'), 'text/csv');
+}
+
+/* ====== Search ====== */
+let SEARCH_INDEX = [];
+function buildSearchIndex(){
+  SEARCH_INDEX = Array.from(document.querySelectorAll('section.page')).map(el=>({
+    id: el.id,
+    title: el.getAttribute('data-title') || el.id,
+    crumb: el.getAttribute('data-crumb') || '',
+    text: el.textContent.replace(/\s+/g,' ').trim()
+  }));
+}
+function scoreItem(item, q, words){
+  const title = item.title.toLowerCase();
+  const text = item.text.toLowerCase();
+  let score = 0;
+  if(title.includes(q)) score += 50;
+  words.forEach(w=>{
+    if(!w) return;
+    if(title.includes(w)) score += 8;
+    if(text.includes(w)) score += 2;
+  });
+  return score;
+}
+function renderSearchResults(scored, q){
+  const resultsEl = document.getElementById('searchResults');
+  if(scored.length === 0){
+    resultsEl.innerHTML = '<div class="sr-empty">No matches. Try &ldquo;rollback&rdquo;, &ldquo;SLO&rdquo;, &ldquo;canary&rdquo;, or ask the guide below.</div>';
+  } else {
+    resultsEl.innerHTML = scored.map(({item})=>{
+      const lowerText = item.text.toLowerCase();
+      const idx = lowerText.indexOf(q);
+      let snippet;
+      if(idx >= 0){
+        const start = Math.max(0, idx - 40);
+        snippet = (start > 0 ? '...' : '') + item.text.substring(start, idx + q.length + 60) + '...';
+      } else {
+        snippet = item.text.substring(0, 110) + '...';
+      }
+      return '<div class="sr-item" data-target="' + item.id + '">' +
+        '<div class="sr-title">' + escapeHtml(item.title) + '</div>' +
+        '<div class="sr-crumb">' + escapeHtml(item.crumb) + '</div>' +
+        '<div class="sr-snippet">' + escapeHtml(snippet) + '</div></div>';
+    }).join('');
+  }
+  resultsEl.classList.add('show');
+  resultsEl.querySelectorAll('.sr-item').forEach(node=>{
+    node.addEventListener('click', ()=>{
+      goToSection(node.getAttribute('data-target'));
+      resultsEl.classList.remove('show');
+      document.getElementById('searchBox').value = '';
+    });
+  });
+}
+function doSearch(raw){
+  const q = raw.trim().toLowerCase();
+  const resultsEl = document.getElementById('searchResults');
+  if(q.length < 2){ resultsEl.classList.remove('show'); resultsEl.innerHTML=''; return; }
+  const words = q.split(/\s+/).filter(Boolean);
+  const scored = SEARCH_INDEX
+    .map(item => ({item, score: scoreItem(item, q, words)}))
+    .filter(x => x.score > 0)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 8);
+  renderSearchResults(scored, q);
+}
+function goToSection(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('sidenav').classList.remove('open');
+}
+
+/* ====== Nav active-state + mobile toggle ====== */
+function setupNavObserver(){
+  const links = Array.from(document.querySelectorAll('.sidenav a.nav-link'));
+  const map = {};
+  links.forEach(l=>{ map[l.getAttribute('href').slice(1)] = l; });
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const link = map[entry.target.id];
+      if(!link) return;
+      if(entry.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  }, {rootMargin: '-64px 0px -70% 0px', threshold: 0});
+  document.querySelectorAll('section.page').forEach(sec=>observer.observe(sec));
+}
+function setupNavClicks(){
+  document.querySelectorAll('.sidenav a.nav-link').forEach(link=>{
+    link.addEventListener('click', (e)=>{
+      const href = link.getAttribute('href');
+      if(href.startsWith('#')){
+        e.preventDefault();
+        goToSection(href.slice(1));
+      }
+    });
+  });
+}
+
+/* ====== Theme toggle ====== */
+function applyStoredTheme(){
+  try{
+    const saved = localStorage.getItem('fg-theme');
+    if(saved === 'light' || saved === 'dark') document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effectiveCurrent = current || (prefersDark ? 'dark' : 'light');
+  const next = effectiveCurrent === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try{ localStorage.setItem('fg-theme', next); }catch(e){}
+}
+
+/* ====== Ask the Guide — offline Q&A ====== */
+const QA_BANK = [
+  { q: "What is CI/CD?", keywords: ["ci","cd","cicd","continuous","integration","delivery","deployment","pipeline"],
+    a: "Continuous Integration constantly merges and validates code; Continuous Delivery keeps it always in a releasable state; Continuous Deployment pushes every passing change live automatically. CareQueue uses CI + Delivery, with a human approval gate before the production canary.",
+    link: "tp-cicd" },
+  { q: "What are the stages of the CareQueue pipeline?", keywords: ["stages","pipeline","build","test","stage","gate","steps"],
+    a: "Build &rarr; unit test &rarr; security scan &rarr; package &rarr; deploy to dev &rarr; integration test &rarr; manual approval &rarr; deploy to staging &rarr; load test &rarr; canary 10% &rarr; automated analysis &rarr; canary 50% &rarr; 100% &rarr; smoke test &amp; notify. Any failed canary analysis triggers automatic rollback.",
+    link: "doc-cicd" },
+  { q: "What is build/release/run separation?", keywords: ["build","release","run","separation","twelvefactor","twelve","factor"],
+    a: "Three distinct stages: Build compiles source into an artifact once; Release binds that artifact to environment-specific config; Run executes it. Collapsing these stages destroys your ability to tell whether a bug is code or configuration.",
+    link: "tp-brr" },
+  { q: "What is Infrastructure as Code?", keywords: ["iac","infrastructure","terraform","code"],
+    a: "Infrastructure — networks, clusters, databases, IAM — is defined in version-controlled declarative Terraform files instead of clicked together in a console, making it reviewable, reproducible, diffable, and drift-detectable.",
+    link: "tp-iac" },
+  { q: "Where are secrets stored?", keywords: ["secrets","secret","credentials","password","key","vault","manager"],
+    a: "Secrets never live in code, Terraform state, or Helm values in plaintext. CareQueue stores DB credentials and API keys in AWS Secrets Manager with automatic rotation, injected into the running service at deploy time via an IAM role, and redacted in all logs.",
+    link: "doc-iac" },
+  { q: "How do dev, staging, and production stay in parity?", keywords: ["environment","environments","parity","dev","staging","production","prod"],
+    a: "The same container image and Helm chart are promoted unchanged across all three tiers. Only scale (replica count, instance size), data (synthetic vs. de-identified vs. real PHI), and config values differ &mdash; never the code or the structure.",
+    link: "doc-env" },
+  { q: "What are containers used for?", keywords: ["container","containers","docker","image","immutable"],
+    a: "A container packages CareQueue's code, runtime, and dependencies into one immutable, portable unit that Kubernetes can schedule, restart, and scale without the container holding any state of its own.",
+    link: "tp-containers" },
+  { q: "What deployment strategies does CareQueue use?", keywords: ["deployment","strategy","strategies","bluegreen","blue","green","canary","rolling"],
+    a: "Canary is the default: 10% of traffic, then 50%, then 100%, each stage gated by automated analysis of error rate and latency. Blue-green is reserved for releases paired with a breaking database migration.",
+    link: "tp-deploy" },
+  { q: "What is a canary deployment?", keywords: ["canary"],
+    a: "A canary deployment shifts a small slice of production traffic (10%) to the new version, watches it against automated success criteria for a fixed window, then progressively increases the slice (50% &rarr; 100%) &mdash; limiting the blast radius of a bad release.",
+    link: "tp-deploy" },
+  { q: "What triggers a rollback?", keywords: ["rollback","trigger","triggers","revert"],
+    a: "Error rate above 2% for 5 minutes, p95 latency above 1.5s for 5 minutes, or 3 consecutive failed health checks &mdash; all automatic via Argo Rollouts &mdash; plus a manual trigger for correctness issues an SRE judges to be wrong even without crossing those thresholds.",
+    link: "doc-rollback" },
+  { q: "How does CareQueue keep data safe during a rollback?", keywords: ["data","safety","migration","expand","contract","schema"],
+    a: "Every migration follows the expand-contract pattern: add the new structure first (expand), let the new code use it while remaining backward-compatible, and only remove the old structure (contract) a full release cycle later. No single release both changes behavior and makes a destructive schema change.",
+    link: "doc-rollback" },
+  { q: "What is the difference between monitoring, logging, and alerting?", keywords: ["monitoring","logging","alerting","logs","metrics","alert"],
+    a: "Monitoring (metrics) tells you something is wrong; logging tells you why, using structured events with a correlation ID; alerting turns a metric threshold into a page to a named owner. CareQueue alerts on symptoms the patient feels, not on raw resource metrics.",
+    link: "tp-monitoring" },
+  { q: "What is an SLI, SLO, and error budget?", keywords: ["sli","slo","error","budget","indicator","objective"],
+    a: "An SLI is a measured quantity (e.g. % of requests under 800ms). An SLO is the target for that indicator (e.g. 99.9% monthly). The error budget is the inverse &mdash; the amount of allowed failure &mdash; and it is a resource the team deliberately spends, not an accident.",
+    link: "tp-slo" },
+  { q: "What is CareQueue's SLO?", keywords: ["slo","availability","99.9","uptime","reliability"],
+    a: "99.9% monthly availability (about 43.2 minutes of allowed downtime per month) and 95% of triage requests scored under 800ms. Never 100% &mdash; that would be unfalsifiable and would remove the ability to take any deliberate risk.",
+    link: "doc-slo" },
+  { q: "What is a burn rate?", keywords: ["burn","rate","burning"],
+    a: "Burn rate measures how fast the error budget is being consumed. A fast burn (14.4x over 1 hour) pages someone immediately; a slow burn (6x over 6 hours) opens a ticket. CareQueue is currently burning slower than a straight-line pace.",
+    link: "doc-slo" },
+  { q: "What happens when the error budget runs out?", keywords: ["freeze","exhausted","budget","policy"],
+    a: "Below 20% remaining, only Sev-1 fixes may deploy; all other releases wait for the budget to recover on its rolling 30-day window or for an explicit VP Engineering override.",
+    link: "doc-slo" },
+  { q: "What is incident response at Meridian?", keywords: ["incident","response","postmortem","runbook"],
+    a: "Detect via an alert on a named SLI, triage severity and open an incident channel, mitigate (usually rollback, not a forward fix under pressure), communicate on a fixed cadence, then a blameless postmortem within 48 hours with owned action items.",
+    link: "tp-incident" },
+  { q: "What is the twelve-factor app methodology?", keywords: ["twelvefactor","twelve","factor","12factor","config"],
+    a: "A set of conventions for deployable, scalable software: config in the environment (never in code), explicit dependencies, stateless processes, fast disposability, logs as event streams, and dev/prod parity, among others.",
+    link: "tp-12factor" },
+  { q: "What are the DORA metrics?", keywords: ["dora","metrics","deployment","frequency","lead","time","mttr","change","failure"],
+    a: "Four measures correlated with high-performing engineering teams: deployment frequency, lead time for changes, change failure rate, and MTTR (mean time to recovery). CareQueue currently sits between the High and Elite DORA bands.",
+    link: "dora" },
+  { q: "What is CareQueue's MTTR?", keywords: ["mttr","recovery","time"],
+    a: "22 minutes, trailing 90-day average &mdash; within the Elite DORA band (under 1 hour), improved from 54 minutes as canary analysis and automated rollback matured.",
+    link: "dora" },
+  { q: "What separates good delivery from bad delivery?", keywords: ["good","bad","delivery","quality"],
+    a: "Good delivery survives a bad Tuesday: small frequent releases, one promoted artifact, secrets out of the repo, a real rollback trigger, symptom-based alerts with named owners, and an SLO below 100% with a tracked error budget.",
+    link: "good-vs-bad" },
+  { q: "What should I check when reviewing an AI-generated pipeline?", keywords: ["review","checklist","architect","lens","approve","evaluate"],
+    a: "Seven checks: one artifact across environments, no secrets in the diff, a numeric rollback trigger, no migration that breaks the prior version, a named alert owner, an SLO below 100%, and the four failure-first answers (what happens if it fails, does it retry, what's the recovery path, what's explicitly out of scope).",
+    link: "review-lens" },
+  { q: "What is CareQueue?", keywords: ["carequeue","meridian","case","study","service"],
+    a: "CareQueue API is Meridian Health Network's real-time patient triage and routing microservice &mdash; it scores symptom submissions and routes patients to the right department across 12 clinics and a telehealth line in under a second, replacing phone-based triage.",
+    link: "case-study" },
+  { q: "Who approves a CareQueue production release?", keywords: ["approve","approval","sign","off","who"],
+    a: "An SRE lead approval gate sits before staging; the release itself ships through canary with automated analysis. The Executive Summary, CI/CD Pipeline Design, and other delivery documents are signed off by the SRE Lead (prepared), the Product Owner or DevOps team (reviewed), and the VP Engineering (approved).",
+    link: "doc-exec" },
+  { q: "How many delivery documents are there and what do they cover?", keywords: ["documents","how","many","eight","list"],
+    a: "Eight: Executive Summary, CI/CD Pipeline Design, Infrastructure-as-Code Plan, Environment Strategy, Deployment Runbook, Rollback Plan, Monitoring &amp; Alerting Plan, and the SLO / Error-Budget Sheet. Each is downloadable as HTML, prints to PDF, and the tabular ones export to CSV.",
+    link: "documents-overview" },
+  { q: "How do I download a document from this guide?", keywords: ["download","export","pdf","csv","save"],
+    a: "Open any of the eight delivery documents and use the buttons above it: 'Download HTML' saves a standalone, fully-styled copy; 'Save as PDF' opens your browser's print dialog scoped to just that document; tabular documents also offer a CSV export button.",
+    link: "documents-overview" }
+];
+const STOPWORDS = new Set(['the','a','an','is','are','what','how','do','does','we','our','to','of','in','for','on','and','or','be','can','i','you','your','this','that','it','with','if','when']);
+function tokenize(s){
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);
+}
+function scoreQA(qa, tokens){
+  let score = 0;
+  const qLower = qa.q.toLowerCase();
+  tokens.forEach(t=>{
+    if(STOPWORDS.has(t)) return;
+    if(qa.keywords.includes(t)) score += 5;
+    if(qLower.includes(t)) score += 2;
+  });
+  return score;
+}
+function findAnswer(query){
+  const tokens = tokenize(query);
+  if(tokens.length === 0) return null;
+  const scored = QA_BANK.map(qa=>({qa, score: scoreQA(qa, tokens)})).sort((a,b)=>b.score - a.score);
+  if(scored[0].score === 0) return null;
+  return scored[0].qa;
+}
+function suggestChipsHtml(){
+  const picks = [QA_BANK[9], QA_BANK[12], QA_BANK[7], QA_BANK[4]];
+  return '<div class="ask-suggest">' + picks.map(qa=>
+    '<button type="button" onclick="askAsk(' + "'" + qa.q.replace(/'/g,"\\'") + "'" + ')">' + escapeHtml(qa.q) + '</button>'
+  ).join('') + '</div>';
+}
+function askAppendMsg(role, html){
+  const body = document.getElementById('askBody');
+  const div = document.createElement('div');
+  div.className = 'ask-msg ' + role;
+  div.innerHTML = '<div class="bubble">' + html + '</div>';
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function askAsk(query){
+  if(!query || !query.trim()) return;
+  askAppendMsg('user', escapeHtml(query));
+  const match = findAnswer(query);
+  if(match){
+    let html = match.a;
+    if(match.link){
+      html += ' <br><a href="#' + match.link + '" onclick="document.getElementById(\'askPanel\').classList.remove(\'open\')">Open full section &rarr;</a>';
+    }
+    askAppendMsg('bot', html);
+  } else {
+    askAppendMsg('bot', "I couldn't find an exact match in the guide for that. Try the search box above, or one of these:" + suggestChipsHtml());
+  }
+}
+function openAsk(){
+  const panel = document.getElementById('askPanel');
+  panel.classList.add('open');
+  if(!panel.dataset.greeted){
+    askAppendMsg('bot', "Ask me anything about the CareQueue delivery &mdash; CI/CD, rollback, SLOs, environments, or the documents. I answer from this guide's own content, offline." + suggestChipsHtml());
+    panel.dataset.greeted = '1';
+  }
+  document.getElementById('askInput').focus();
+}
+function closeAsk(){
+  document.getElementById('askPanel').classList.remove('open');
+}
+
+/* ====== FAQ list ====== */
+function renderFaqList(){
+  const el = document.getElementById('faqList');
+  if(!el) return;
+  el.innerHTML = QA_BANK.slice(0, 16).map((qa,i)=>
+    '<div class="faq-item" data-qa="' + i + '"><h4>' + escapeHtml(qa.q) + '</h4><p>Click to see the answer in Ask the guide.</p></div>'
+  ).join('');
+  el.querySelectorAll('.faq-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const i = +item.getAttribute('data-qa');
+      openAsk();
+      askAsk(QA_BANK[i].q);
+    });
+  });
+}
+
+/* ====== Bootstrap ====== */
+document.addEventListener('DOMContentLoaded', function(){
+  applyStoredTheme();
+
+  document.querySelectorAll('img.needs-logo').forEach(img=>{
+    img.src = 'data:image/png;base64,' + LOGO_B64;
+  });
+
+  buildSearchIndex();
+  renderFaqList();
+  setupNavObserver();
+  setupNavClicks();
+
+  const searchBox = document.getElementById('searchBox');
+  const searchResults = document.getElementById('searchResults');
+  searchBox.addEventListener('input', (e)=> doSearch(e.target.value));
+  searchBox.addEventListener('focus', (e)=> { if(e.target.value.trim().length >= 2) doSearch(e.target.value); });
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.searchwrap')) searchResults.classList.remove('show');
+  });
+
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+  document.getElementById('navToggle').addEventListener('click', ()=>{
+    document.getElementById('sidenav').classList.toggle('open');
+  });
+
+  document.getElementById('askFab').addEventListener('click', openAsk);
+  document.getElementById('askClose').addEventListener('click', closeAsk);
+  document.getElementById('askSend').addEventListener('click', ()=>{
+    const input = document.getElementById('askInput');
+    askAsk(input.value);
+    input.value = '';
+  });
+  document.getElementById('askInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      const input = e.target;
+      askAsk(input.value);
+      input.value = '';
+    }
+  });
+});
+</script>
+
+</body>
+</html>
