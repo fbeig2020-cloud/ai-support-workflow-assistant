@@ -1,5 +1,7 @@
 # PROGRESS — AI Support Workflow Assistant
 
+> **Note on CLAUDE.md:** This file is the shared working-agreement template provided to all students in the program. Its infrastructure references (`backend/`, `frontend/`, `system/`, circuit breakers, etc.) describe a larger reference architecture, not this specific project. What was actually built for this capstone is documented in `architecture.md` and reflected in the `src/` directory.
+
 ## Project DNA & Requirements
 
 ### R4 — Safety Guardrail (BUILT)
