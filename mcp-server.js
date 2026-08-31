@@ -86,17 +86,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "submitReviewDecision",
-      description: "Record a human reviewer's approve/reject decision for a queued ticket",
+      description:
+        "Call this when a human support reviewer has just told you their decision on a specific ticket that's sitting in the review queue — either 'approve it' (generate and save the ticket's final support summary, and remove it from the queue) or 'reject it' (send it back for another look). You need the ticket's requestId already in hand — read the pending-review-requests resource first if you don't have it — and the name of the reviewer giving the decision. Only call this after a human has actually stated approve or reject; never call it to guess what should happen to a ticket or to act on a ticket the reviewer hasn't looked at yet.",
       inputSchema: {
         type: "object",
         properties: {
-          requestId: { type: "string" },
+          requestId: { type: "string", minLength: 3, maxLength: 64 },
           decision: {
             type: "object",
             properties: {
               action: { type: "string", enum: ["approve", "reject"] },
-              reviewer: { type: "string" },
-              reason: { type: "string" },
+              reviewer: { type: "string", minLength: 1, maxLength: 100 },
+              reason: { type: "string", maxLength: 500 },
             },
             required: ["action", "reviewer"],
           },
@@ -137,7 +138,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: JSON.stringify(
-                { ok: false, error: `No queued ticket found for requestId "${requestId}".` },
+                { found: false, message: `No queued ticket found for requestId "${requestId}".` },
                 null,
                 2
               ),
