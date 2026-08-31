@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ai-support-workflow-assistant": {
+      "command": "node",
+      "args": ["mcp-server.js"]
+    }
+  }
+}
