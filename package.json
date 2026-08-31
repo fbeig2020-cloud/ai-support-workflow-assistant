@@ -6,5 +6,8 @@
   "scripts": {
     "test": "node --test",
     "serve:command-center": "node scripts/serveCommandCenter.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
   }
 }
