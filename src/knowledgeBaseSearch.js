@@ -127,38 +127,57 @@ function withTimeout(promise, timeoutMs) {
  *   Defaults to node:fs/promises readFile. Overridable only so tests can
  *   deterministically simulate a slow or permission-denied read without
  *   depending on real disk timing or OS-specific file permissions.
+ * @param {(event: { phase: 'started'|'finished', file: string, outcome?: 'success'|'failure',
+ *   durationMs?: number, errorClass?: string }) => (void|Promise<void>)} [onDiskRead]
+ *   Optional observability hook fired exactly at this disk-read boundary (not
+ *   on validation failures upstream, which never reach here). Real callers
+ *   are mcp-server.js, wiring this to a structured log notification; tests
+ *   may pass a spy. Never affects the read itself.
  * @returns {Promise<KnowledgeBaseArticle[]>}
  */
-async function loadKnowledgeBase(kbPath, timeoutMs, readFileImpl = readFile) {
+async function loadKnowledgeBase(kbPath, timeoutMs, readFileImpl = readFile, onDiskRead) {
+  const file = 'knowledgeBase.json';
+  const startedAt = Date.now();
+  await onDiskRead?.({ phase: 'started', file });
+
   let raw;
   try {
     raw = await withTimeout(readFileImpl(kbPath, 'utf8'), timeoutMs);
   } catch (error) {
-    if (error.errorClass) throw error; // already tagged (timeout)
-    if (error.code === 'EACCES' || error.code === 'EPERM') {
-      throw Object.assign(new Error('knowledge base access denied'), { errorClass: 'KnowledgeBaseAccessDeniedError' });
+    let tagged = error;
+    if (!error.errorClass) {
+      if (error.code === 'EACCES' || error.code === 'EPERM') {
+        tagged = Object.assign(new Error('knowledge base access denied'), { errorClass: 'KnowledgeBaseAccessDeniedError' });
+      } else if (error.code === 'ENOENT') {
+        tagged = Object.assign(new Error('knowledge base file not found'), { errorClass: 'KnowledgeBaseUnavailableError' });
+      } else {
+        tagged = Object.assign(new Error(`knowledge base read failed: ${error.message}`), {
+          errorClass: 'KnowledgeBaseUnavailableError',
+        });
+      }
     }
-    if (error.code === 'ENOENT') {
-      throw Object.assign(new Error('knowledge base file not found'), { errorClass: 'KnowledgeBaseUnavailableError' });
-    }
-    throw Object.assign(new Error(`knowledge base read failed: ${error.message}`), {
-      errorClass: 'KnowledgeBaseUnavailableError',
-    });
+    await onDiskRead?.({ phase: 'finished', file, outcome: 'failure', durationMs: Date.now() - startedAt, errorClass: tagged.errorClass });
+    throw tagged;
   }
 
   let parsed;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw Object.assign(new Error('knowledge base file is not valid JSON'), { errorClass: 'KnowledgeBaseCorruptError' });
+    const tagged = Object.assign(new Error('knowledge base file is not valid JSON'), { errorClass: 'KnowledgeBaseCorruptError' });
+    await onDiskRead?.({ phase: 'finished', file, outcome: 'failure', durationMs: Date.now() - startedAt, errorClass: tagged.errorClass });
+    throw tagged;
   }
 
   if (!parsed || !Array.isArray(parsed.articles)) {
-    throw Object.assign(new Error('knowledge base file is missing an articles array'), {
+    const tagged = Object.assign(new Error('knowledge base file is missing an articles array'), {
       errorClass: 'KnowledgeBaseCorruptError',
     });
+    await onDiskRead?.({ phase: 'finished', file, outcome: 'failure', durationMs: Date.now() - startedAt, errorClass: tagged.errorClass });
+    throw tagged;
   }
 
+  await onDiskRead?.({ phase: 'finished', file, outcome: 'success', durationMs: Date.now() - startedAt });
   return parsed.articles;
 }
 
@@ -194,8 +213,9 @@ function confidenceForScore(score) {
  *
  * @param {unknown} classification   Output of classify.js's classifySupportRequest
  *   (must have at least a recognized `category`; `matchedSignals` is optional).
- * @param {{ kbPath?: string|URL, timeoutMs?: number, readFile?: Function }} [options]
- *   Overrides for tests only — real callers never pass `readFile`.
+ * @param {{ kbPath?: string|URL, timeoutMs?: number, readFile?: Function, onDiskRead?: Function }} [options]
+ *   `readFile` is an override for tests only. `onDiskRead` is the disk-read
+ *   observability hook (see loadKnowledgeBase) — real callers are mcp-server.js.
  * @returns {Promise<KnowledgeBaseSearchResult>}
  */
 export async function searchKnowledgeBase(classification, options = {}) {
@@ -225,7 +245,7 @@ export async function searchKnowledgeBase(classification, options = {}) {
 
   let articles;
   try {
-    articles = await loadKnowledgeBase(kbPath, timeoutMs, options.readFile);
+    articles = await loadKnowledgeBase(kbPath, timeoutMs, options.readFile, options.onDiskRead);
   } catch (error) {
     return uncertainResult({
       category,

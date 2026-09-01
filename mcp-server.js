@@ -1,9 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
@@ -13,11 +15,54 @@ import { generateDraftResponse } from "./src/generateDraftResponse.js";
 import { listQueuedTickets, addTicketToQueue, removeTicketFromQueue } from "./src/ticketQueue.js";
 import { generateSupportSummaryAndLog, saveSupportSummaryAndLog } from "./src/auditedActions.js";
 import { appendAuditEntry } from "./src/auditLog.js";
+import {
+  toolInvocationStarted,
+  toolInvocationFinished,
+  diskReadStarted,
+  diskReadFinished,
+  requestRejected,
+  toolInvocationError,
+} from "./src/mcpLogEvents.js";
 
 const server = new Server(
   { name: "ai-support-workflow-assistant", version: "1.0.0" },
-  { capabilities: { tools: {}, resources: {} } }
+  { capabilities: { tools: {}, resources: {}, logging: {} } }
 );
+
+/**
+ * Send one structured log notification (Observability Framework shape) to
+ * the connected MCP client via the declared `logging` capability. A logging
+ * failure (no client connected, transport closed) must never break the tool
+ * call it's describing, so this always swallows its own errors.
+ * @param {{ level: string, data: object }} event
+ */
+async function emitLog({ level, data }) {
+  try {
+    await server.sendLoggingMessage({ level, logger: "mcp-server", data });
+  } catch {
+    // Logging is best-effort observability, never a reason to fail a tool call.
+  }
+}
+
+/** Wires searchKnowledgeBase's/generateDraftResponse's onDiskRead hook to structured logs. */
+function onDiskReadFor(correlationId, tool) {
+  return async (evt) => {
+    if (evt.phase === "started") {
+      await emitLog(diskReadStarted({ correlationId, tool, file: evt.file }));
+    } else {
+      await emitLog(
+        diskReadFinished({
+          correlationId,
+          tool,
+          file: evt.file,
+          outcome: evt.outcome,
+          durationMs: evt.durationMs,
+          errorClass: evt.errorClass,
+        })
+      );
+    }
+  };
+}
 
 const RESOURCES = [
   {
@@ -30,6 +75,10 @@ const RESOURCES = [
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => ({
   resources: RESOURCES,
+}));
+
+server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({
+  resourceTemplates: [],
 }));
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
@@ -110,19 +159,65 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+  const correlationId = randomUUID();
+  const startedAt = Date.now();
 
+  await emitLog(toolInvocationStarted({ correlationId, tool: name }));
+
+  try {
+    const result = await dispatchTool(name, args, correlationId);
+    await emitLog(
+      toolInvocationFinished({ correlationId, tool: name, outcome: "success", durationMs: Date.now() - startedAt })
+    );
+    return result;
+  } catch (error) {
+    if (!error.mcpLogRejectionLogged) {
+      await emitLog(
+        toolInvocationError({ correlationId, tool: name, errorClass: error.errorClass ?? "UnhandledToolError" })
+      );
+    }
+    await emitLog(
+      toolInvocationFinished({ correlationId, tool: name, outcome: "failure", durationMs: Date.now() - startedAt })
+    );
+    throw error;
+  }
+});
+
+/**
+ * Executes one tool call. Emits the tool-specific structured log events
+ * (disk reads, fail-closed rejections, checked-failure error classes) that
+ * only make sense with knowledge of which tool is running; the caller above
+ * handles the tool-wide started/finished/error boundaries every tool shares.
+ * @param {string} name
+ * @param {Record<string, unknown>} args
+ * @param {string} correlationId
+ */
+async function dispatchTool(name, args, correlationId) {
   if (name === "classify") {
     const result = classifySupportRequest(args.requestText);
+    if (result.logEntry?.error_class) {
+      await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
+    }
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 
   if (name === "knowledgeBaseSearch") {
-    const result = await searchKnowledgeBase(args.classification);
+    const result = await searchKnowledgeBase(args.classification, {
+      onDiskRead: onDiskReadFor(correlationId, name),
+    });
+    if (result.logEntry?.error_class) {
+      await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
+    }
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 
   if (name === "generateDraftResponse") {
-    const result = await generateDraftResponse(args.classification, args.kbSearchResult);
+    const result = await generateDraftResponse(args.classification, args.kbSearchResult, {
+      onDiskRead: onDiskReadFor(correlationId, name),
+    });
+    if (result.logEntry?.error_class) {
+      await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
+    }
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 
@@ -133,6 +228,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const queued = listQueuedTickets();
       const ticket = queued.find((t) => t.requestId === requestId);
       if (!ticket) {
+        await emitLog(requestRejected({ correlationId, tool: name, reason: "ticket_not_found" }));
         return {
           content: [
             {
@@ -174,6 +270,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
 
         if (!requeueResult.ok) {
+          await emitLog(
+            toolInvocationError({
+              correlationId,
+              tool: name,
+              errorClass: requeueResult.logEntry?.error_class ?? "QueueWriteFailedError",
+            })
+          );
           return {
             content: [
               {
@@ -216,6 +319,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const workflow = { ticketId: ticket.requestId, ...ticket };
       const summaryResult = generateSupportSummaryAndLog(workflow);
       if (!summaryResult.generated) {
+        await emitLog(
+          toolInvocationError({
+            correlationId,
+            tool: name,
+            errorClass: summaryResult.logEntry?.error_class ?? "SummaryGenerationFailedError",
+          })
+        );
         return {
           content: [
             {
@@ -228,6 +338,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       const saveResult = saveSupportSummaryAndLog(summaryResult);
       if (!saveResult.saved) {
+        await emitLog(
+          toolInvocationError({
+            correlationId,
+            tool: name,
+            errorClass: saveResult.logEntry?.error_class ?? "SaveFailedError",
+          })
+        );
         return {
           content: [
             {
@@ -242,6 +359,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       return { content: [{ type: "text", text: JSON.stringify(summaryResult, null, 2) }] };
     } catch (error) {
+      await emitLog(
+        toolInvocationError({
+          correlationId,
+          tool: name,
+          errorClass: error instanceof Error ? error.constructor.name : "UnknownError",
+        })
+      );
       return {
         content: [
           {
@@ -257,8 +381,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
-  throw new Error(`Unknown tool: ${name}`);
-});
+  await emitLog(requestRejected({ correlationId, tool: name, reason: "unknown_tool" }));
+  const unknownToolError = Object.assign(new Error(`Unknown tool: ${name}`), { mcpLogRejectionLogged: true });
+  throw unknownToolError;
+}
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

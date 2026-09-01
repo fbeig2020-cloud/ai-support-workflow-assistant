@@ -115,29 +115,45 @@ function withTimeout(promise, timeoutMs) {
  * @param {(path: string|URL, encoding: string) => Promise<string>} readFileImpl
  *   Defaults to node:fs/promises readFile. Overridable only so tests can
  *   deterministically simulate a slow or permission-denied read.
+ * @param {(event: { phase: 'started'|'finished', file: string, outcome?: 'success'|'failure',
+ *   durationMs?: number, errorClass?: string }) => (void|Promise<void>)} [onDiskRead]
+ *   Optional observability hook fired exactly at this disk-read boundary (not
+ *   on validation failures upstream, which never reach here). Real callers
+ *   are mcp-server.js, wiring this to a structured log notification; tests
+ *   may pass a spy. Never affects the read itself.
  */
-async function loadTemplates(templatesPath, timeoutMs, readFileImpl = readFile) {
+async function loadTemplates(templatesPath, timeoutMs, readFileImpl = readFile, onDiskRead) {
+  const file = 'responseTemplates.json';
+  const startedAt = Date.now();
+  await onDiskRead?.({ phase: 'started', file });
+
   let raw;
   try {
     raw = await withTimeout(readFileImpl(templatesPath, 'utf8'), timeoutMs);
   } catch (error) {
-    if (error.errorClass) throw error; // already tagged (timeout)
-    if (error.code === 'EACCES' || error.code === 'EPERM') {
-      throw Object.assign(new Error('response template access denied'), { errorClass: 'TemplateAccessDeniedError' });
+    let tagged = error;
+    if (!error.errorClass) {
+      if (error.code === 'EACCES' || error.code === 'EPERM') {
+        tagged = Object.assign(new Error('response template access denied'), { errorClass: 'TemplateAccessDeniedError' });
+      } else if (error.code === 'ENOENT') {
+        tagged = Object.assign(new Error('response template file not found'), { errorClass: 'TemplateUnavailableError' });
+      } else {
+        tagged = Object.assign(new Error(`response template read failed: ${error.message}`), {
+          errorClass: 'TemplateUnavailableError',
+        });
+      }
     }
-    if (error.code === 'ENOENT') {
-      throw Object.assign(new Error('response template file not found'), { errorClass: 'TemplateUnavailableError' });
-    }
-    throw Object.assign(new Error(`response template read failed: ${error.message}`), {
-      errorClass: 'TemplateUnavailableError',
-    });
+    await onDiskRead?.({ phase: 'finished', file, outcome: 'failure', durationMs: Date.now() - startedAt, errorClass: tagged.errorClass });
+    throw tagged;
   }
 
   let parsed;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw Object.assign(new Error('response template file is not valid JSON'), { errorClass: 'TemplateCorruptError' });
+    const tagged = Object.assign(new Error('response template file is not valid JSON'), { errorClass: 'TemplateCorruptError' });
+    await onDiskRead?.({ phase: 'finished', file, outcome: 'failure', durationMs: Date.now() - startedAt, errorClass: tagged.errorClass });
+    throw tagged;
   }
 
   if (
@@ -149,11 +165,14 @@ async function loadTemplates(templatesPath, timeoutMs, readFileImpl = readFile) 
     !parsed.stepsSection ||
     typeof parsed.stepsSection !== 'object'
   ) {
-    throw Object.assign(new Error('response template file is missing required shape'), {
+    const tagged = Object.assign(new Error('response template file is missing required shape'), {
       errorClass: 'TemplateCorruptError',
     });
+    await onDiskRead?.({ phase: 'finished', file, outcome: 'failure', durationMs: Date.now() - startedAt, errorClass: tagged.errorClass });
+    throw tagged;
   }
 
+  await onDiskRead?.({ phase: 'finished', file, outcome: 'success', durationMs: Date.now() - startedAt });
   return parsed;
 }
 
@@ -189,8 +208,9 @@ function buildStepsSection(stepsSection, kbSearchResult) {
  *   (must have at least a recognized `category`; `summary` is optional).
  * @param {unknown} kbSearchResult   Output of knowledgeBaseSearch.js's searchKnowledgeBase
  *   (optional — treated as "not found" if missing or malformed).
- * @param {{ templatesPath?: string|URL, timeoutMs?: number, readFile?: Function }} [options]
- *   Overrides for tests only — real callers never pass `readFile`.
+ * @param {{ templatesPath?: string|URL, timeoutMs?: number, readFile?: Function, onDiskRead?: Function }} [options]
+ *   `readFile` is an override for tests only. `onDiskRead` is the disk-read
+ *   observability hook (see loadTemplates) — real callers are mcp-server.js.
  * @returns {Promise<DraftResponseResult>}
  */
 export async function generateDraftResponse(classification, kbSearchResult, options = {}) {
@@ -221,7 +241,7 @@ export async function generateDraftResponse(classification, kbSearchResult, opti
 
   let templateData;
   try {
-    templateData = await loadTemplates(templatesPath, timeoutMs, options.readFile);
+    templateData = await loadTemplates(templatesPath, timeoutMs, options.readFile, options.onDiskRead);
   } catch (error) {
     return notGenerated({
       category,

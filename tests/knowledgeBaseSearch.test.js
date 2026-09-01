@@ -185,6 +185,39 @@ test('searchKnowledgeBaseAndLog still logs a failure entry when the classificati
   assert.equal(record.entry.error_class, 'ValidationError');
 });
 
+// --- onDiskRead observability hook (mcp-server.js's disk-read boundary) -----
+
+test('onDiskRead fires started then finished(success) around a successful read', async () => {
+  const events = [];
+  const result = await searchKnowledgeBase(
+    { category: 'login_problem', matchedSignals: [] },
+    { onDiskRead: (evt) => events.push(evt) },
+  );
+
+  assert.equal(result.found, true);
+  assert.deepEqual(events.map((e) => e.phase), ['started', 'finished']);
+  assert.equal(events[0].file, 'knowledgeBase.json');
+  assert.equal(events[1].outcome, 'success');
+  assert.equal(typeof events[1].durationMs, 'number');
+});
+
+test('onDiskRead fires finished(failure) with the tagged error class on a read failure, and does not fire at all when validation fails before any read is attempted', async () => {
+  const events = [];
+  const result = await searchKnowledgeBase(
+    { category: 'login_problem', matchedSignals: [] },
+    { kbPath: tempPath('does-not-exist'), onDiskRead: (evt) => events.push(evt) },
+  );
+
+  assert.equal(result.found, false);
+  assert.deepEqual(events.map((e) => e.phase), ['started', 'finished']);
+  assert.equal(events[1].outcome, 'failure');
+  assert.equal(events[1].errorClass, 'KnowledgeBaseUnavailableError');
+
+  const validationEvents = [];
+  await searchKnowledgeBase({ matchedSignals: [] }, { onDiskRead: (evt) => validationEvents.push(evt) });
+  assert.deepEqual(validationEvents, []);
+});
+
 // --- Purity / idempotency of the successful search path ---------------------
 
 test('the same classification always returns the same search result (idempotent)', async () => {

@@ -284,6 +284,43 @@ test('generateDraftResponseAndLog still logs a failure entry when the classifica
   assert.equal(record.entry.error_class, 'ValidationError');
 });
 
+// --- onDiskRead observability hook (mcp-server.js's disk-read boundary) -----
+
+test('onDiskRead fires started then finished(success) around a successful read', async () => {
+  const events = [];
+  const draft = await generateDraftResponse(
+    { category: 'login_problem', matchedSignals: [] },
+    undefined,
+    { onDiskRead: (evt) => events.push(evt) },
+  );
+
+  assert.equal(draft.generated, true);
+  assert.deepEqual(events.map((e) => e.phase), ['started', 'finished']);
+  assert.equal(events[0].file, 'responseTemplates.json');
+  assert.equal(events[1].outcome, 'success');
+  assert.equal(typeof events[1].durationMs, 'number');
+});
+
+test('onDiskRead fires finished(failure) with the tagged error class on a read failure, and does not fire at all when validation fails before any read is attempted', async () => {
+  const events = [];
+  const draft = await generateDraftResponse(
+    { category: 'login_problem', matchedSignals: [] },
+    undefined,
+    { templatesPath: tempPath('does-not-exist'), onDiskRead: (evt) => events.push(evt) },
+  );
+
+  assert.equal(draft.generated, false);
+  assert.deepEqual(events.map((e) => e.phase), ['started', 'finished']);
+  assert.equal(events[1].outcome, 'failure');
+  assert.equal(events[1].errorClass, 'TemplateUnavailableError');
+
+  const validationEvents = [];
+  await generateDraftResponse({ category: 'not_a_real_category' }, undefined, {
+    onDiskRead: (evt) => validationEvents.push(evt),
+  });
+  assert.deepEqual(validationEvents, []);
+});
+
 // --- Purity / idempotency of the successful generation path ------------------
 
 test('the same classification and KB result always render the same draft (idempotent)', async () => {
