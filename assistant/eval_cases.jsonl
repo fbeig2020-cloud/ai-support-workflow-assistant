@@ -1,0 +1,7 @@
+{"input": {"ticket_text": "I've been locked out of my account after too many failed password attempts. Can you help me get back in?"}, "expected": {"category": "login_problem", "escalation_recommended": false}}
+{"input": {"ticket_text": "I need access to the finance dashboard for my new role but I keep getting an access denied error."}, "expected": {"category": "access_permission_issue", "escalation_recommended": true}}
+{"input": {"ticket_text": "My Power BI sales report has been blank all morning and the dataset refresh keeps failing."}, "expected": {"category": "power_bi_report_issue", "escalation_recommended": true}}
+{"input": {"ticket_text": "The nightly report query has been timing out for the past two days — is the database okay?"}, "expected": {"category": "sql_database_issue", "escalation_recommended": true}}
+{"input": {"ticket_text": "The customer count in this week's report doesn't match last week's — looks like there are duplicate records."}, "expected": {"category": "data_issue", "escalation_recommended": false}}
+{"input": {"ticket_text": "How do I export a Power BI report to PDF? Is that even possible?"}, "expected": {"category": "technical_question", "escalation_recommended": true}}
+{"input": {"ticket_text": "Something is wrong with everything and nothing makes sense anymore, please just fix it."}, "expected": {"category": "general_support_request", "escalation_recommended": true}}

@@ -1,0 +1,158 @@
+{
+  "workflow": "assistant/ package - handle_ticket() support-ticket triage",
+  "status": "CONFIRMED - all 10 cases' expected values user-confirmed as of 2026-09-01 (EVAL-01/02/03/04/05/06/10 locked in from live-observed handle_ticket() results; EVAL-07/08/09 confirmed in the prior session)",
+  "instructions_for_reviewer": "All 10 cases now have user-confirmed 'expected' values (as of 2026-09-01) and this file is ready to drive a grading run against assistant/evals.py (same pattern as assistant/eval_cases.jsonl, expanded to 10 cases and a superset of fields: category, priority, confidence, escalation_recommended, kb_articles_cited). EVAL-01/02/03/04/05/06/10 were locked in from live handle_ticket() runs observed on 2026-09-01; EVAL-07/08/09 (the deliberately-awkward cases) were confirmed the prior session. See each case's 'note' field for provenance and any caveats (e.g. EVAL-06's flagged KB-007 content gap). A 2026-09-01 grading run against this file scored 5/10; EVAL-01 and EVAL-08's original expected values were then corrected to match live behavior (both were intentional human-in-the-loop escalation design, not bugs -- see PROGRESS.md 'REQ-006 escalation-bias finding' entry). Same day, a root-cause fix landed in core.py/prompt.py (see PROGRESS.md 'category-lock fix' entry) stopping the assistant from searching a second, different category than the one it classified a ticket into -- EVAL-07's spurious KB-007 citation is gone as a result (see its 'note'). That fix is global, not EVAL-07-specific, and a second grading run afterward showed real side effects on other cases: EVAL-08 (deliberately cross-category-ambiguous) now only searches and cites from its first category, dropping KB-004 from its result; EVAL-03 and EVAL-10 also newly mismatch, though it's not yet established whether that's the fix or ordinary model run-to-run variance. Per explicit user decision, EVAL-03, EVAL-06, EVAL-07 (priority field only), EVAL-08, EVAL-09, and EVAL-10 all remain open, unresolved grading mismatches for now, tracked separately -- none of their 'expected' values were changed as part of the fix.",
+  "schema_fields_to_confirm": ["category", "priority", "confidence", "escalation_recommended", "kb_articles_cited"],
+  "cases": [
+    {
+      "id": "EVAL-01",
+      "awkward_type": null,
+      "note": "Locked in from a live handle_ticket() run on 2026-09-01. That run required a retry -- the first attempt hit a transient JSON-parse error on the model's response (an early instance of the max_tokens truncation bug fixed in core.py/client.py the same day, not a one-off after all -- see PROGRESS.md); the second attempt succeeded cleanly. CORRECTED on 2026-09-01 after the evals.py grading run: confidence and escalation_recommended were changed from the original high/false to medium/true. This is not a bug -- the ticket describes a compound symptom (repeated session drops, then a full lockout with a hung login screen) that doesn't cleanly match either retrieved KB-001 (lockout/reset) or KB-002 (MFA), and the system prompt's REQ-006-derived escalation clause ('or the issue is outside what a documented procedure can resolve') correctly favors human review under that ambiguity, per this project's human-in-the-loop principle. See the PROGRESS.md entry documenting this finding.",
+      "input": {
+        "ticket_text": "I keep getting logged out of the analytics portal every few minutes and now it won't let me log back in at all -- just spins on the login screen."
+      },
+      "expected": {
+        "category": "login_problem",
+        "priority": "high",
+        "confidence": "medium",
+        "escalation_recommended": true,
+        "kb_articles_cited": ["KB-001", "KB-002"]
+      }
+    },
+    {
+      "id": "EVAL-02",
+      "awkward_type": null,
+      "note": "Locked in from a live handle_ticket() run on 2026-09-01.",
+      "input": {
+        "ticket_text": "I was moved to the data quality team last week and I still don't have access to the shared SQL Server instance for the practice database. Can someone grant that?"
+      },
+      "expected": {
+        "category": "access_permission_issue",
+        "priority": "medium",
+        "confidence": "high",
+        "escalation_recommended": true,
+        "kb_articles_cited": ["KB-003"]
+      }
+    },
+    {
+      "id": "EVAL-03",
+      "awkward_type": null,
+      "note": "Locked in from a live handle_ticket() run on 2026-09-01. NEWLY OPEN (2026-09-01): after the same-day category-lock fix (see PROGRESS.md 'category-lock fix' entry), a re-run of the full suite showed this case mismatching on escalation_recommended (expected true, got false) for the first time -- it had passed before the fix. Not yet established whether this is a real effect of the fix (this case also dropped from two searches to one) or ordinary model run-to-run variance; left open per explicit user decision, not investigated further here.",
+      "input": {
+        "ticket_text": "The weekly KPI dashboard in Power BI hasn't refreshed since Tuesday and all the numbers are showing last week's data."
+      },
+      "expected": {
+        "category": "power_bi_report_issue",
+        "priority": "high",
+        "confidence": "high",
+        "escalation_recommended": true,
+        "kb_articles_cited": ["KB-004"]
+      }
+    },
+    {
+      "id": "EVAL-04",
+      "awkward_type": null,
+      "note": "This is the real ticket from your workflow used earlier in this session (python -m assistant.assistant). The observed result from that run (category='sql_database_issue', priority='medium', confidence='high', escalation_recommended=false, kb_articles_cited=['KB-005']) has now been user-confirmed and locked into 'expected' below as-is on 2026-09-01.",
+      "input": {
+        "ticket_text": "My SQL query keeps timing out whenever I try to join more than two tables in the practice database. It worked fine last week. What should I check?"
+      },
+      "expected": {
+        "category": "sql_database_issue",
+        "priority": "medium",
+        "confidence": "high",
+        "escalation_recommended": false,
+        "kb_articles_cited": ["KB-005"]
+      }
+    },
+    {
+      "id": "EVAL-05",
+      "awkward_type": null,
+      "note": "Locked in from a live handle_ticket() run on 2026-09-01.",
+      "input": {
+        "ticket_text": "The row counts in my practice database output don't match what's in the source CSV -- looks like some records are duplicated after the last import."
+      },
+      "expected": {
+        "category": "data_issue",
+        "priority": "medium",
+        "confidence": "high",
+        "escalation_recommended": false,
+        "kb_articles_cited": ["KB-006"]
+      }
+    },
+    {
+      "id": "EVAL-06",
+      "awkward_type": null,
+      "note": "Locked in from a live handle_ticket() run on 2026-09-01. KNOWN KNOWLEDGE-BASE CONTENT GAP (not urgent, flagged for awareness): the model correctly classified this as technical_question, but KB-007 ('General how-to / technical question') is only a generic escalation-handling stub in src/data/knowledgeBase.json -- it has no actual steps for answering this specific SSMS-to-Power-BI-export question, which is why confidence came back 'low' and escalation_recommended 'true' rather than the assistant giving a real answer. If this how-to question (or similar technical_question-category questions) recur, a real KB article covering data-export/connection workflows would let the assistant answer directly instead of always routing to a human.",
+      "input": {
+        "ticket_text": "Is there a way to export query results straight from SQL Server Management Studio to a Power BI dataset, or do I need to go through Excel first?"
+      },
+      "expected": {
+        "category": "technical_question",
+        "priority": "low",
+        "confidence": "low",
+        "escalation_recommended": true,
+        "kb_articles_cited": ["KB-007"]
+      }
+    },
+    {
+      "id": "EVAL-07",
+      "awkward_type": "tool_finds_nothing",
+      "note": "general_support_request has no article in src/data/knowledgeBase.json, and this ticket is written to be vague enough that no other category's KB article should score a real match -- the deliberate 'nothing found' case. That assumption was briefly violated: prior to a 2026-09-01 fix, handle_ticket() would speculatively re-search under a different, unrelated category (technical_question) after the first search came back weak, and KB-007 (a generic stub) scored a false-positive match there purely from tools.py's flat category-match bonus, not real relevance -- confidence came back 'low' and kb_articles_cited ['KB-007'] instead of 'none'/[]. FIXED 2026-09-01: core.py now rejects any search_knowledge_base call for a category other than the ticket's first-searched one, and prompt.py's SYSTEM_PROMPT now explicitly instructs the model not to try another category. Verified live: the assistant now makes exactly one search call (general_support_request only), correctly finds nothing, and confidence/kb_articles_cited are back to matching 'expected' exactly ('none'/[]) -- no edit needed to those fields. 'priority' (expected 'low', currently observed 'medium') remains a separate, pre-existing, still-open mismatch unrelated to this fix. See the PROGRESS.md 'category-lock fix' entry for the full root-cause writeup, including a real side effect the fix had on EVAL-08.",
+      "input": {
+        "ticket_text": "I'm not sure who to ask, but my whole workspace feels slower today and I don't know if it's just me or something bigger."
+      },
+      "expected": {
+        "category": "general_support_request",
+        "priority": "low",
+        "confidence": "none",
+        "escalation_recommended": true,
+        "kb_articles_cited": []
+      }
+    },
+    {
+      "id": "EVAL-08",
+      "awkward_type": "genuinely_ambiguous",
+      "note": "Reads as plausibly either access_permission_issue (access was pulled) or power_bi_report_issue (the report itself is broken) -- deliberately doesn't resolve which one it is. User-confirmed expected category is access_permission_issue, which matches the live pipeline's observed classification. kb_articles_cited locked in from a live handle_ticket() run on 2026-09-01: ['KB-003', 'KB-004'], matching both this run and the 2026-08-31 run. CORRECTED on 2026-09-01: escalation_recommended changed from the user's original false to true, matching what both the 2026-08-31 and 2026-09-01 live runs consistently returned. Not a bug -- KB-003 (the access_permission_issue article) has its own documented step that a permission change 'requires... a human must approve and apply it,' so this category escalates almost by construction, on top of the ticket's designed genuine ambiguity. Matches this project's human-in-the-loop principle. See the PROGRESS.md entry documenting this finding. SIDE EFFECT, LEFT OPEN (2026-09-01): the same-day category-lock fix (see PROGRESS.md 'category-lock fix' entry) that corrected EVAL-07's spurious KB-007 match also stops this case's previously-observed second search under power_bi_report_issue -- the assistant now only searches its first-classified category (access_permission_issue) and a re-run cited kb_articles_cited: ['KB-003'] only, dropping KB-004. This case was deliberately designed to be cross-category ambiguous, so that second search was arguably legitimate rather than a bug, unlike EVAL-07's. Per explicit user decision, 'expected' was NOT updated to ['KB-003'] -- this is left as an open, tracked mismatch for a separate look, not resolved here.",
+      "input": {
+        "ticket_text": "I can't get into the finance Power BI workspace anymore -- not sure if my access got pulled or if the report itself is broken."
+      },
+      "expected": {
+        "category": "access_permission_issue",
+        "priority": "medium",
+        "confidence": "medium",
+        "escalation_recommended": true,
+        "kb_articles_cited": ["KB-003", "KB-004"]
+      }
+    },
+    {
+      "id": "EVAL-09",
+      "awkward_type": "malformed_or_incomplete",
+      "note": "No system named, no error described, no category signal -- tests the fallback path for input too thin to classify confidently.",
+      "input": {
+        "ticket_text": "it broke again pls fix"
+      },
+      "expected": {
+        "category": "general_support_request",
+        "priority": "low",
+        "confidence": "none",
+        "escalation_recommended": true,
+        "kb_articles_cited": []
+      }
+    },
+    {
+      "id": "EVAL-10",
+      "awkward_type": null,
+      "note": "A second, different SQL scenario since SQL/database work is the core of your real workflow -- not a duplicate of EVAL-04 (three-table join + indexing question, vs. EVAL-04's plain timeout report). Locked in from a live handle_ticket() run on 2026-09-01. NEWLY OPEN (2026-09-01): after the same-day category-lock fix (see PROGRESS.md 'category-lock fix' entry), a re-run of the full suite showed this case mismatching on confidence (expected medium, got high) for the first time -- it had passed before the fix. Not yet established whether this is a real effect of the fix (this case also dropped from two searches to one) or ordinary model run-to-run variance; left open per explicit user decision, not investigated further here.",
+      "input": {
+        "ticket_text": "Now that I added a third table to my join, the query runs for a while and then just errors out with a timeout -- same practice database as before. Is this an indexing thing?"
+      },
+      "expected": {
+        "category": "sql_database_issue",
+        "priority": "medium",
+        "confidence": "medium",
+        "escalation_recommended": false,
+        "kb_articles_cited": ["KB-005"]
+      }
+    }
+  ]
+}
