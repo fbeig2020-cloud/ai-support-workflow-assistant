@@ -29,3 +29,7 @@ tmp/
 
 # Saved support summaries (runtime-generated ticket data, not shipped code)
 summaries/
+
+# Python
+__pycache__/
+*.pyc

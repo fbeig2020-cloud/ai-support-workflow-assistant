@@ -1,0 +1,12 @@
+{
+  "requestId": "TICKET-DEMO-001",
+  "category": "login_problem",
+  "priority": "high",
+  "summary": "I can't log into my account, it keeps saying my password is wrong.",
+  "matchedSignals": [
+    "log in",
+    "password",
+    "can't log"
+  ],
+  "createdAt": "2026-09-01T01:31:24.803Z"
+}
