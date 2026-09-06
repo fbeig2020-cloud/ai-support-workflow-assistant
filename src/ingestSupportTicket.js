@@ -125,9 +125,10 @@ function validateInput(input) {
  *
  * @param {unknown} input   Must have ticketId, requestText, studentEmail (all
  *   non-empty strings); studentName and source are optional strings.
+ * @param {{ queueDir?: string }} [options]   Override the queue directory (tests only).
  * @returns {IngestTicketResult}
  */
-export function ingestSupportTicket(input) {
+export function ingestSupportTicket(input, options = {}) {
   const validation = validateInput(input);
   if (!validation.ok) {
     return notIngested(validation.reason, input);
@@ -144,17 +145,18 @@ export function ingestSupportTicket(input) {
     source: source ?? null,
   };
 
-  const queueResult = addTicketToQueue(ticket);
+  const queueResult = addTicketToQueue(ticket, options);
   if (!queueResult.ok || !queueResult.saved) {
     return queueResult;
   }
 
-  const studentPath = join(QUEUE_DIR, `${ticketId}.student.json`);
+  const queueDir = options.queueDir ?? QUEUE_DIR;
+  const studentPath = join(queueDir, `${ticketId}.student.json`);
   const studentRecord = { requestId: ticketId, studentEmail, studentName: studentName ?? null };
 
   try {
-    if (!existsSync(QUEUE_DIR)) {
-      mkdirSync(QUEUE_DIR, { recursive: true });
+    if (!existsSync(queueDir)) {
+      mkdirSync(queueDir, { recursive: true });
     }
     writeFileSync(studentPath, JSON.stringify(studentRecord, null, 2), { encoding: 'utf8' });
   } catch (error) {
@@ -162,7 +164,7 @@ export function ingestSupportTicket(input) {
     const errorClass = error.code === 'EACCES' || error.code === 'EPERM' ? 'StudentInfoAccessDeniedError' : 'StudentInfoWriteFailedError';
     process.stderr.write(`ALERT: support ticket student info write failed: ${message}\n`);
 
-    const flagResult = addTicketToQueue({ ...ticket, contactInfoMissing: true });
+    const flagResult = addTicketToQueue({ ...ticket, contactInfoMissing: true }, options);
     if (flagResult.ok && flagResult.saved) {
       return {
         ok: false,
