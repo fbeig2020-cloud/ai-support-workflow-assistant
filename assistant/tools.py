@@ -48,6 +48,7 @@ def search_knowledge_base(category: str, keywords: list[str] | None = None) -> d
     elif isinstance(keywords, str):
         keywords = [k.strip() for k in keywords.split(",") if k.strip()]
     elif not isinstance(keywords, list):
+        print(f"WARNING: search_knowledge_base got a non-list keywords value: {keywords!r} — discarding it")
         keywords = []
 
     try:
@@ -58,6 +59,7 @@ def search_knowledge_base(category: str, keywords: list[str] | None = None) -> d
             "found": False,
             "confidence": "none",
             "results": [],
+            "error": "kb_unavailable",
             "message": f"Knowledge base unavailable: {e}",
         }
 

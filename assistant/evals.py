@@ -69,26 +69,30 @@ def run_eval(cases):
 
     for i, case in enumerate(cases, start=1):
         total += 1
-        ticket_text = case["input"]["ticket_text"]
-        expected = case["expected"]
+        try:
+            ticket_text = case["input"]["ticket_text"]
+            expected = case["expected"]
 
-        actual = handle_ticket(ticket_text)
-        problems = safety_checks(actual)
+            actual = handle_ticket(ticket_text)
+            problems = safety_checks(actual)
 
-        if problems:
-            failures.append(f"case #{i}: SAFETY VIOLATION — {problems}")
-            continue
+            if problems:
+                failures.append(f"case #{i}: SAFETY VIOLATION — {problems}")
+                continue
 
-        if case_passes(expected, actual):
-            passed += 1
-        else:
+            if case_passes(expected, actual):
+                passed += 1
+            else:
+                label = case.get("id", f"#{i}")
+                mismatches = {
+                    key: (expected_value, actual.get(key))
+                    for key, expected_value in expected.items()
+                    if key not in actual or not field_matches(expected_value, actual[key])
+                }
+                failures.append(f"case {label}: mismatched fields (expected, actual) = {mismatches}")
+        except Exception as e:
             label = case.get("id", f"#{i}")
-            mismatches = {
-                key: (expected_value, actual.get(key))
-                for key, expected_value in expected.items()
-                if key not in actual or not field_matches(expected_value, actual[key])
-            }
-            failures.append(f"case {label}: mismatched fields (expected, actual) = {mismatches}")
+            failures.append(f"case {label}: CRASHED — {type(e).__name__}: {e}")
 
     return total, passed, failures
 
