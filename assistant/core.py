@@ -140,13 +140,40 @@ def handle_ticket(ticket_text: str) -> dict:
             ),
             "confidence": "none",
         }
-    else:
+    elif response.stop_reason == "end_turn":
         text = next(b.text for b in response.content if b.type == "text")
-        data = json.loads(text)
-
-        data["kb_articles_cited"] = [
+        try:
+         data = json.loads(text)
+        except json.JSONDecodeError as e:
+         data = {
+            "category": "general_support_request",
+            "priority": "medium",
+            "kb_articles_cited": [],
+            "draft_reply": "",
+            "escalation_recommended": True,
+            "escalation_reason": (
+            f"Model returned invalid JSON that could not be parsed ({e}). "
+            f"Raw response (truncated): {text[:200]!r}"
+        ),
+            "confidence": "none",
+            }
+        else:
+         data["kb_articles_cited"] = [
             article_id for article_id in data.get("kb_articles_cited", []) if article_id in cited_article_ids
-        ]
+            ]
+    else:
+        data = {
+            "category": "general_support_request",
+            "priority": "medium",
+            "kb_articles_cited": [],
+            "draft_reply": "",
+            "escalation_recommended": True,
+            "escalation_reason": (
+                 f"Unexpected stop reason from the model: '{response.stop_reason}'. "
+                 f"Escalating instead of attempting to parse a response that may not contain text."
+            ),
+            "confidence": "none",
+        }
 
     data["requires_human_approval"] = True
     data["status"] = "proposed"
