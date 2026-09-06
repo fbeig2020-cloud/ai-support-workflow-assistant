@@ -133,8 +133,8 @@
       },
       "expected": {
         "category": "general_support_request",
-        "priority": "low",
-        "confidence": "none",
+        "priority": "medium",
+        "confidence": "low",
         "escalation_recommended": true,
         "kb_articles_cited": []
       }
