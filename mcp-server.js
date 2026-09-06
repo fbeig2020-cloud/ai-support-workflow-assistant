@@ -14,6 +14,7 @@ import { searchKnowledgeBase } from "./src/knowledgeBaseSearch.js";
 import { generateDraftResponse } from "./src/generateDraftResponse.js";
 import { listQueuedTickets, addTicketToQueue, removeTicketFromQueue } from "./src/ticketQueue.js";
 import { generateSupportSummaryAndLog, saveSupportSummaryAndLog } from "./src/auditedActions.js";
+import { ingestSupportTicket } from "./src/ingestSupportTicket.js";
 import { appendAuditEntry } from "./src/auditLog.js";
 import {
   toolInvocationStarted,
@@ -154,6 +155,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["requestId", "decision"],
       },
     },
+    {
+      name: "ingestSupportTicket",
+      description:
+        "Call this when a brand-new support ticket arrives, before any classification has happened. Creates the ticket in the queue with status 'unclassified', ready for the classify tool to pick up later. Requires studentEmail for internal contact tracking — that email (and studentName, if given) is stored separately and is never shown back to you, never logged, and never used in classification or drafting.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          ticketId: { type: "string" },
+          requestText: { type: "string" },
+          studentEmail: { type: "string" },
+          studentName: { type: "string" },
+          source: { type: "string" },
+        },
+        required: ["ticketId", "requestText", "studentEmail"],
+      },
+    },
   ],
 }));
 
@@ -195,6 +212,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function dispatchTool(name, args, correlationId) {
   if (name === "classify") {
     const result = classifySupportRequest(args.requestText);
+    if (result.logEntry?.error_class) {
+      await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
+    }
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+
+  if (name === "ingestSupportTicket") {
+    const result = ingestSupportTicket(args);
     if (result.logEntry?.error_class) {
       await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
     }

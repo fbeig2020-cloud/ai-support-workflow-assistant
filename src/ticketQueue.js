@@ -190,7 +190,7 @@ export function listQueuedTickets(options = {}) {
 
   let files;
   try {
-    files = readdirSync(dir).filter((name) => name.endsWith('.json'));
+    files = readdirSync(dir).filter((name) => name.endsWith('.json') && !name.endsWith('.student.json'));
   } catch {
     return tickets;
   }
