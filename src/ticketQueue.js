@@ -162,6 +162,9 @@ export function addTicketToQueue(ticket, options = {}) {
  * @returns {number}
  */
 function priorityRank(priority) {
+  if (priority === null || priority === undefined) {
+    return Infinity;
+  }
   return PRIORITY_RANK.has(priority) ? PRIORITY_RANK.get(priority) : -1;
 }
 
@@ -207,7 +210,12 @@ export function listQueuedTickets(options = {}) {
   }
 
   tickets.sort((a, b) => {
-    const rankDiff = priorityRank(b.priority) - priorityRank(a.priority);
+    const rankA = priorityRank(a.priority);
+    const rankB = priorityRank(b.priority);
+    if (rankA === Infinity && rankB === Infinity) {
+      return (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0);
+    }
+    const rankDiff = rankB - rankA;
     if (rankDiff !== 0) return rankDiff;
     return (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0);
   });
