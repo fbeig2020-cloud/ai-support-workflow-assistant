@@ -8,5 +8,8 @@
     "password",
     "can't log"
   ],
-  "createdAt": "2026-09-01T01:31:24.803Z"
+  "createdAt": "2026-09-01T01:31:24.803Z",
+  "previouslyRejected": true,
+  "rejectionReason": null,
+  "rejectionCount": 1
 }
