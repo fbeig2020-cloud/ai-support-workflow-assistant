@@ -6,7 +6,7 @@ A general reference for AI system architecture — the seven-layer stack and whe
 
 **Sources:** `architecture.md` (design intent), direct reads of the files under `src/` and `tests/`, and (Part V) the official course definition of the INPACT trust framework, Module 1 Lesson 2, "Trust Before Intelligence Framework."
 
-**Compiled:** 2026-08-30. **Updated:** 2026-09-07 — Part V's INPACT definition corrected (see that section's note).
+**Compiled:** 2026-08-30. **Updated:** 2026-09-07 — Part V: all six INPACT dimensions now evaluated (see that section's note).
 
 This document mirrors [architecture/7-layer-architecture-mapping.md](7-layer-architecture-mapping.md) in evidence-tier discipline: every claim is marked **Confirmed** (verified by reading the cited source or test directly), **Documented** (described in `architecture.md`, not independently re-verified here), or **Gap** (named out of scope, or found genuinely absent).
 
@@ -110,26 +110,42 @@ Row 1's citation is a direct source read: `classify.js:159` was opened and the g
 
 ## Part V — INPACT Trust Band Scorecard
 
-INPACT is now the **confirmed** six-dimension framework from Module 1, Lesson 2 of the course, "Trust Before Intelligence Framework": **I**nstant, **N**atural, **P**ermitted, **A**daptive, **C**ontextual, **T**ransparent. This replaces an earlier, incorrect guess at the definition (Integrity, Non-repudiation, Provenance, Accountability, Controllability, Transparency) that appeared in a prior version of this section.
+INPACT is the **confirmed** six-dimension framework from Module 1, Lesson 2 of the course, "Trust Before Intelligence Framework": **I**nstant, **N**atural, **P**ermitted, **A**daptive, **C**ontextual, **T**ransparent. This replaces an earlier, incorrect guess at the definition (Integrity, Non-repudiation, Provenance, Accountability, Controllability, Transparency) that appeared in a prior version of this section.
 
-> **Correction — 2026-09-07:** the definition below is confirmed against the course materials, not provisional. Two of the six dimensions — Permitted and Transparent — have been evaluated against real project evidence. The other four — Instant, Natural, Adaptive, Contextual — have not been evaluated yet and are marked accordingly below, with no invented evidence.
+> **Status — 2026-09-07:** all six dimensions are now evaluated against real project evidence — this section no longer carries provisional or "not yet evaluated" language. The verdicts below are deliberately uneven: two dimensions are test-hardened, one is disclosed as not met by design, and one is a genuine mixed result rather than a single score, because the same evidence looks different depending on who the output is for.
 
-**Status scale:** **Pass** — evaluated against real project evidence, and held up. **Not yet evaluated** — no evidence gathered yet, deliberately unscored rather than assumed to fail.
+**Band scale:** **Hardened** — verified in source and covered by a test that tries to break it. **Confirmed** — verified directly in source; no dedicated break-test yet. **Documented** — observed in project records, not proven by source or a test. **Mixed** — passes for part of its intended audience, not for another part. **Not Met** — absent by deliberate design choice, disclosed rather than hidden.
 
-| Dimension | Definition | Status | Evidence |
+| Dimension | Definition | Band | Evidence |
 |---|---|---|---|
-| Instant | Responds in under 2 seconds | Not yet evaluated | No latency measurement has been taken against this system. |
-| Natural | Speaks in business language, not model/schema language | Not yet evaluated | Output phrasing has not been reviewed against this criterion. |
-| Permitted | Attribute-based access control — only does what the asker is authorized for | **Pass** | `presentToAgent.js` blocks restricted actions without `requiresApproval: true`; `reviewClassification.js` and `reviewEscalation.js` require human approval before anything is final; `generateEscalationRecommendation.js` is shaped to pass through the same guardrail rather than bypassing it; an integration test confirms the escalation action actually clears both `guardrail.js` and `presentToAgent.js`. Known limitation: only one undifferentiated reviewer role exists — no routing between reviewer types. |
-| Adaptive | Improves continuously rather than being frozen at training time | Not yet evaluated | No continuous-improvement mechanism has been assessed. |
-| Contextual | Carries context across domains instead of answering each question in isolation | Not yet evaluated | Cross-domain context carry-over has not been assessed. |
-| Transparent | Audit trails, so any answer can be traced back to how it was reached | **Pass (strongest dimension)** | `appendAuditEntry()` in `auditLog.js` is SHA-256 hash-chained and append-only; `tests/auditLog.test.js` proves tampering with a past entry breaks its recomputed hash; write failures fail closed with an `ALERT:` line to stderr rather than failing silently; every action module logs through this same single path via `auditedActions.js`. Known limitation: no automated `verifyAuditLog()` tool exists yet to walk the full chain on demand, and no real (non-test) `audit-trail.log` has been produced from a live run. |
+| Instant | Responds in under 2 seconds | Documented | MCP session notes record every tool call running under 50ms — well inside the 2-second bar — which is why progress notifications were correctly declined as unnecessary during that work. Known limitation: no dedicated timing/performance test proves this formally, so it stays at Documented rather than Hardened. |
+| Natural | Speaks in business language, not model/schema language | **Mixed** | `generateDraftResponse.js` produces plain, human-readable business language intended for students to read directly — this passes. Most internal outputs (classification results, audit log entries, knowledge base search results) are structured JSON with schema-level field names (`confidence`, `matchedSignals`, `logEntry`) intended for other code or auditors, not a human reader — these do not meet "Natural." Scored as mixed rather than a single verdict because the criterion applies differently depending on the output's intended audience: student-facing output passes, internal/auditor-facing output doesn't. |
+| Permitted | Attribute-based access control — only does what the asker is authorized for | **Hardened** | `presentToAgent.js` blocks restricted actions without `requiresApproval: true`; `reviewClassification.js` and `reviewEscalation.js` require human approval before anything is final; `generateEscalationRecommendation.js` is shaped to pass through the same guardrail rather than bypassing it; an integration test confirms the escalation action actually clears both `guardrail.js` and `presentToAgent.js`. Known limitation: only one undifferentiated reviewer role exists — no routing between reviewer types. |
+| Adaptive | Improves continuously rather than being frozen at training time | **Not Met** | Every reasoning module (`classify.js`, `knowledgeBaseSearch.js`, `generateEscalationRecommendation.js`, and the rest) is fixed, rule-based logic; none learns from or updates itself based on past outcomes. This reflects the project's own stated design principle, repeated in header comments across the codebase: *"LLMs are probabilistic. Production systems must be deterministic."* By design, not oversight: a deliberate tradeoff for reliability, reproducibility, and auditability in a support-triage context. Improving the system's logic requires a human developer to make and test a code change — intentional, since it keeps every behavior explainable and testable. |
+| Contextual | Carries context across domains instead of answering each question in isolation | Confirmed | The full pipeline is built as an explicit chain, each Skill passing its typed output as the next Skill's input (classify → priority → search → escalation → draft → summary). `generateSupportSummary.js` includes a real consistency check that refuses to build a summary claiming an escalation happened without a matching escalation review actually present — proving context is carried and cross-validated across the ticket's full lifecycle, not answered in isolation. Confirmed rather than Hardened: this consistency check has not been exercised by a dedicated test that tries to defeat it, only verified by reading the source. |
+| Transparent | Audit trails, so any answer can be traced back to how it was reached | **Hardened (strongest dimension)** | `appendAuditEntry()` in `auditLog.js` is SHA-256 hash-chained and append-only; `tests/auditLog.test.js` proves tampering with a past entry breaks its recomputed hash; write failures fail closed with an `ALERT:` line to stderr rather than failing silently; every action module logs through this same single path via `auditedActions.js`. Known limitation: no automated `verifyAuditLog()` tool exists yet to walk the full chain on demand, and no real (non-test) `audit-trail.log` has been produced from a live run. |
 
-**What this reflects so far:**
-- **Both evaluated dimensions pass by the same standard as Part IV — a test that tries to break the mechanism, not just a happy-path check.** Permitted is backed by an integration test confirming the escalation path actually clears the guardrail; Transparent is backed by a tampering test that proves a corrupted entry is detectable.
-- **The four open dimensions are unscored, not failing.** Instant and Adaptive in particular need infrastructure this build doesn't have yet — latency instrumentation and a live improvement loop — so scoring them without that evidence would mean guessing again, the exact mistake this correction fixes.
+**Summary table — all six dimensions**
 
-**Known limitations disclosed so far:**
+| Dimension | Band | One-line why |
+|---|---|---|
+| Instant | Documented | Sub-50ms tool calls observed in session notes; no dedicated timing test |
+| Natural | Mixed | Student-facing drafts pass; internal/auditor-facing JSON doesn't |
+| Permitted | Hardened | Guardrail blocks unapproved actions; break-tested by an integration test |
+| Adaptive | Not Met | Deliberately deterministic, rule-based logic — no self-updating by design |
+| Contextual | Confirmed | Typed chain plus a real cross-step consistency check in the summary Skill |
+| Transparent | Hardened | Hash-chained audit log; break-tested by a tampering test |
+
+**What this reflects, now that all six are scored:**
+- **The two Hardened dimensions share the same signature as Part IV — a test that tries to break the mechanism, not just a happy-path check.** Permitted is backed by an integration test confirming the escalation path actually clears the guardrail; Transparent is backed by a tampering test that proves a corrupted entry is detectable.
+- **Not Met is a disclosed design choice, not a discovered defect.** Adaptive fails by the letter of the definition because the system is deliberately deterministic — the same principle that makes Permitted and Transparent strong (fixed, auditable, testable rules) is exactly what keeps Adaptive from being true. The three are connected, not independent: trading away continuous self-modification is what buys the reliability the other two dimensions depend on.
+- **Mixed is the most honest verdict for Natural, not a hedge.** The definition doesn't specify an audience, but this system has two very different ones — the student reading a draft response, and the developer or auditor reading a log entry — and they get different answers. Flattening that to a single Pass or Fail would hide the real, audience-dependent split.
+- **Confirmed sits deliberately below Hardened for Contextual.** The cross-step consistency check in `generateSupportSummary.js` is real and verified in source, but no test currently tries to force an inconsistent summary through it — so the claim rests on code review, not a proof-by-attempted-failure the way Permitted and Transparent's do.
+
+**Known limitations disclosed across all six:**
+- **Instant** — no dedicated timing/performance test; the sub-50ms figure comes from session notes, not an automated benchmark.
+- **Natural** — no style linter or audience-aware check enforces plain language on the student-facing path; the split is observed, not mechanically guaranteed to hold as the codebase grows.
 - **Permitted** — only one undifferentiated reviewer role exists; no routing between reviewer types.
+- **Adaptive** — not a limitation to fix; a standing tradeoff. Revisit only if the project's reliability/auditability priority changes.
+- **Contextual** — the consistency check has not been stress-tested by a case engineered to defeat it.
 - **Transparent** — no automated `verifyAuditLog()` chain-walk tool yet, and no real (non-test) `audit-trail.log` has been produced from a live run.
-- **Instant, Natural, Adaptive, Contextual** — open. Evaluate each against real evidence before treating this scorecard as complete.
