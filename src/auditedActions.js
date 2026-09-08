@@ -16,6 +16,18 @@
  * guardrail.js: call the underlying function, then persist the logEntry it
  * produced via auditLog.js's sanctioned write path.
  *
+ * STORY-008 (Classification Learning) adds three more wrappers following
+ * that same shape — recordClassificationCorrectionAndLog,
+ * checkForSuggestedRuleAndLog, reviewSuggestedRuleAndLog — with one
+ * deliberate difference on the last: when a suggestion is approved,
+ * reviewSuggestedRuleAndLog also calls classify.js's
+ * applyApprovedClassificationRule() and persists a second, distinct audit
+ * record for that write. This is the one place in this file where the
+ * wrapper does more than "call the pure function, log its result" — because
+ * this is the one action in this repo where a human approval is supposed to
+ * actually change future behavior, not just get recorded. Rejecting a
+ * suggestion triggers no such second call.
+ *
  * SCOPE NOTE: this module is not something STORY-003's story text asked
  * for. The story only asked to persist the logEntry objects classify.js
  * and reviewClassification.js already build. But nothing in this repo
@@ -35,7 +47,7 @@
  * auditLog.js) so a caller can decide how to react.
  */
 
-import { classifySupportRequest } from './classify.js';
+import { classifySupportRequest, applyApprovedClassificationRule } from './classify.js';
 import { reviewClassification } from './reviewClassification.js';
 import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
 import { generateDraftResponse } from './generateDraftResponse.js';
@@ -43,6 +55,8 @@ import { generateEscalationRecommendation } from './generateEscalationRecommenda
 import { reviewEscalation } from './reviewEscalation.js';
 import { generateSupportSummary } from './generateSupportSummary.js';
 import { saveSupportSummary } from './saveSupportSummary.js';
+import { recordClassificationCorrection, checkForSuggestedRule } from './classificationCorrections.js';
+import { reviewSuggestedRule } from './reviewSuggestedRule.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -166,4 +180,70 @@ export function saveSupportSummaryAndLog(summary, options = {}) {
   const result = saveSupportSummary(summary, options);
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
+}
+
+/**
+ * Record a human's correction of a wrong classification and persist the
+ * resulting logEntry to the audit trail.
+ *
+ * @param {unknown} correction
+ * @param {{ logPath?: string, correctionsPath?: string|URL }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `correctionsPath`
+ *   is passed through to recordClassificationCorrection (tests only).
+ * @returns {import('./classificationCorrections.js').RecordCorrectionResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function recordClassificationCorrectionAndLog(correction, options = {}) {
+  const result = recordClassificationCorrection(correction, options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Check recorded corrections for a repeating pattern, queue any resulting
+ * suggestion(s) (via ticketQueue.js), and persist the resulting logEntry to
+ * the audit trail.
+ *
+ * @param {{ logPath?: string, correctionsPath?: string|URL, queueDir?: string }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `correctionsPath`/`queueDir`
+ *   are passed through to checkForSuggestedRule (tests only).
+ * @returns {import('./classificationCorrections.js').CheckSuggestionsResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function checkForSuggestedRuleAndLog(options = {}) {
+  const result = checkForSuggestedRule(options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Review a suggested classification rule change and persist the resulting
+ * logEntry to the audit trail. On approval only, also applies the rule via
+ * classify.js's applyApprovedClassificationRule() and persists a second,
+ * distinct audit record for that write — see this file's header comment for
+ * why this one wrapper does more than its siblings. Rejecting persists only
+ * the decision; nothing is applied.
+ *
+ * @param {unknown} suggestion
+ * @param {unknown} decision
+ * @param {{ logPath?: string, rulesPath?: string|URL }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `rulesPath`
+ *   is passed through to applyApprovedClassificationRule (tests only, approve path only).
+ * @returns {import('./reviewSuggestedRule.js').SuggestedRuleReviewResult &
+ *   { auditResult: import('./auditLog.js').AuditAppendResult,
+ *     applyResult?: ReturnType<typeof applyApprovedClassificationRule>,
+ *     applyAuditResult?: import('./auditLog.js').AuditAppendResult }}
+ */
+export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
+  const result = reviewSuggestedRule(suggestion, decision);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+
+  if (result.outcome !== 'approved') {
+    return { ...result, auditResult };
+  }
+
+  const applyResult = applyApprovedClassificationRule(
+    { keyword: suggestion.keyword, category: suggestion.correctCategory },
+    options,
+  );
+  const applyAuditResult = appendAuditEntry(applyResult.logEntry, options);
+  return { ...result, auditResult, applyResult, applyAuditResult };
 }

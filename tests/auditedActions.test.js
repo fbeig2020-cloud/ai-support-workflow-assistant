@@ -3,8 +3,15 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { classifyAndLog, reviewAndLog } from '../src/auditedActions.js';
+import {
+  classifyAndLog,
+  reviewAndLog,
+  recordClassificationCorrectionAndLog,
+  checkForSuggestedRuleAndLog,
+  reviewSuggestedRuleAndLog,
+} from '../src/auditedActions.js';
 import { classifySupportRequest } from '../src/classify.js';
+import { SUGGESTION_THRESHOLD } from '../src/classificationCorrections.js';
 
 // Each test file gets its own unique subdirectory (not the shared 'tests/tmp'
 // root) because node --test runs files concurrently in separate processes;
@@ -134,4 +141,138 @@ test('a blocked audit write still returns the classification result, with auditR
   assert.equal(result.category, 'login_problem');
   assert.equal(result.auditResult.ok, false);
   assert.equal(result.auditResult.error, 'audit_log_write_failed');
+});
+
+// --- STORY-008: classification learning wrappers ------------------------------
+
+const VALID_CORRECTION = {
+  requestId: 'REQ-1',
+  keyword: 'widget',
+  wrongCategory: 'sql_database_issue',
+  correctCategory: 'general_support_request',
+  reviewer: 'agent.jane',
+};
+
+const VALID_SUGGESTION = {
+  type: 'suggested_rule_change',
+  keyword: 'widget',
+  wrongCategory: 'sql_database_issue',
+  correctCategory: 'general_support_request',
+  timesSeen: 3,
+};
+
+test('recordClassificationCorrectionAndLog persists the correction logEntry to the audit trail', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const result = recordClassificationCorrectionAndLog(VALID_CORRECTION, { logPath, correctionsPath });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.recorded, true);
+  assert.equal(result.auditResult.ok, true);
+  const [record] = readLines(logPath);
+  assert.equal(record.entry.event, 'classification_correction_recorded');
+});
+
+test('checkForSuggestedRuleAndLog persists a logEntry whether or not a suggestion is created', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+
+  const noSuggestionYet = checkForSuggestedRuleAndLog({ logPath, correctionsPath, queueDir });
+  assert.equal(noSuggestionYet.suggested, false);
+  assert.equal(noSuggestionYet.auditResult.ok, true);
+
+  for (let i = 0; i < SUGGESTION_THRESHOLD; i++) {
+    recordClassificationCorrectionAndLog({ ...VALID_CORRECTION, requestId: `REQ-${i}` }, { logPath, correctionsPath });
+  }
+  const withSuggestion = checkForSuggestedRuleAndLog({ logPath, correctionsPath, queueDir });
+  assert.equal(withSuggestion.suggested, true);
+
+  const lines = readLines(logPath);
+  assert.ok(lines.some((line) => line.entry.event === 'rule_suggestion_created'));
+});
+
+test('reviewSuggestedRuleAndLog on reject logs the decision but does not call applyApprovedClassificationRule', () => {
+  const logPath = tempLogPath();
+  const decision = { action: 'reject', reviewer: 'agent.jane' };
+  const result = reviewSuggestedRuleAndLog(VALID_SUGGESTION, decision, { logPath });
+
+  assert.equal(result.outcome, 'rejected');
+  assert.equal(result.auditResult.ok, true);
+  assert.equal(result.applyResult, undefined);
+
+  const lines = readLines(logPath);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].entry.event, 'rule_suggestion_rejected');
+});
+
+test('reviewSuggestedRuleAndLog on approve also applies the rule and logs a second, distinct entry', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  const decision = { action: 'approve', reviewer: 'agent.jane' };
+  const result = reviewSuggestedRuleAndLog(VALID_SUGGESTION, decision, { logPath, rulesPath });
+
+  assert.equal(result.outcome, 'approved');
+  assert.equal(result.applyResult.ok, true);
+  assert.equal(result.applyResult.applied, true);
+  assert.equal(result.applyAuditResult.ok, true);
+
+  const lines = readLines(logPath);
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0].entry.event, 'rule_suggestion_approved');
+  assert.equal(lines[1].entry.event, 'approved_classification_rule_applied');
+  assert.equal(lines[1].prevHash, lines[0].hash);
+});
+
+// --- STORY-008: full flow, tying classificationCorrections + reviewSuggestedRule
+//     + classify.js together -----------------------------------------------------
+
+test('a rejected suggestion does not change classifySupportRequest()\'s behavior for that keyword', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+
+  const before = classifySupportRequest('There is a gizmo problem today.', { rulesPath });
+  assert.equal(before.category, 'general_support_request');
+
+  for (let i = 0; i < SUGGESTION_THRESHOLD; i++) {
+    recordClassificationCorrectionAndLog(
+      { requestId: `REQ-${i}`, keyword: 'gizmo', wrongCategory: 'general_support_request', correctCategory: 'data_issue', reviewer: 'agent.jane' },
+      { logPath, correctionsPath },
+    );
+  }
+  const { suggestions } = checkForSuggestedRuleAndLog({ logPath, correctionsPath, queueDir });
+  assert.equal(suggestions.length, 1);
+
+  const rejectResult = reviewSuggestedRuleAndLog(suggestions[0], { action: 'reject', reviewer: 'agent.jane' }, { logPath, rulesPath });
+  assert.equal(rejectResult.outcome, 'rejected');
+
+  const after = classifySupportRequest('There is a gizmo problem today.', { rulesPath });
+  assert.equal(after.category, 'general_support_request', 'a rejected suggestion must not change classify.js behavior');
+});
+
+test('an approved suggestion DOES change classifySupportRequest()\'s behavior for that keyword going forward', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+
+  const before = classifySupportRequest('There is a sprocket problem today.', { rulesPath });
+  assert.equal(before.category, 'general_support_request');
+
+  for (let i = 0; i < SUGGESTION_THRESHOLD; i++) {
+    recordClassificationCorrectionAndLog(
+      { requestId: `REQ-${i}`, keyword: 'sprocket', wrongCategory: 'general_support_request', correctCategory: 'data_issue', reviewer: 'agent.jane' },
+      { logPath, correctionsPath },
+    );
+  }
+  const { suggestions } = checkForSuggestedRuleAndLog({ logPath, correctionsPath, queueDir });
+
+  const approveResult = reviewSuggestedRuleAndLog(suggestions[0], { action: 'approve', reviewer: 'agent.jane' }, { logPath, rulesPath });
+  assert.equal(approveResult.outcome, 'approved');
+  assert.equal(approveResult.applyResult.applied, true);
+
+  const after = classifySupportRequest('There is a sprocket problem today.', { rulesPath });
+  assert.equal(after.category, 'data_issue', 'an approved suggestion must change classify.js behavior going forward');
 });

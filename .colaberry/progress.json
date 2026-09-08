@@ -2,12 +2,12 @@
   "schema_version": 2,
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
-    "stories_total": 8,
+    "stories_total": 9,
     "stories_verified": 8,
     "stories_submitted": 0,
     "stories_in_progress": 0,
-    "stories_not_started": 0,
-    "criteria_total": 26,
+    "stories_not_started": 1,
+    "criteria_total": 30,
     "criteria_passed": 26,
     "points_awarded": 800
   },
@@ -290,6 +290,41 @@
         "commit_at": "2026-08-24T13:08:08Z",
         "points_awarded": 100,
         "outstanding": []
+      }
+    },
+    {
+      "id": "STORY-008",
+      "release": null,
+      "acceptance_total": 4,
+      "criteria": [
+        {
+          "text": "Given a rejected classification with a correct category supplied, when the correction is recorded, then it is saved with the keyword, wrong category, and correct category.",
+          "passed": false
+        },
+        {
+          "text": "Given the same keyword -> correct-category pattern recorded 3 separate times, when the corrections are checked, then a suggested_rule_change proposal is added to the existing ticket queue.",
+          "passed": false
+        },
+        {
+          "text": "Given a suggested_rule_change proposal, when a human approves it, then classify.js uses the new rule for that keyword going forward; when a human rejects it, then nothing about classify.js changes.",
+          "passed": false
+        },
+        {
+          "text": "Trust: every correction recorded, every suggestion created, and every approve/reject decision on a suggestion is logged in the audit trail.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": "Implemented and covered by tests/classificationCorrections.test.js, tests/reviewSuggestedRule.test.js, and new tests in tests/classify.test.js and tests/auditedActions.test.js (npm test: 258/258 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here because no external grading/commit-verification pass (the process the other stories' verification blocks record) has run yet; this is not a claim that the work is unverified in general, just that this file's specific verification record hasn't been produced.",
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 4,
+        "outstanding": [
+          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
+        ]
       }
     }
   ]

@@ -1,5 +1,8 @@
 /**
  * STORY-001 — Classify and Prioritize Support Requests.
+ * Extended by STORY-008 (Classification Learning) with a bounded, explicitly
+ * human-gated exception to this module's own determinism principle — see the
+ * "Approved classification overrides" section below.
  *
  * Deterministic, rule-based classification. Per CLAUDE.md's core principle
  * ("LLMs are probabilistic. Production systems must be deterministic."), this
@@ -9,6 +12,24 @@
  * This module only classifies and summarizes. It does not approve, act, send,
  * or persist anything (that's STORY-002 / STORY-003) — see R4 in
  * src/guardrail.js for the boundary that governs restricted actions.
+ *
+ * Approved classification overrides (STORY-008): src/data/approvedClassificationRules.json
+ * holds a small, human-approved keyword -> category table, populated ONLY by
+ * applyApprovedClassificationRule() below, which is itself only ever called
+ * after a human approves a rule-change suggestion (src/reviewSuggestedRule.js,
+ * wired through auditedActions.js's reviewSuggestedRuleAndLog). Nothing in
+ * this repo writes that file automatically from repeated corrections alone —
+ * src/classificationCorrections.js's checkForSuggestedRule() only ever
+ * proposes. classifySupportRequest() reads that file (sync, so this function
+ * stays synchronous for every existing caller) and, when a request contains
+ * an approved keyword, assigns its category directly, bypassing the static
+ * signal tables for category only — priority detection is unaffected. This
+ * is still fully deterministic (same file contents -> same output) and still
+ * never self-updating on its own; a human approves every entry. flagged
+ * explicitly because architecture/layers-and-boundaries.md's Part V scored
+ * this module's "Adaptive" dimension "Not Met, by design" before this
+ * change — that verdict is now stale and may be worth revisiting, though
+ * updating that doc is out of scope here unless asked.
  *
  * @typedef {'power_bi_report_issue'|'data_issue'|'access_permission_issue'|
  *   'sql_database_issue'|'login_problem'|'technical_question'|
@@ -25,6 +46,13 @@
  *                                        (Observability Framework shape). Not persisted here —
  *                                        persistent audit trail storage is STORY-003.
  */
+
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** Default location of the approved classification overrides (STORY-008). */
+export const APPROVED_RULES_PATH = new URL('./data/approvedClassificationRules.json', import.meta.url);
 
 /** The only categories this assistant may assign. Order also breaks match-count ties. */
 export const CATEGORIES = [
@@ -97,10 +125,46 @@ const PRIORITY_SIGNALS = {
 const SUMMARY_MAX_LENGTH = 140;
 
 /**
- * @param {string} requestText
- * @returns {{ category: Category, matchedSignals: string[] }}
+ * Load the approved-override table (STORY-008). Fails closed to "no
+ * overrides" on any problem (missing file, corrupt JSON, wrong shape) —
+ * never throws, and never lets a bad overrides file break classification
+ * itself; it just falls back to the static signal tables below.
+ *
+ * @param {string|URL} rulesPath
+ * @returns {{ keyword: string, category: Category }[]}
  */
-function determineCategory(requestText) {
+function loadApprovedOverrides(rulesPath) {
+  try {
+    if (!existsSync(rulesPath)) return [];
+    const parsed = JSON.parse(readFileSync(rulesPath, 'utf8'));
+    if (!parsed || !Array.isArray(parsed.rules)) return [];
+    return parsed.rules.filter(
+      (rule) =>
+        rule !== null &&
+        typeof rule === 'object' &&
+        typeof rule.keyword === 'string' &&
+        rule.keyword.trim() !== '' &&
+        typeof rule.category === 'string' &&
+        CATEGORIES.includes(rule.category),
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * @param {string} requestText
+ * @param {{ keyword: string, category: Category }[]} overrides   Checked first,
+ *   in file order; the first matching keyword wins. See loadApprovedOverrides.
+ * @returns {{ category: Category, matchedSignals: string[], overrideApplied: boolean }}
+ */
+function determineCategory(requestText, overrides) {
+  for (const rule of overrides) {
+    if (requestText.includes(rule.keyword.toLowerCase())) {
+      return { category: rule.category, matchedSignals: [rule.keyword], overrideApplied: true };
+    }
+  }
+
   let bestCategory = DEFAULT_CATEGORY;
   let bestScore = 0;
   let bestSignals = [];
@@ -117,7 +181,7 @@ function determineCategory(requestText) {
     }
   }
 
-  return { category: bestCategory, matchedSignals: bestSignals };
+  return { category: bestCategory, matchedSignals: bestSignals, overrideApplied: false };
 }
 
 /**
@@ -153,9 +217,10 @@ function summarize(rawText) {
  * always yields the same output, no side effects.
  *
  * @param {unknown} requestText
+ * @param {{ rulesPath?: string|URL }} [options]   Override the approved-overrides file path (tests only).
  * @returns {ClassificationResult}
  */
-export function classifySupportRequest(requestText) {
+export function classifySupportRequest(requestText, options = {}) {
   if (typeof requestText !== 'string' || requestText.trim() === '') {
     return {
       category: DEFAULT_CATEGORY,
@@ -174,7 +239,8 @@ export function classifySupportRequest(requestText) {
   }
 
   const normalized = requestText.toLowerCase();
-  const { category, matchedSignals: categorySignals } = determineCategory(normalized);
+  const overrides = loadApprovedOverrides(options.rulesPath ?? APPROVED_RULES_PATH);
+  const { category, matchedSignals: categorySignals, overrideApplied } = determineCategory(normalized, overrides);
   const { priority, matchedSignals: prioritySignals } = determinePriority(normalized);
   const summary = summarize(requestText);
   const matchedSignals = [...categorySignals, ...prioritySignals];
@@ -184,7 +250,7 @@ export function classifySupportRequest(requestText) {
     priority,
     summary,
     matchedSignals,
-    logEntry: buildLogEntry({ category, priority, summary, matchedSignals, outcome: 'success' }),
+    logEntry: buildLogEntry({ category, priority, summary, matchedSignals, outcome: 'success', overrideApplied }),
   };
 }
 
@@ -195,18 +261,136 @@ export function classifySupportRequest(requestText) {
  * STORY-003.
  *
  * @param {{ category: Category, priority: Priority, summary: string,
- *   matchedSignals: string[], outcome: 'success'|'failure', errorClass?: string }} fields
+ *   matchedSignals: string[], outcome: 'success'|'failure', errorClass?: string,
+ *   overrideApplied?: boolean }} fields
  * @returns {Object}
  */
-function buildLogEntry({ category, priority, summary, matchedSignals, outcome, errorClass }) {
+function buildLogEntry({ category, priority, summary, matchedSignals, outcome, errorClass, overrideApplied }) {
   const entry = {
     timestamp: new Date().toISOString(),
     level: outcome === 'success' ? 'info' : 'warn',
     service: 'classify',
     event: 'support_request_classified',
     outcome,
-    context: { category, priority, summary, matchedSignals },
+    context: { category, priority, summary, matchedSignals, overrideApplied: overrideApplied ?? false },
   };
   if (errorClass) entry.error_class = errorClass;
   return entry;
+}
+
+/**
+ * @param {{ event: string, outcome: 'success'|'failure', keyword: string|undefined,
+ *   category: string|undefined, errorClass?: string, reason?: string }} fields
+ * @returns {Object}
+ */
+function buildApplyRuleLogEntry({ event, outcome, keyword, category, errorClass, reason }) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level: outcome === 'success' ? 'info' : 'warn',
+    service: 'classify',
+    event,
+    outcome,
+    context: { keyword, category },
+  };
+  if (errorClass) entry.error_class = errorClass;
+  if (reason) entry.context.reason = reason;
+  return entry;
+}
+
+/**
+ * Persist one approved keyword -> category override, so classifySupportRequest()
+ * uses it for that keyword going forward. This is the ONLY sanctioned write
+ * path for src/data/approvedClassificationRules.json — it must only ever be
+ * called after a human has approved a rule-change suggestion (see
+ * src/reviewSuggestedRule.js and auditedActions.js's reviewSuggestedRuleAndLog).
+ * Calling it directly, without that approval step, is a misuse of this
+ * function, not a safe shortcut. Upsert by keyword — approving the same
+ * keyword again just overwrites its category, never duplicates. Never throws.
+ *
+ * @param {unknown} rule   Must have a non-empty string `keyword` and a `category`
+ *   that is one of CATEGORIES.
+ * @param {{ rulesPath?: string|URL }} [options]   Override the approved-overrides file path (tests only).
+ * @returns {{ ok: boolean, applied: boolean, message?: string, logEntry: Object }}
+ */
+export function applyApprovedClassificationRule(rule, options = {}) {
+  const keyword = rule && typeof rule === 'object' ? rule.keyword : undefined;
+  const category = rule && typeof rule === 'object' ? rule.category : undefined;
+
+  const isValid =
+    rule !== null &&
+    typeof rule === 'object' &&
+    !Array.isArray(rule) &&
+    typeof keyword === 'string' &&
+    keyword.trim() !== '' &&
+    typeof category === 'string' &&
+    CATEGORIES.includes(category);
+
+  if (!isValid) {
+    return {
+      ok: false,
+      applied: false,
+      message: 'Rule not applied: invalid keyword or category.',
+      logEntry: buildApplyRuleLogEntry({
+        event: 'approved_classification_rule_rejected',
+        outcome: 'failure',
+        keyword,
+        category,
+        errorClass: 'ValidationError',
+        reason: 'invalid_rule',
+      }),
+    };
+  }
+
+  const rulesPath = options.rulesPath ?? APPROVED_RULES_PATH;
+
+  let existingRules = [];
+  try {
+    if (existsSync(rulesPath)) {
+      const parsed = JSON.parse(readFileSync(rulesPath, 'utf8'));
+      if (parsed && Array.isArray(parsed.rules)) existingRules = parsed.rules;
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      applied: false,
+      message: 'Rule not applied: approved-overrides file is corrupt.',
+      logEntry: buildApplyRuleLogEntry({
+        event: 'approved_classification_rule_apply_failed',
+        outcome: 'failure',
+        keyword,
+        category,
+        errorClass: 'RulesFileCorruptError',
+        reason: error instanceof Error ? error.message : String(error),
+      }),
+    };
+  }
+
+  const withoutExisting = existingRules.filter(
+    (existing) => !(existing && typeof existing.keyword === 'string' && existing.keyword.toLowerCase() === keyword.toLowerCase()),
+  );
+  const nextRules = [...withoutExisting, { keyword, category, approvedAt: new Date().toISOString() }];
+
+  try {
+    const dir = dirname(rulesPath instanceof URL ? fileURLToPath(rulesPath) : rulesPath);
+    if (dir && dir !== '.' && !existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(rulesPath, JSON.stringify({ rules: nextRules }, null, 2), { encoding: 'utf8' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorClass = error.code === 'EACCES' || error.code === 'EPERM' ? 'RulesAccessDeniedError' : 'RulesWriteFailedError';
+    process.stderr.write(`ALERT: approved classification rule write failed: ${message}\n`);
+    return {
+      ok: false,
+      applied: false,
+      message: `Rule not applied: ${message}`,
+      logEntry: buildApplyRuleLogEntry({ event: 'approved_classification_rule_apply_failed', outcome: 'failure', keyword, category, errorClass }),
+    };
+  }
+
+  return {
+    ok: true,
+    applied: true,
+    logEntry: buildApplyRuleLogEntry({ event: 'approved_classification_rule_applied', outcome: 'success', keyword, category }),
+  };
 }

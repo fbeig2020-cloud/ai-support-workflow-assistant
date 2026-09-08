@@ -1,6 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifySupportRequest, CATEGORIES, PRIORITIES } from '../src/classify.js';
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { classifySupportRequest, CATEGORIES, PRIORITIES, applyApprovedClassificationRule } from '../src/classify.js';
+
+// Own subdirectory per file, same reason as the other tests/*.test.js files:
+// node --test runs files concurrently, so a shared literal tmp dir name races.
+const TMP_DIR = join('tests/tmp', `classify-${randomUUID()}`);
+
+function tempRulesPath(name) {
+  return join(TMP_DIR, `${name}-${randomUUID()}.json`);
+}
+
+test.before(() => {
+  mkdirSync(TMP_DIR, { recursive: true });
+});
+
+test.after(() => {
+  rmSync(TMP_DIR, { recursive: true, force: true });
+});
 
 // --- Happy path: one representative request per category --------------------
 
@@ -126,4 +145,83 @@ test('classification is pure: same input twice yields the same category, priorit
   assert.equal(first.priority, second.priority);
   assert.equal(first.summary, second.summary);
   assert.deepEqual(first.matchedSignals, second.matchedSignals);
+});
+
+// --- STORY-008: approved classification overrides -----------------------------
+
+test('with no approved-overrides file, classification is unaffected (default behavior preserved)', () => {
+  const rulesPath = tempRulesPath('missing');
+  const result = classifySupportRequest("There's a widget issue on the homepage.", { rulesPath });
+  assert.equal(result.category, 'general_support_request');
+  assert.equal(result.logEntry.context.overrideApplied, false);
+});
+
+test('an approved override keyword takes precedence over the static signal tables', () => {
+  const rulesPath = tempRulesPath('override');
+  writeFileSync(rulesPath, JSON.stringify({ rules: [{ keyword: 'widget', category: 'sql_database_issue' }] }));
+
+  const result = classifySupportRequest("There's a widget issue on the homepage.", { rulesPath });
+  assert.equal(result.category, 'sql_database_issue');
+  assert.ok(result.matchedSignals.includes('widget'));
+  assert.equal(result.logEntry.context.overrideApplied, true);
+});
+
+test('an unrelated request is unaffected by an approved override for a different keyword', () => {
+  const rulesPath = tempRulesPath('override-unrelated');
+  writeFileSync(rulesPath, JSON.stringify({ rules: [{ keyword: 'widget', category: 'sql_database_issue' }] }));
+
+  const result = classifySupportRequest('How do I change my display language?', { rulesPath });
+  assert.equal(result.category, 'technical_question');
+});
+
+test('a corrupt approved-overrides file fails closed to "no overrides" rather than crashing classification', () => {
+  const rulesPath = tempRulesPath('corrupt');
+  writeFileSync(rulesPath, '{ not valid json');
+
+  assert.doesNotThrow(() => classifySupportRequest("There's a widget issue.", { rulesPath }));
+  const result = classifySupportRequest("There's a widget issue.", { rulesPath });
+  assert.equal(result.category, 'general_support_request');
+});
+
+test('an approved-overrides file with the wrong shape (no rules array) is ignored, not crashed on', () => {
+  const rulesPath = tempRulesPath('wrong-shape');
+  writeFileSync(rulesPath, JSON.stringify({ notRules: [] }));
+
+  assert.doesNotThrow(() => classifySupportRequest("There's a widget issue.", { rulesPath }));
+});
+
+// --- STORY-008: applyApprovedClassificationRule -------------------------------
+
+test('applyApprovedClassificationRule writes a rule that a later classification then honors', () => {
+  const rulesPath = tempRulesPath('apply-happy');
+  const applyResult = applyApprovedClassificationRule({ keyword: 'gizmo', category: 'data_issue' }, { rulesPath });
+
+  assert.equal(applyResult.ok, true);
+  assert.equal(applyResult.applied, true);
+  assert.equal(applyResult.logEntry.event, 'approved_classification_rule_applied');
+  assert.equal(applyResult.logEntry.outcome, 'success');
+
+  const result = classifySupportRequest('The gizmo report is off.', { rulesPath });
+  assert.equal(result.category, 'data_issue');
+});
+
+test('applying a rule for the same keyword twice upserts (overwrites), never duplicates', () => {
+  const rulesPath = tempRulesPath('apply-upsert');
+  applyApprovedClassificationRule({ keyword: 'gizmo', category: 'data_issue' }, { rulesPath });
+  applyApprovedClassificationRule({ keyword: 'gizmo', category: 'sql_database_issue' }, { rulesPath });
+
+  const result = classifySupportRequest('The gizmo report is off.', { rulesPath });
+  assert.equal(result.category, 'sql_database_issue');
+});
+
+test('applyApprovedClassificationRule fails closed on malformed input, never throws', () => {
+  const rulesPath = tempRulesPath('apply-malformed');
+  for (const bad of [null, undefined, {}, { keyword: '' }, { keyword: 'x', category: 'not_a_real_category' }, { category: 'data_issue' }]) {
+    assert.doesNotThrow(() => applyApprovedClassificationRule(bad, { rulesPath }));
+    const result = applyApprovedClassificationRule(bad, { rulesPath });
+    assert.equal(result.ok, false);
+    assert.equal(result.applied, false);
+    assert.equal(result.logEntry.outcome, 'failure');
+    assert.equal(result.logEntry.error_class, 'ValidationError');
+  }
 });

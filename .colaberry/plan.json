@@ -102,6 +102,17 @@
       "fulfilled_by": [
         "STORY-003"
       ]
+    },
+    {
+      "id": "REQ-011",
+      "kind": "FUNC",
+      "cluster": "Classification Learning",
+      "priority": "should",
+      "statement": "The assistant may propose classification rule changes learned from repeated human corrections, but must never apply a rule change automatically — a human must approve each proposed rule before it changes future classifications.",
+      "notes": "Added 2026-09-08 at the user's explicit request, beyond the original 10-REQ scope defined at project start (STORY-000 through STORY-007). Not part of the initial requirements set — flagged here per CLAUDE.md's scope-lock rule rather than silently folded into an existing REQ.",
+      "fulfilled_by": [
+        "STORY-008"
+      ]
     }
   ],
   "releases": [
@@ -339,6 +350,37 @@
         "Incorrect summary details"
       ],
       "task_guidance": "Create summary generation logic that compiles workflow details into a coherent document.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-008",
+      "title": "Classification Learning from Human Corrections",
+      "release": null,
+      "fulfills": [
+        "REQ-011"
+      ],
+      "narrative": "As a support agent, when I reject a classification and give the correct category, I want the assistant to notice when the same correction keeps happening so it can propose fixing the underlying rule, without ever changing its own behavior until I approve that specific proposal.",
+      "acceptance": [
+        "Given a rejected classification with a correct category supplied, when the correction is recorded, then it is saved with the keyword, wrong category, and correct category.",
+        "Given the same keyword -> correct-category pattern recorded 3 separate times, when the corrections are checked, then a suggested_rule_change proposal is added to the existing ticket queue.",
+        "Given a suggested_rule_change proposal, when a human approves it, then classify.js uses the new rule for that keyword going forward; when a human rejects it, then nothing about classify.js changes.",
+        "Trust: every correction recorded, every suggestion created, and every approve/reject decision on a suggestion is logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-002",
+        "STORY-003"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Correction not recorded (malformed input, corrupt corrections file, write failure)",
+        "Same correction recorded twice (duplicate)",
+        "Suggestion not queued (queue write failure)",
+        "Malformed or not-actually-a-suggestion item reaching a reviewer",
+        "Approval interface not available",
+        "Audit trail not updated"
+      ],
+      "task_guidance": "Record human corrections; propose (never apply) a rule change once a pattern recurs 3 times; gate the actual classify.js behavior change behind an explicit human approval, mirroring the existing review approve/reject shape.",
       "due_on": null,
       "due_baseline_on": null
     }
