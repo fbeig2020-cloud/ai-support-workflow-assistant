@@ -18,22 +18,39 @@
  *
  * STORY-008 (Classification Learning) adds three more wrappers following
  * that same shape — recordClassificationCorrectionAndLog,
- * checkForSuggestedRuleAndLog, reviewSuggestedRuleAndLog — with one
- * deliberate difference on the last: when a suggestion is approved,
+ * checkForSuggestedRuleAndLog, reviewSuggestedRuleAndLog — with two
+ * deliberate differences on the last. First: when a suggestion is approved,
  * reviewSuggestedRuleAndLog also calls classify.js's
  * applyApprovedClassificationRule() and persists a second, distinct audit
  * record for that write. This is the one place in this file where the
  * wrapper does more than "call the pure function, log its result" — because
  * this is the one action in this repo where a human approval is supposed to
- * actually change future behavior, not just get recorded. Rejecting a
- * suggestion triggers no such second call.
+ * actually change future behavior, not just get recorded. Second: a decided
+ * suggestion (approved or rejected) is removed from the ticket queue
+ * afterward via ticketQueue.js's removeTicketFromQueue — reject removes it
+ * unconditionally, approve only removes it once applyResult.applied is true,
+ * so a suggestion whose apply-write failed stays visible in the queue rather
+ * than silently disappearing with nothing to show for it. (Fixed after
+ * initially shipping without this — see STORY-009's PROGRESS.md entry,
+ * which flagged the inconsistency against knowledgeBaseCorrections.js's
+ * matching behavior below.)
  *
  * STORY-009 (Knowledge Base Learning) adds proposeKnowledgeBaseArticleAndLog
  * and reviewKnowledgeBaseProposalAndLog, the same shape again. Unlike
  * STORY-008's pair, reviewKnowledgeBaseProposalAndLog makes only ONE
- * underlying call — knowledgeBaseCorrections.js's reviewKnowledgeBaseProposal()
- * itself performs the knowledgeBase.json write on approve, per that story's
- * spec (one file, two exports, no separate apply step).
+ * underlying call for the KB write — knowledgeBaseCorrections.js's
+ * reviewKnowledgeBaseProposal() itself performs the knowledgeBase.json write
+ * on approve and the queue removal on either decision, per that story's spec
+ * (one file, two exports, no separate apply step). It makes a second call of
+ * its own, though: on a successful approve, it also builds and saves a
+ * summary document for the newly added article via the existing, unmodified
+ * saveSupportSummaryAndLog() (defined below) — reusing the same "finished
+ * work gets a summary" pattern STORY-007 established for tickets, per
+ * explicit user request. This intentionally does NOT go through
+ * generateSupportSummary.js, whose validation requires a full ticket-workflow
+ * bundle (classification, review, draft response, ...) that a KB proposal
+ * never has — building the summary text directly here avoids fabricating
+ * those fields just to satisfy a contract that doesn't fit.
  *
  * SCOPE NOTE: this module is not something STORY-003's story text asked
  * for. The story only asked to persist the logEntry objects classify.js
@@ -65,6 +82,7 @@ import { saveSupportSummary } from './saveSupportSummary.js';
 import { recordClassificationCorrection, checkForSuggestedRule } from './classificationCorrections.js';
 import { reviewSuggestedRule } from './reviewSuggestedRule.js';
 import { proposeKnowledgeBaseArticle, reviewKnowledgeBaseProposal } from './knowledgeBaseCorrections.js';
+import { removeTicketFromQueue } from './ticketQueue.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -243,6 +261,12 @@ export function checkForSuggestedRuleAndLog(options = {}) {
 export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
   const result = reviewSuggestedRule(suggestion, decision);
   const auditResult = appendAuditEntry(result.logEntry, options);
+  const requestId = suggestion && typeof suggestion === 'object' ? suggestion.requestId : undefined;
+
+  if (result.outcome === 'rejected') {
+    if (typeof requestId === 'string') removeTicketFromQueue(requestId, { queueDir: options.queueDir });
+    return { ...result, auditResult };
+  }
 
   if (result.outcome !== 'approved') {
     return { ...result, auditResult };
@@ -253,6 +277,13 @@ export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
     options,
   );
   const applyAuditResult = appendAuditEntry(applyResult.logEntry, options);
+
+  // Only remove the suggestion from the queue once its effect actually landed —
+  // a failed apply must not make a still-unresolved suggestion disappear.
+  if (applyResult.applied && typeof requestId === 'string') {
+    removeTicketFromQueue(requestId, { queueDir: options.queueDir });
+  }
+
   return { ...result, auditResult, applyResult, applyAuditResult };
 }
 
@@ -273,22 +304,73 @@ export function proposeKnowledgeBaseArticleAndLog(proposal, options = {}) {
 }
 
 /**
+ * Plain-text summary for a newly approved knowledge base article — the KB
+ * counterpart to generateSupportSummary.js's ticket summary, built directly
+ * rather than through that module (see this file's header comment for why).
+ * Only ever called with real, already-produced data: the article as written
+ * to knowledgeBase.json, the originating ticket, and who proposed/approved it.
+ *
+ * @param {{ article: Object, sourceTicketId: string|undefined, proposedBy: string|undefined,
+ *   reviewer: string }} fields
+ * @returns {string}
+ */
+function buildKbProposalSummaryText({ article, sourceTicketId, proposedBy, reviewer }) {
+  const lines = [];
+  lines.push(`Knowledge Base Article Approved — ${article.id}`);
+  lines.push('');
+  lines.push(`Title: ${article.title}`);
+  lines.push(`Category: ${article.category}`);
+  lines.push(`Tags: ${article.tags.join(', ')}`);
+  lines.push('');
+  lines.push('Steps:');
+  article.steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
+  lines.push('');
+  lines.push(`Originating ticket: ${sourceTicketId ?? 'unknown'}`);
+  lines.push(`Proposed by: ${proposedBy ?? 'unknown'}`);
+  lines.push(`Approved by: ${reviewer}`);
+  return lines.join('\n');
+}
+
+/**
  * Review a knowledge base article proposal by id and persist the resulting
  * logEntry to the audit trail. On approve, knowledgeBaseCorrections.js's
  * reviewKnowledgeBaseProposal() itself writes the new article into
- * knowledgeBase.json — unlike reviewSuggestedRuleAndLog, this wrapper does
- * not make a second underlying call, since the write is intrinsic to this
- * one decision (per this story's spec: one file, two exports).
+ * knowledgeBase.json and removes the proposal from the queue — unlike
+ * reviewSuggestedRuleAndLog, this wrapper doesn't need a second call to make
+ * that part happen, since it's intrinsic to that one decision (per this
+ * story's spec: one file, two exports). It does make one call of its own,
+ * though: on a successful approve, it builds and saves a summary document
+ * for the newly added article via the existing saveSupportSummaryAndLog()
+ * (unmodified — reused exactly as STORY-007 built it), per explicit user
+ * request that approved KB articles get the same "finished work gets a
+ * summary" treatment tickets already do. Reject saves no summary — nothing
+ * changed, so there's nothing finished to document.
  *
  * @param {unknown} proposalId
  * @param {unknown} decision
- * @param {{ logPath?: string, kbPath?: string|URL, queueDir?: string }} [options]
+ * @param {{ logPath?: string, kbPath?: string|URL, queueDir?: string, summariesDir?: string }} [options]
  *   `logPath` is passed through to appendAuditEntry (tests only); `kbPath`/`queueDir`
- *   are passed through to reviewKnowledgeBaseProposal (tests only).
- * @returns {import('./knowledgeBaseCorrections.js').KnowledgeBaseReviewResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ *   are passed through to reviewKnowledgeBaseProposal (tests only); `summariesDir`
+ *   is passed through to saveSupportSummary (tests only).
+ * @returns {import('./knowledgeBaseCorrections.js').KnowledgeBaseReviewResult &
+ *   { auditResult: import('./auditLog.js').AuditAppendResult,
+ *     summaryResult?: import('./saveSupportSummary.js').SaveSummaryResult & { auditResult: import('./auditLog.js').AuditAppendResult } }}
  */
 export function reviewKnowledgeBaseProposalAndLog(proposalId, decision, options = {}) {
   const result = reviewKnowledgeBaseProposal(proposalId, decision, options);
   const auditResult = appendAuditEntry(result.logEntry, options);
-  return { ...result, auditResult };
+
+  if (result.outcome !== 'approved' || !result.article) {
+    return { ...result, auditResult };
+  }
+
+  const summaryText = buildKbProposalSummaryText({
+    article: result.article,
+    sourceTicketId: result.sourceTicketId,
+    proposedBy: result.proposedBy,
+    reviewer: decision.reviewer,
+  });
+  const summaryResult = saveSupportSummaryAndLog({ generated: true, ticketId: result.article.id, summaryText }, options);
+
+  return { ...result, auditResult, summaryResult };
 }

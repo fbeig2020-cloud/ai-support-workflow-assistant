@@ -92,6 +92,10 @@
  * @property {'approved'|'rejected'|'error'} outcome
  * @property {string} [reason]
  * @property {Object} [article]       Present on approve — the article as written to knowledgeBase.json.
+ * @property {string} [sourceTicketId] Present on approve — carried from the original proposal, for
+ *                                       a caller (auditedActions.js) that wants to summarize the
+ *                                       approval without a second, redundant queue lookup.
+ * @property {string} [proposedBy]    Present on approve, same reasoning as sourceTicketId.
  * @property {Object} logEntry
  */
 
@@ -441,6 +445,8 @@ export function reviewKnowledgeBaseProposal(proposalId, decision, options = {}) 
     ok: true,
     outcome: 'approved',
     article,
+    sourceTicketId: proposal.sourceTicketId,
+    proposedBy: proposal.proposedBy,
     logEntry: buildLogEntry({
       event: 'kb_proposal_approved',
       outcome: 'success',

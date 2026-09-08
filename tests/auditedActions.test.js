@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   classifyAndLog,
@@ -14,6 +14,7 @@ import {
 } from '../src/auditedActions.js';
 import { classifySupportRequest } from '../src/classify.js';
 import { SUGGESTION_THRESHOLD } from '../src/classificationCorrections.js';
+import { addTicketToQueue, listQueuedTickets } from '../src/ticketQueue.js';
 
 // Each test file gets its own unique subdirectory (not the shared 'tests/tmp'
 // root) because node --test runs files concurrently in separate processes;
@@ -161,6 +162,7 @@ const VALID_SUGGESTION = {
   wrongCategory: 'sql_database_issue',
   correctCategory: 'general_support_request',
   timesSeen: 3,
+  requestId: 'rule-suggestion-test1',
 };
 
 test('recordClassificationCorrectionAndLog persists the correction logEntry to the audit trail', () => {
@@ -224,6 +226,47 @@ test('reviewSuggestedRuleAndLog on approve also applies the rule and logs a seco
   assert.equal(lines[0].entry.event, 'rule_suggestion_approved');
   assert.equal(lines[1].entry.event, 'approved_classification_rule_applied');
   assert.equal(lines[1].prevHash, lines[0].hash);
+});
+
+// --- reviewSuggestedRuleAndLog: decided suggestions are removed from the queue,
+//     matching knowledgeBaseCorrections.js's behavior (fixed after initially
+//     shipping without this — see PROGRESS.md's STORY-009 follow-up entry) ---
+
+test('a rejected suggestion is removed from the ticket queue', () => {
+  const logPath = tempLogPath();
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+  addTicketToQueue(VALID_SUGGESTION, { queueDir });
+
+  reviewSuggestedRuleAndLog(VALID_SUGGESTION, { action: 'reject', reviewer: 'agent.jane' }, { logPath, queueDir });
+
+  assert.equal(listQueuedTickets({ queueDir }).length, 0);
+});
+
+test('an approved suggestion is removed from the ticket queue once the rule write succeeds', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+  addTicketToQueue(VALID_SUGGESTION, { queueDir });
+
+  const result = reviewSuggestedRuleAndLog(VALID_SUGGESTION, { action: 'approve', reviewer: 'agent.jane' }, { logPath, rulesPath, queueDir });
+
+  assert.equal(result.applyResult.applied, true);
+  assert.equal(listQueuedTickets({ queueDir }).length, 0);
+});
+
+test('an approved suggestion is NOT removed from the queue if the rule write fails — nothing silently disappears', () => {
+  const logPath = tempLogPath();
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+  // Point rulesPath at a directory (not a file) so the write inside applyApprovedClassificationRule fails.
+  const blockerDir = join(TMP_DIR, `blocker-dir-${randomUUID()}`);
+  mkdirSync(blockerDir, { recursive: true });
+  const rulesPath = blockerDir; // existsSync(rulesPath) is true, but it's a directory, so writeFileSync fails.
+  addTicketToQueue(VALID_SUGGESTION, { queueDir });
+
+  const result = reviewSuggestedRuleAndLog(VALID_SUGGESTION, { action: 'approve', reviewer: 'agent.jane' }, { logPath, rulesPath, queueDir });
+
+  assert.equal(result.applyResult.applied, false);
+  assert.equal(listQueuedTickets({ queueDir }).length, 1, 'a suggestion whose apply failed must stay visible in the queue');
 });
 
 // --- STORY-008: full flow, tying classificationCorrections + reviewSuggestedRule
@@ -311,24 +354,77 @@ test('proposeKnowledgeBaseArticleAndLog persists the proposal logEntry to the au
   assert.equal(record.entry.event, 'kb_article_proposed');
 });
 
-test('reviewKnowledgeBaseProposalAndLog on approve persists one logEntry and writes the article', () => {
+test('reviewKnowledgeBaseProposalAndLog on approve persists the decision logEntry and writes the article', () => {
   const logPath = tempLogPath();
   const kbPath = tempKbPath();
   const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const summariesDir = join(TMP_DIR, `summaries-${randomUUID()}`);
   const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
 
-  const result = reviewKnowledgeBaseProposalAndLog(proposalId, { action: 'approve', reviewer: 'agent.jane' }, { logPath, kbPath, queueDir });
+  const result = reviewKnowledgeBaseProposalAndLog(
+    proposalId,
+    { action: 'approve', reviewer: 'agent.jane' },
+    { logPath, kbPath, queueDir, summariesDir },
+  );
 
   assert.equal(result.outcome, 'approved');
   assert.equal(result.auditResult.ok, true);
   const lines = readLines(logPath);
-  assert.equal(lines.length, 2);
   assert.equal(lines[0].entry.event, 'kb_article_proposed');
   assert.equal(lines[1].entry.event, 'kb_proposal_approved');
   assert.equal(lines[1].prevHash, lines[0].hash);
 
   const onDisk = JSON.parse(readFileSync(kbPath, 'utf8'));
   assert.ok(onDisk.articles.some((a) => a.id === proposalId));
+});
+
+// --- Task 2: an approved KB proposal also gets a saved summary document -------
+
+test('reviewKnowledgeBaseProposalAndLog on approve also saves a summary document, chained into the same audit trail', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const summariesDir = join(TMP_DIR, `summaries-${randomUUID()}`);
+  const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = reviewKnowledgeBaseProposalAndLog(
+    proposalId,
+    { action: 'approve', reviewer: 'agent.jane' },
+    { logPath, kbPath, queueDir, summariesDir },
+  );
+
+  assert.equal(result.summaryResult.ok, true);
+  assert.equal(result.summaryResult.saved, true);
+  assert.equal(result.summaryResult.auditResult.ok, true);
+
+  const summaryOnDisk = JSON.parse(readFileSync(join(summariesDir, `${proposalId}.json`), 'utf8'));
+  assert.match(summaryOnDisk.summaryText, /Knowledge Base Article Approved/);
+  assert.match(summaryOnDisk.summaryText, new RegExp(VALID_KB_PROPOSAL.sourceTicketId));
+  assert.match(summaryOnDisk.summaryText, new RegExp(VALID_KB_PROPOSAL.proposedBy));
+
+  const lines = readLines(logPath);
+  assert.equal(lines.length, 3);
+  assert.equal(lines[0].entry.event, 'kb_article_proposed');
+  assert.equal(lines[1].entry.event, 'kb_proposal_approved');
+  assert.equal(lines[2].entry.event, 'support_summary_saved');
+  assert.equal(lines[2].prevHash, lines[1].hash);
+});
+
+test('reviewKnowledgeBaseProposalAndLog on reject saves no summary document — nothing changed', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const summariesDir = join(TMP_DIR, `summaries-${randomUUID()}`);
+  const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = reviewKnowledgeBaseProposalAndLog(
+    proposalId,
+    { action: 'reject', reviewer: 'agent.jane' },
+    { logPath, kbPath, queueDir, summariesDir },
+  );
+
+  assert.equal(result.summaryResult, undefined);
+  assert.equal(existsSync(join(summariesDir, `${proposalId}.json`)), false);
 });
 
 test('reviewKnowledgeBaseProposalAndLog on reject logs the decision and never touches knowledgeBase.json', () => {

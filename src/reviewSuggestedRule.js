@@ -22,7 +22,10 @@
  * applyApprovedClassificationRule() only when outcome === 'approved'. That
  * keeps this module testable and consistent with its siblings, while the
  * side effect it triggers is documented once, at the one call site
- * responsible for triggering it.
+ * responsible for triggering it. Same reasoning for queue cleanup: this
+ * module never touches the ticket queue — reviewSuggestedRuleAndLog removes
+ * a decided suggestion afterward (unconditionally on reject; on approve,
+ * only once the rule write actually succeeded).
  *
  * Fails closed on:
  *  - A suggestion that isn't actually a suggested_rule_change shape (wrong
