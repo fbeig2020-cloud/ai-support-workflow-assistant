@@ -2,12 +2,12 @@
   "schema_version": 2,
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
-    "stories_total": 9,
+    "stories_total": 10,
     "stories_verified": 8,
     "stories_submitted": 0,
     "stories_in_progress": 0,
-    "stories_not_started": 1,
-    "criteria_total": 30,
+    "stories_not_started": 2,
+    "criteria_total": 33,
     "criteria_passed": 26,
     "points_awarded": 800
   },
@@ -322,6 +322,37 @@
         "state": "not_started",
         "criteria_passed": 0,
         "criteria_total": 4,
+        "outstanding": [
+          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
+        ]
+      }
+    },
+    {
+      "id": "STORY-009",
+      "release": null,
+      "acceptance_total": 3,
+      "criteria": [
+        {
+          "text": "Given a ticket a human manually solved after a no-match or weak-confidence knowledge base search, when the human proposes a new article, then it is auto-assigned the next available KB id and added to the existing ticket queue as a suggested_kb_article.",
+          "passed": false
+        },
+        {
+          "text": "Given a suggested_kb_article proposal, when a human approves it, then it is added to knowledgeBase.json as a real, searchable article tagged source: human_approved_correction; when a human rejects it, then knowledgeBase.json is not touched at all.",
+          "passed": false
+        },
+        {
+          "text": "Trust: every proposal created and every approve/reject decision is logged in the audit trail.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": "Implemented and covered by tests/knowledgeBaseCorrections.test.js and new tests in tests/auditedActions.test.js (npm test: 277/277 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008: no external grading/commit-verification pass has run for this story yet.",
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 3,
         "outstanding": [
           "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
         ]

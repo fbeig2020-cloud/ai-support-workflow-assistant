@@ -113,6 +113,17 @@
       "fulfilled_by": [
         "STORY-008"
       ]
+    },
+    {
+      "id": "REQ-012",
+      "kind": "FUNC",
+      "cluster": "Knowledge Base Learning",
+      "priority": "should",
+      "statement": "The assistant may propose new knowledge base articles learned from tickets a human manually solved after a no-match or weak-confidence search, but must never add an article automatically — a human must approve each proposed article before it becomes part of the searchable knowledge base.",
+      "notes": "Added 2026-09-08 at the user's explicit request, as the knowledge-base counterpart to REQ-011/STORY-008's classification learning. Same scope-lock flag applies: not part of the original 10-REQ set.",
+      "fulfilled_by": [
+        "STORY-009"
+      ]
     }
   ],
   "releases": [
@@ -381,6 +392,36 @@
         "Audit trail not updated"
       ],
       "task_guidance": "Record human corrections; propose (never apply) a rule change once a pattern recurs 3 times; gate the actual classify.js behavior change behind an explicit human approval, mirroring the existing review approve/reject shape.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-009",
+      "title": "Knowledge Base Learning from Human-Solved Tickets",
+      "release": null,
+      "fulfills": [
+        "REQ-012"
+      ],
+      "narrative": "As a support agent, when I manually solve a ticket the knowledge base search couldn't help with, I want to be able to propose the solution as a new article, so the assistant can find it automatically next time — but only once I (or another reviewer) approve it.",
+      "acceptance": [
+        "Given a ticket a human manually solved after a no-match or weak-confidence knowledge base search, when the human proposes a new article, then it is auto-assigned the next available KB id and added to the existing ticket queue as a suggested_kb_article.",
+        "Given a suggested_kb_article proposal, when a human approves it, then it is added to knowledgeBase.json as a real, searchable article tagged source: human_approved_correction; when a human rejects it, then knowledgeBase.json is not touched at all.",
+        "Trust: every proposal created and every approve/reject decision is logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-003",
+        "STORY-004"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Proposal not recorded (malformed input, corrupt knowledgeBase.json, queue write failure)",
+        "Same ticket proposed twice (duplicate)",
+        "Auto-assigned id collides with an existing or already-pending article",
+        "Malformed or missing proposal reaching a reviewer",
+        "Approval interface not available",
+        "Audit trail not updated"
+      ],
+      "task_guidance": "Record a human-authored article proposal from a ticket the knowledge base search couldn't resolve; auto-assign its KB id from both knowledgeBase.json and any already-pending proposals; gate the actual knowledgeBase.json write behind an explicit human approval, reusing the existing ticket queue for review rather than a separate surface.",
       "due_on": null,
       "due_baseline_on": null
     }

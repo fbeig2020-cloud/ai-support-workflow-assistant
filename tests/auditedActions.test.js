@@ -9,6 +9,8 @@ import {
   recordClassificationCorrectionAndLog,
   checkForSuggestedRuleAndLog,
   reviewSuggestedRuleAndLog,
+  proposeKnowledgeBaseArticleAndLog,
+  reviewKnowledgeBaseProposalAndLog,
 } from '../src/auditedActions.js';
 import { classifySupportRequest } from '../src/classify.js';
 import { SUGGESTION_THRESHOLD } from '../src/classificationCorrections.js';
@@ -275,4 +277,71 @@ test('an approved suggestion DOES change classifySupportRequest()\'s behavior fo
 
   const after = classifySupportRequest('There is a sprocket problem today.', { rulesPath });
   assert.equal(after.category, 'data_issue', 'an approved suggestion must change classify.js behavior going forward');
+});
+
+// --- STORY-009: knowledge base learning wrappers -------------------------------
+
+const SEED_KB_ARTICLES = [{ id: 'KB-001', category: 'login_problem', tags: ['password'], title: 'Reset a password', steps: ['do it'] }];
+
+function tempKbPath() {
+  const kbPath = join(TMP_DIR, `kb-${randomUUID()}.json`);
+  writeFileSync(kbPath, JSON.stringify({ articles: SEED_KB_ARTICLES }));
+  return kbPath;
+}
+
+const VALID_KB_PROPOSAL = {
+  sourceTicketId: 'TICKET-9001',
+  proposedBy: 'agent.jane',
+  category: 'sql_database_issue',
+  tags: ['widget', 'sync error'],
+  title: 'Widget fails to sync with the SQL backend',
+  steps: ['Restart the sync worker.'],
+};
+
+test('proposeKnowledgeBaseArticleAndLog persists the proposal logEntry to the audit trail', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const result = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.proposed, true);
+  assert.equal(result.auditResult.ok, true);
+  const [record] = readLines(logPath);
+  assert.equal(record.entry.event, 'kb_article_proposed');
+});
+
+test('reviewKnowledgeBaseProposalAndLog on approve persists one logEntry and writes the article', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = reviewKnowledgeBaseProposalAndLog(proposalId, { action: 'approve', reviewer: 'agent.jane' }, { logPath, kbPath, queueDir });
+
+  assert.equal(result.outcome, 'approved');
+  assert.equal(result.auditResult.ok, true);
+  const lines = readLines(logPath);
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0].entry.event, 'kb_article_proposed');
+  assert.equal(lines[1].entry.event, 'kb_proposal_approved');
+  assert.equal(lines[1].prevHash, lines[0].hash);
+
+  const onDisk = JSON.parse(readFileSync(kbPath, 'utf8'));
+  assert.ok(onDisk.articles.some((a) => a.id === proposalId));
+});
+
+test('reviewKnowledgeBaseProposalAndLog on reject logs the decision and never touches knowledgeBase.json', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const before = readFileSync(kbPath, 'utf8');
+  const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = reviewKnowledgeBaseProposalAndLog(proposalId, { action: 'reject', reviewer: 'agent.jane' }, { logPath, kbPath, queueDir });
+
+  assert.equal(result.outcome, 'rejected');
+  assert.equal(readFileSync(kbPath, 'utf8'), before);
+  const lines = readLines(logPath);
+  assert.equal(lines[lines.length - 1].entry.event, 'kb_proposal_rejected');
 });

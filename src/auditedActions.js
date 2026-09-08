@@ -28,6 +28,13 @@
  * actually change future behavior, not just get recorded. Rejecting a
  * suggestion triggers no such second call.
  *
+ * STORY-009 (Knowledge Base Learning) adds proposeKnowledgeBaseArticleAndLog
+ * and reviewKnowledgeBaseProposalAndLog, the same shape again. Unlike
+ * STORY-008's pair, reviewKnowledgeBaseProposalAndLog makes only ONE
+ * underlying call — knowledgeBaseCorrections.js's reviewKnowledgeBaseProposal()
+ * itself performs the knowledgeBase.json write on approve, per that story's
+ * spec (one file, two exports, no separate apply step).
+ *
  * SCOPE NOTE: this module is not something STORY-003's story text asked
  * for. The story only asked to persist the logEntry objects classify.js
  * and reviewClassification.js already build. But nothing in this repo
@@ -57,6 +64,7 @@ import { generateSupportSummary } from './generateSupportSummary.js';
 import { saveSupportSummary } from './saveSupportSummary.js';
 import { recordClassificationCorrection, checkForSuggestedRule } from './classificationCorrections.js';
 import { reviewSuggestedRule } from './reviewSuggestedRule.js';
+import { proposeKnowledgeBaseArticle, reviewKnowledgeBaseProposal } from './knowledgeBaseCorrections.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /**
@@ -246,4 +254,41 @@ export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
   );
   const applyAuditResult = appendAuditEntry(applyResult.logEntry, options);
   return { ...result, auditResult, applyResult, applyAuditResult };
+}
+
+/**
+ * Propose a new knowledge base article from a human-solved ticket and
+ * persist the resulting logEntry to the audit trail.
+ *
+ * @param {unknown} proposal
+ * @param {{ logPath?: string, kbPath?: string|URL, queueDir?: string }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `kbPath`/`queueDir`
+ *   are passed through to proposeKnowledgeBaseArticle (tests only).
+ * @returns {import('./knowledgeBaseCorrections.js').ProposeArticleResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function proposeKnowledgeBaseArticleAndLog(proposal, options = {}) {
+  const result = proposeKnowledgeBaseArticle(proposal, options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
+}
+
+/**
+ * Review a knowledge base article proposal by id and persist the resulting
+ * logEntry to the audit trail. On approve, knowledgeBaseCorrections.js's
+ * reviewKnowledgeBaseProposal() itself writes the new article into
+ * knowledgeBase.json — unlike reviewSuggestedRuleAndLog, this wrapper does
+ * not make a second underlying call, since the write is intrinsic to this
+ * one decision (per this story's spec: one file, two exports).
+ *
+ * @param {unknown} proposalId
+ * @param {unknown} decision
+ * @param {{ logPath?: string, kbPath?: string|URL, queueDir?: string }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `kbPath`/`queueDir`
+ *   are passed through to reviewKnowledgeBaseProposal (tests only).
+ * @returns {import('./knowledgeBaseCorrections.js').KnowledgeBaseReviewResult & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function reviewKnowledgeBaseProposalAndLog(proposalId, decision, options = {}) {
+  const result = reviewKnowledgeBaseProposal(proposalId, decision, options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
 }
