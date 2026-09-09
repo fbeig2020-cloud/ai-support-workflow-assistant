@@ -110,6 +110,12 @@ export function classifyAndLog(requestText, options = {}) {
  */
 export function reviewAndLog(classification, decision, options = {}) {
   const result = reviewClassification(classification, decision);
+  if (result.outcome === 'rejected') {
+    const reasonText = result.reason ?? 'none provided';
+    const trailingPunctuation = /[.!?]$/.test(reasonText) ? '' : '.';
+    result.logEntry.humanSummary =
+      `A support agent rejected this classification. Reason: ${reasonText}${trailingPunctuation}`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -159,6 +165,11 @@ export async function generateDraftResponseAndLog(classification, kbSearchResult
  */
 export function generateEscalationRecommendationAndLog(classification, kbSearchResult, options = {}) {
   const result = generateEscalationRecommendation(classification, kbSearchResult);
+  if (result.recommended) {
+    result.logEntry.humanSummary = result.explanation
+      ? `The system could not find a confident answer in the knowledge base, so it's recommending a human specialist review this ticket. ${result.explanation}`
+      : `The system could not find a confident answer in the knowledge base, so it's recommending a human specialist review this ticket.`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }

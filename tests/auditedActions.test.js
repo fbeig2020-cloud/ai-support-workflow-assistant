@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   classifyAndLog,
   reviewAndLog,
+  generateEscalationRecommendationAndLog,
   recordClassificationCorrectionAndLog,
   checkForSuggestedRuleAndLog,
   reviewSuggestedRuleAndLog,
@@ -117,6 +118,58 @@ test('reviewAndLog still logs a failure entry for malformed decisions (fails clo
   assert.equal(result.auditResult.ok, true);
   const [record] = readLines(logPath);
   assert.equal(record.entry.event, 'classification_review_failed');
+});
+
+// --- humanSummary: plain-English audit field on reject / recommended-escalation ---
+
+test('reviewAndLog adds a plain-English humanSummary on reject, naming the real reason', () => {
+  const logPath = tempLogPath();
+  const decision = { action: 'reject', reviewer: 'agent.jane', reason: 'Wrong category, this is a billing issue' };
+  const result = reviewAndLog(VALID_CLASSIFICATION, decision, { logPath });
+
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /rejected/);
+  assert.ok(result.logEntry.humanSummary.includes('Wrong category, this is a billing issue'));
+});
+
+test('reviewAndLog\'s humanSummary does not double up the period when the reason already ends in terminal punctuation', () => {
+  const logPath = tempLogPath();
+  const decision = { action: 'reject', reviewer: 'agent.jane', reason: 'Wrong category.' };
+  const result = reviewAndLog(VALID_CLASSIFICATION, decision, { logPath });
+
+  assert.ok(result.logEntry.humanSummary.includes('Wrong category.'));
+  assert.ok(!result.logEntry.humanSummary.endsWith('..'));
+});
+
+test('reviewAndLog does NOT add humanSummary on approve', () => {
+  const logPath = tempLogPath();
+  const decision = { action: 'approve', reviewer: 'agent.jane' };
+  const result = reviewAndLog(VALID_CLASSIFICATION, decision, { logPath });
+
+  assert.equal(result.outcome, 'approved');
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+const ESCALATION_CLASSIFICATION = { category: 'sql_database_issue', priority: 'high', summary: 'Query is timing out.' };
+const NOT_FOUND_KB_RESULT = { found: false };
+const FOUND_KB_RESULT = { found: true };
+
+test('generateEscalationRecommendationAndLog adds a plain-English humanSummary when recommended, including the real explanation', () => {
+  const logPath = tempLogPath();
+  const result = generateEscalationRecommendationAndLog(ESCALATION_CLASSIFICATION, NOT_FOUND_KB_RESULT, { logPath });
+
+  assert.equal(result.recommended, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /(escalat|human specialist|human review)/i);
+  assert.ok(result.explanation && result.logEntry.humanSummary.includes(result.explanation));
+});
+
+test('generateEscalationRecommendationAndLog does NOT add humanSummary when not recommended', () => {
+  const logPath = tempLogPath();
+  const result = generateEscalationRecommendationAndLog(ESCALATION_CLASSIFICATION, FOUND_KB_RESULT, { logPath });
+
+  assert.equal(result.recommended, false);
+  assert.equal(result.logEntry.humanSummary, undefined);
 });
 
 // --- Multiple actions on one request chain into one trail -----------------
