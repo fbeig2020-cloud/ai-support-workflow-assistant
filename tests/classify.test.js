@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
-import { classifySupportRequest, CATEGORIES, PRIORITIES, applyApprovedClassificationRule } from '../src/classify.js';
+import { classifySupportRequest, CATEGORIES, PRIORITIES, applyApprovedClassificationRule, revokeApprovedRule } from '../src/classify.js';
 
 // Own subdirectory per file, same reason as the other tests/*.test.js files:
 // node --test runs files concurrently, so a shared literal tmp dir name races.
@@ -224,4 +224,183 @@ test('applyApprovedClassificationRule fails closed on malformed input, never thr
     assert.equal(result.logEntry.outcome, 'failure');
     assert.equal(result.logEntry.error_class, 'ValidationError');
   }
+});
+
+// --- STORY-010: revokeApprovedRule ---------------------------------------------
+
+test('revokeApprovedRule marks an existing approved rule as revoked, without deleting it', () => {
+  const rulesPath = tempRulesPath('revoke-happy');
+  applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+
+  const result = revokeApprovedRule(
+    { keyword: 'widget', reason: 'Too broad, causing misclassifications.', reviewer: 'agent.jane' },
+    { rulesPath },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.revoked, true);
+  assert.equal(result.rule.keyword, 'widget');
+  assert.equal(result.rule.revoked, true);
+  assert.equal(result.rule.revokedBy, 'agent.jane');
+  assert.equal(result.rule.revokedReason, 'Too broad, causing misclassifications.');
+  assert.ok(!Number.isNaN(Date.parse(result.rule.revokedAt)));
+  assert.equal(result.logEntry.service, 'classify');
+  assert.equal(result.logEntry.event, 'approved_classification_rule_revoked');
+  assert.equal(result.logEntry.outcome, 'success');
+  assert.equal(result.logEntry.context.keyword, 'widget');
+  assert.equal(result.logEntry.context.reviewer, 'agent.jane');
+
+  // Marked, not deleted: the original keyword/category/approvedAt survive alongside the new fields.
+  const onDisk = JSON.parse(readFileSync(rulesPath, 'utf8')).rules;
+  assert.equal(onDisk.length, 1);
+  assert.equal(onDisk[0].keyword, 'widget');
+  assert.equal(onDisk[0].category, 'sql_database_issue');
+  assert.equal(onDisk[0].revoked, true);
+});
+
+test('revokeApprovedRule fails closed on missing keyword, reason, or reviewer, never throws', () => {
+  const rulesPath = tempRulesPath('revoke-malformed');
+  applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+
+  const badInputs = [
+    null,
+    undefined,
+    42,
+    [],
+    {},
+    { reason: 'no longer valid', reviewer: 'agent.jane' }, // missing keyword
+    { keyword: '', reason: 'no longer valid', reviewer: 'agent.jane' }, // blank keyword
+    { keyword: 'widget', reviewer: 'agent.jane' }, // missing reason
+    { keyword: 'widget', reason: '', reviewer: 'agent.jane' }, // blank reason
+    { keyword: 'widget', reason: 'no longer valid' }, // missing reviewer
+    { keyword: 'widget', reason: 'no longer valid', reviewer: '' }, // blank reviewer
+  ];
+
+  for (const bad of badInputs) {
+    assert.doesNotThrow(() => revokeApprovedRule(bad, { rulesPath }));
+    const result = revokeApprovedRule(bad, { rulesPath });
+    assert.equal(result.ok, false);
+    assert.equal(result.revoked, false);
+    assert.equal(result.logEntry.outcome, 'failure');
+    assert.equal(result.logEntry.event, 'approved_classification_rule_revoke_rejected');
+    assert.equal(result.logEntry.error_class, 'ValidationError');
+  }
+
+  // None of the rejected attempts touched the rule on disk.
+  const onDisk = JSON.parse(readFileSync(rulesPath, 'utf8')).rules;
+  assert.equal(onDisk[0].revoked, undefined);
+});
+
+test('revokeApprovedRule fails closed when no approved rule matches the keyword', () => {
+  const rulesPath = tempRulesPath('revoke-not-found');
+  applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+
+  const result = revokeApprovedRule({ keyword: 'nonexistent', reason: 'irrelevant', reviewer: 'agent.jane' }, { rulesPath });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.revoked, false);
+  assert.equal(result.notFound, true);
+  assert.equal(result.logEntry.event, 'approved_classification_rule_revoke_failed');
+  assert.equal(result.logEntry.error_class, 'RuleNotFoundError');
+});
+
+test('revokeApprovedRule fails closed with not-found when the rules file does not exist yet', () => {
+  const rulesPath = tempRulesPath('revoke-no-file');
+
+  assert.doesNotThrow(() => revokeApprovedRule({ keyword: 'widget', reason: 'irrelevant', reviewer: 'agent.jane' }, { rulesPath }));
+  const result = revokeApprovedRule({ keyword: 'widget', reason: 'irrelevant', reviewer: 'agent.jane' }, { rulesPath });
+  assert.equal(result.ok, false);
+  assert.equal(result.notFound, true);
+});
+
+test('revoking an already-revoked rule is an idempotent no-op, not an error', () => {
+  const rulesPath = tempRulesPath('revoke-duplicate');
+  applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+
+  const first = revokeApprovedRule({ keyword: 'widget', reason: 'first reason', reviewer: 'agent.jane' }, { rulesPath });
+  const second = revokeApprovedRule({ keyword: 'widget', reason: 'second reason', reviewer: 'agent.bob' }, { rulesPath });
+
+  assert.equal(first.ok, true);
+  assert.equal(first.revoked, true);
+
+  assert.equal(second.ok, true);
+  assert.equal(second.revoked, false);
+  assert.equal(second.alreadyRevoked, true);
+  assert.equal(second.logEntry.event, 'approved_classification_rule_revoke_duplicate');
+  assert.equal(second.logEntry.outcome, 'success');
+
+  // The second, no-op call must not overwrite the first revocation's details.
+  const onDisk = JSON.parse(readFileSync(rulesPath, 'utf8')).rules[0];
+  assert.equal(onDisk.revokedReason, 'first reason');
+  assert.equal(onDisk.revokedBy, 'agent.jane');
+});
+
+test('a corrupt approved-overrides file fails closed rather than crashing revocation', () => {
+  const rulesPath = tempRulesPath('revoke-corrupt');
+  writeFileSync(rulesPath, '{ not valid json');
+
+  assert.doesNotThrow(() => revokeApprovedRule({ keyword: 'widget', reason: 'irrelevant', reviewer: 'agent.jane' }, { rulesPath }));
+  const result = revokeApprovedRule({ keyword: 'widget', reason: 'irrelevant', reviewer: 'agent.jane' }, { rulesPath });
+  assert.equal(result.ok, false);
+  assert.equal(result.revoked, false);
+  assert.equal(result.logEntry.event, 'approved_classification_rule_revoke_failed');
+  assert.equal(result.logEntry.error_class, 'RulesFileCorruptError');
+  // the corrupt file must still be exactly as it was — never blindly overwritten.
+  assert.equal(readFileSync(rulesPath, 'utf8'), '{ not valid json');
+});
+
+test('a write failure fails closed with an alert, mirroring applyApprovedClassificationRule\'s own write-failure handling', () => {
+  const rulesPath = tempRulesPath('revoke-write-failure');
+  applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+  chmodSync(rulesPath, 0o444); // read-only: the read that finds the rule still succeeds, only the write fails.
+
+  const writes = [];
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  process.stderr.write = (chunk, ...args) => {
+    writes.push(String(chunk));
+    return originalStderrWrite(chunk, ...args);
+  };
+
+  let result;
+  try {
+    result = revokeApprovedRule({ keyword: 'widget', reason: 'irrelevant', reviewer: 'agent.jane' }, { rulesPath });
+  } finally {
+    process.stderr.write = originalStderrWrite;
+    chmodSync(rulesPath, 0o666); // restore so cleanup can remove it
+  }
+
+  assert.equal(result.ok, false);
+  assert.equal(result.revoked, false);
+  assert.equal(result.logEntry.event, 'approved_classification_rule_revoke_failed');
+  assert.ok(['RulesAccessDeniedError', 'RulesWriteFailedError'].includes(result.logEntry.error_class));
+  assert.ok(writes.some((line) => line.startsWith('ALERT: approved classification rule revoke write failed')));
+});
+
+// --- STORY-010: revokeApprovedRule x classify.js integration -------------------
+
+test('revoking an approved rule stops it from matching new requests, without altering a classification already produced under it', () => {
+  const rulesPath = tempRulesPath('revoke-integration');
+  applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+
+  // A ticket classified while the rule was still active.
+  const classifiedBeforeRevocation = classifySupportRequest("There's a widget issue on the homepage.", { rulesPath });
+  assert.equal(classifiedBeforeRevocation.category, 'sql_database_issue');
+  assert.equal(classifiedBeforeRevocation.logEntry.context.overrideApplied, true);
+
+  const revokeResult = revokeApprovedRule(
+    { keyword: 'widget', reason: 'Too broad, causing misclassifications.', reviewer: 'agent.jane' },
+    { rulesPath },
+  );
+  assert.equal(revokeResult.ok, true);
+  assert.equal(revokeResult.revoked, true);
+
+  // The already-produced result is an ordinary object — revocation never reaches back
+  // to rewrite it; nothing re-runs or re-classifies past tickets.
+  assert.equal(classifiedBeforeRevocation.category, 'sql_database_issue');
+  assert.equal(classifiedBeforeRevocation.logEntry.context.overrideApplied, true);
+
+  // A new ticket with identical wording now falls through to the static signal tables.
+  const classifiedAfterRevocation = classifySupportRequest("There's a widget issue on the homepage.", { rulesPath });
+  assert.equal(classifiedAfterRevocation.category, 'general_support_request');
+  assert.equal(classifiedAfterRevocation.logEntry.context.overrideApplied, false);
 });

@@ -124,6 +124,17 @@
       "fulfilled_by": [
         "STORY-009"
       ]
+    },
+    {
+      "id": "REQ-013",
+      "kind": "FUNC",
+      "cluster": "Classification Learning",
+      "priority": "should",
+      "statement": "A human must be able to revoke a previously approved classification rule so it stops being applied to new classifications, without deleting the approval history and without altering any classification already made under it.",
+      "notes": "Added 2026-09-08 at the user's explicit request, as the revoke counterpart to REQ-011/STORY-008's classification-rule approval — same override table, opposite direction. Not part of the original 10-REQ set.",
+      "fulfilled_by": [
+        "STORY-010"
+      ]
     }
   ],
   "releases": [
@@ -422,6 +433,37 @@
         "Audit trail not updated"
       ],
       "task_guidance": "Record a human-authored article proposal from a ticket the knowledge base search couldn't resolve; auto-assign its KB id from both knowledgeBase.json and any already-pending proposals; gate the actual knowledgeBase.json write behind an explicit human approval, reusing the existing ticket queue for review rather than a separate surface.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-010",
+      "title": "Revoke an Approved Classification Rule",
+      "release": null,
+      "fulfills": [
+        "REQ-013"
+      ],
+      "narrative": "As a support agent, when an approved classification rule turns out to be wrong or too broad, I want to revoke it, so the assistant stops applying it to new requests — without losing the record that it was ever approved, and without rewriting any classification it already produced.",
+      "acceptance": [
+        "Given an existing approved classification rule, when a human revokes it with a reason, then the rule is marked revoked (never deleted) and classify.js no longer applies it to new requests.",
+        "Given a rule that has already been revoked, when a human attempts to revoke it again, then the second attempt is an idempotent no-op, not an error.",
+        "Given a classification already produced using a rule before it was revoked, when the rule is later revoked, then that earlier classification result is unaffected.",
+        "Trust: every revocation attempt — successful, not-found, or duplicate — is logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-003",
+        "STORY-008"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Revocation rejected (missing/blank keyword, reason, or reviewer)",
+        "Revoked keyword does not match any approved rule",
+        "Rule already revoked (must be idempotent, not an error)",
+        "Corrupt approved-rules file",
+        "Rules file write failure",
+        "Audit trail not updated"
+      ],
+      "task_guidance": "Add a revoked flag (plus revokedAt/revokedBy/revokedReason) to an approved rule rather than deleting it; skip revoked rules in classify.js's override lookup so only future classifications are affected; wrap the revoke function in the same *AndLog audit pattern as every other action in this repo.",
       "due_on": null,
       "due_baseline_on": null
     }

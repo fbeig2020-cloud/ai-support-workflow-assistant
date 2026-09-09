@@ -71,7 +71,7 @@
  * auditLog.js) so a caller can decide how to react.
  */
 
-import { classifySupportRequest, applyApprovedClassificationRule } from './classify.js';
+import { classifySupportRequest, applyApprovedClassificationRule, revokeApprovedRule } from './classify.js';
 import { reviewClassification } from './reviewClassification.js';
 import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
 import { generateDraftResponse } from './generateDraftResponse.js';
@@ -285,6 +285,25 @@ export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
   }
 
   return { ...result, auditResult, applyResult, applyAuditResult };
+}
+
+/**
+ * Revoke a previously approved classification rule and persist the
+ * resulting logEntry to the audit trail. See classify.js's
+ * revokeApprovedRule() for revocation semantics — it marks the rule
+ * `revoked: true` rather than deleting it, and is idempotent (revoking an
+ * already-revoked rule is a no-op, not an error).
+ *
+ * @param {unknown} revocation
+ * @param {{ logPath?: string, rulesPath?: string|URL }} [options]
+ *   `logPath` is passed through to appendAuditEntry (tests only); `rulesPath`
+ *   is passed through to revokeApprovedRule (tests only).
+ * @returns {ReturnType<typeof revokeApprovedRule> & { auditResult: import('./auditLog.js').AuditAppendResult }}
+ */
+export function revokeApprovedRuleAndLog(revocation, options = {}) {
+  const result = revokeApprovedRule(revocation, options);
+  const auditResult = appendAuditEntry(result.logEntry, options);
+  return { ...result, auditResult };
 }
 
 /**

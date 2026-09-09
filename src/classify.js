@@ -128,7 +128,11 @@ const SUMMARY_MAX_LENGTH = 140;
  * Load the approved-override table (STORY-008). Fails closed to "no
  * overrides" on any problem (missing file, corrupt JSON, wrong shape) —
  * never throws, and never lets a bad overrides file break classification
- * itself; it just falls back to the static signal tables below.
+ * itself; it just falls back to the static signal tables below. Skips any
+ * rule with `revoked: true` (see revokeApprovedRule() below) so a revoked
+ * rule stops matching new requests immediately — it is filtered out here,
+ * not deleted from the file, so past classifications that already used it
+ * are never touched or re-run.
  *
  * @param {string|URL} rulesPath
  * @returns {{ keyword: string, category: Category }[]}
@@ -145,7 +149,8 @@ function loadApprovedOverrides(rulesPath) {
         typeof rule.keyword === 'string' &&
         rule.keyword.trim() !== '' &&
         typeof rule.category === 'string' &&
-        CATEGORIES.includes(rule.category),
+        CATEGORIES.includes(rule.category) &&
+        rule.revoked !== true,
     );
   } catch {
     return [];
@@ -392,5 +397,174 @@ export function applyApprovedClassificationRule(rule, options = {}) {
     ok: true,
     applied: true,
     logEntry: buildApplyRuleLogEntry({ event: 'approved_classification_rule_applied', outcome: 'success', keyword, category }),
+  };
+}
+
+/**
+ * @param {{ event: string, outcome: 'success'|'failure', keyword: string|undefined,
+ *   reason: string|undefined, reviewer: string|undefined, errorClass?: string }} fields
+ * @returns {Object}
+ */
+function buildRevokeRuleLogEntry({ event, outcome, keyword, reason, reviewer, errorClass }) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level: outcome === 'success' ? 'info' : 'warn',
+    service: 'classify',
+    event,
+    outcome,
+    context: { keyword, reason, reviewer },
+  };
+  if (errorClass) entry.error_class = errorClass;
+  return entry;
+}
+
+/**
+ * Revoke a previously approved classification override. Marks the rule
+ * `revoked: true` (plus `revokedAt`/`revokedBy`/`revokedReason`) rather than
+ * deleting it, so approval history stays intact and classifications already
+ * made using the rule are never touched or re-run — only loadApprovedOverrides()
+ * changes behavior, by skipping revoked rules for requests classified from
+ * this point forward. Idempotent: revoking an already-revoked rule is a
+ * no-op, not an error (`ok: true, revoked: false, alreadyRevoked: true`),
+ * per CLAUDE.md's idempotency mandate. Never throws.
+ *
+ * @param {unknown} revocation   Must have a non-empty string `keyword`, `reason`, and `reviewer`.
+ * @param {{ rulesPath?: string|URL }} [options]   Override the approved-overrides file path (tests only).
+ * @returns {{ ok: boolean, revoked: boolean, alreadyRevoked?: boolean, notFound?: boolean,
+ *   message?: string, rule?: Object, logEntry: Object }}
+ */
+export function revokeApprovedRule(revocation, options = {}) {
+  const keyword = revocation && typeof revocation === 'object' ? revocation.keyword : undefined;
+  const reason = revocation && typeof revocation === 'object' ? revocation.reason : undefined;
+  const reviewer = revocation && typeof revocation === 'object' ? revocation.reviewer : undefined;
+
+  const isValid =
+    revocation !== null &&
+    typeof revocation === 'object' &&
+    !Array.isArray(revocation) &&
+    typeof keyword === 'string' &&
+    keyword.trim() !== '' &&
+    typeof reason === 'string' &&
+    reason.trim() !== '' &&
+    typeof reviewer === 'string' &&
+    reviewer.trim() !== '';
+
+  if (!isValid) {
+    return {
+      ok: false,
+      revoked: false,
+      message: 'Rule not revoked: invalid keyword, reason, or reviewer.',
+      logEntry: buildRevokeRuleLogEntry({
+        event: 'approved_classification_rule_revoke_rejected',
+        outcome: 'failure',
+        keyword,
+        reason,
+        reviewer,
+        errorClass: 'ValidationError',
+      }),
+    };
+  }
+
+  const rulesPath = options.rulesPath ?? APPROVED_RULES_PATH;
+
+  let existingRules = [];
+  try {
+    if (existsSync(rulesPath)) {
+      const parsed = JSON.parse(readFileSync(rulesPath, 'utf8'));
+      if (parsed && Array.isArray(parsed.rules)) existingRules = parsed.rules;
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      revoked: false,
+      message: 'Rule not revoked: approved-overrides file is corrupt.',
+      logEntry: buildRevokeRuleLogEntry({
+        event: 'approved_classification_rule_revoke_failed',
+        outcome: 'failure',
+        keyword,
+        reason,
+        reviewer,
+        errorClass: 'RulesFileCorruptError',
+      }),
+    };
+  }
+
+  const ruleIndex = existingRules.findIndex(
+    (existing) => existing && typeof existing.keyword === 'string' && existing.keyword.toLowerCase() === keyword.toLowerCase(),
+  );
+
+  if (ruleIndex === -1) {
+    return {
+      ok: false,
+      revoked: false,
+      notFound: true,
+      message: `Rule not revoked: no approved rule found for keyword "${keyword}".`,
+      logEntry: buildRevokeRuleLogEntry({
+        event: 'approved_classification_rule_revoke_failed',
+        outcome: 'failure',
+        keyword,
+        reason,
+        reviewer,
+        errorClass: 'RuleNotFoundError',
+      }),
+    };
+  }
+
+  if (existingRules[ruleIndex].revoked === true) {
+    return {
+      ok: true,
+      revoked: false,
+      alreadyRevoked: true,
+      message: `Rule not revoked: keyword "${keyword}" was already revoked.`,
+      logEntry: buildRevokeRuleLogEntry({
+        event: 'approved_classification_rule_revoke_duplicate',
+        outcome: 'success',
+        keyword,
+        reason,
+        reviewer,
+      }),
+    };
+  }
+
+  const revokedRule = {
+    ...existingRules[ruleIndex],
+    revoked: true,
+    revokedAt: new Date().toISOString(),
+    revokedBy: reviewer,
+    revokedReason: reason,
+  };
+  const nextRules = [...existingRules];
+  nextRules[ruleIndex] = revokedRule;
+
+  try {
+    const dir = dirname(rulesPath instanceof URL ? fileURLToPath(rulesPath) : rulesPath);
+    if (dir && dir !== '.' && !existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(rulesPath, JSON.stringify({ rules: nextRules }, null, 2), { encoding: 'utf8' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorClass = error.code === 'EACCES' || error.code === 'EPERM' ? 'RulesAccessDeniedError' : 'RulesWriteFailedError';
+    process.stderr.write(`ALERT: approved classification rule revoke write failed: ${message}\n`);
+    return {
+      ok: false,
+      revoked: false,
+      message: `Rule not revoked: ${message}`,
+      logEntry: buildRevokeRuleLogEntry({
+        event: 'approved_classification_rule_revoke_failed',
+        outcome: 'failure',
+        keyword,
+        reason,
+        reviewer,
+        errorClass,
+      }),
+    };
+  }
+
+  return {
+    ok: true,
+    revoked: true,
+    rule: revokedRule,
+    logEntry: buildRevokeRuleLogEntry({ event: 'approved_classification_rule_revoked', outcome: 'success', keyword, reason, reviewer }),
   };
 }

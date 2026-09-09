@@ -2,12 +2,12 @@
   "schema_version": 2,
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
-    "stories_total": 10,
+    "stories_total": 11,
     "stories_verified": 8,
     "stories_submitted": 0,
     "stories_in_progress": 0,
-    "stories_not_started": 2,
-    "criteria_total": 33,
+    "stories_not_started": 3,
+    "criteria_total": 37,
     "criteria_passed": 26,
     "points_awarded": 800
   },
@@ -353,6 +353,41 @@
         "state": "not_started",
         "criteria_passed": 0,
         "criteria_total": 3,
+        "outstanding": [
+          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
+        ]
+      }
+    },
+    {
+      "id": "STORY-010",
+      "release": null,
+      "acceptance_total": 4,
+      "criteria": [
+        {
+          "text": "Given an existing approved classification rule, when a human revokes it with a reason, then the rule is marked revoked (never deleted) and classify.js no longer applies it to new requests.",
+          "passed": false
+        },
+        {
+          "text": "Given a rule that has already been revoked, when a human attempts to revoke it again, then the second attempt is an idempotent no-op, not an error.",
+          "passed": false
+        },
+        {
+          "text": "Given a classification already produced using a rule before it was revoked, when the rule is later revoked, then that earlier classification result is unaffected.",
+          "passed": false
+        },
+        {
+          "text": "Trust: every revocation attempt — successful, not-found, or duplicate — is logged in the audit trail.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": "Implemented and covered by new tests in tests/classify.test.js and tests/auditedActions.test.js (npm test: 293/293 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008/009: no external grading/commit-verification pass has run for this story yet.",
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 4,
         "outstanding": [
           "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
         ]

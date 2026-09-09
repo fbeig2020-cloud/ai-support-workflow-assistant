@@ -9,10 +9,11 @@ import {
   recordClassificationCorrectionAndLog,
   checkForSuggestedRuleAndLog,
   reviewSuggestedRuleAndLog,
+  revokeApprovedRuleAndLog,
   proposeKnowledgeBaseArticleAndLog,
   reviewKnowledgeBaseProposalAndLog,
 } from '../src/auditedActions.js';
-import { classifySupportRequest } from '../src/classify.js';
+import { classifySupportRequest, applyApprovedClassificationRule } from '../src/classify.js';
 import { SUGGESTION_THRESHOLD } from '../src/classificationCorrections.js';
 import { addTicketToQueue, listQueuedTickets } from '../src/ticketQueue.js';
 
@@ -320,6 +321,69 @@ test('an approved suggestion DOES change classifySupportRequest()\'s behavior fo
 
   const after = classifySupportRequest('There is a sprocket problem today.', { rulesPath });
   assert.equal(after.category, 'data_issue', 'an approved suggestion must change classify.js behavior going forward');
+});
+
+// --- STORY-010: revokeApprovedRuleAndLog ---------------------------------------
+
+test('revokeApprovedRuleAndLog persists a distinct approved_classification_rule_revoked entry, not merged into the original _applied entry', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+
+  const applyResult = applyApprovedClassificationRule({ keyword: 'widget', category: 'sql_database_issue' }, { rulesPath });
+  assert.equal(applyResult.applied, true);
+
+  const result = revokeApprovedRuleAndLog(
+    { keyword: 'widget', reason: 'Too broad, causing misclassifications.', reviewer: 'agent.jane' },
+    { logPath, rulesPath },
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.revoked, true);
+  assert.equal(result.auditResult.ok, true);
+
+  // Only the revoke call itself was logged (the apply call above used a separate,
+  // unlogged path) — one record, its own distinct event, not folded into anything else.
+  const lines = readLines(logPath);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].entry.event, 'approved_classification_rule_revoked');
+  assert.equal(lines[0].entry.context.keyword, 'widget');
+  assert.equal(lines[0].entry.context.reviewer, 'agent.jane');
+});
+
+test('revokeApprovedRuleAndLog logs a distinct entry for an apply-then-revoke sequence, chained after the applied entry', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  const decision = { action: 'approve', reviewer: 'agent.jane' };
+
+  const applyResult = reviewSuggestedRuleAndLog(VALID_SUGGESTION, decision, { logPath, rulesPath });
+  assert.equal(applyResult.applyResult.applied, true);
+
+  const revokeResult = revokeApprovedRuleAndLog(
+    { keyword: VALID_SUGGESTION.keyword, reason: 'Superseded by a better rule.', reviewer: 'agent.jane' },
+    { logPath, rulesPath },
+  );
+  assert.equal(revokeResult.revoked, true);
+
+  const lines = readLines(logPath);
+  assert.equal(lines.length, 3);
+  assert.equal(lines[0].entry.event, 'rule_suggestion_approved');
+  assert.equal(lines[1].entry.event, 'approved_classification_rule_applied');
+  assert.equal(lines[2].entry.event, 'approved_classification_rule_revoked');
+  assert.equal(lines[2].prevHash, lines[1].hash);
+});
+
+test('revokeApprovedRuleAndLog still logs a failure entry for a keyword with no approved rule (fails closed)', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+
+  const result = revokeApprovedRuleAndLog({ keyword: 'nonexistent', reason: 'irrelevant', reviewer: 'agent.jane' }, { logPath, rulesPath });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.notFound, true);
+  assert.equal(result.auditResult.ok, true);
+  const [record] = readLines(logPath);
+  assert.equal(record.entry.event, 'approved_classification_rule_revoke_failed');
+  assert.equal(record.entry.error_class, 'RuleNotFoundError');
 });
 
 // --- STORY-009: knowledge base learning wrappers -------------------------------
