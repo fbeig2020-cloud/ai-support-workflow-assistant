@@ -95,6 +95,11 @@ import { appendAuditEntry } from './auditLog.js';
  */
 export function classifyAndLog(requestText, options = {}) {
   const result = classifySupportRequest(requestText);
+  if (result.logEntry.outcome === 'success') {
+    const category = result.category.replace(/_/g, ' ');
+    result.logEntry.humanSummary =
+      `This ticket was classified as a ${category} with ${result.priority} priority.`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -185,6 +190,14 @@ export function generateEscalationRecommendationAndLog(classification, kbSearchR
  */
 export function reviewEscalationAndLog(recommendation, decision, options = {}) {
   const result = reviewEscalation(recommendation, decision);
+  if (result.outcome === 'approved') {
+    result.logEntry.humanSummary = 'A support agent approved escalating this ticket to a human specialist.';
+  } else if (result.outcome === 'rejected') {
+    const reasonText = result.reason ?? 'none provided';
+    const trailingPunctuation = /[.!?]$/.test(reasonText) ? '' : '.';
+    result.logEntry.humanSummary =
+      `A support agent rejected escalating this ticket. Reason: ${reasonText}${trailingPunctuation}`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -199,6 +212,11 @@ export function reviewEscalationAndLog(recommendation, decision, options = {}) {
  */
 export function generateSupportSummaryAndLog(workflow, options = {}) {
   const result = generateSupportSummary(workflow);
+  if (result.generated) {
+    result.logEntry.humanSummary = result.logEntry.context.escalated
+      ? 'A final summary was generated for this ticket. It was escalated to a human specialist.'
+      : 'A final summary was generated for this ticket. It was resolved without escalation.';
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -215,6 +233,9 @@ export function generateSupportSummaryAndLog(workflow, options = {}) {
  */
 export function saveSupportSummaryAndLog(summary, options = {}) {
   const result = saveSupportSummary(summary, options);
+  if (result.saved) {
+    result.logEntry.humanSummary = "This ticket's summary was saved for record-keeping.";
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -231,6 +252,12 @@ export function saveSupportSummaryAndLog(summary, options = {}) {
  */
 export function recordClassificationCorrectionAndLog(correction, options = {}) {
   const result = recordClassificationCorrection(correction, options);
+  if (result.recorded) {
+    const wrongCategory = result.correction.wrongCategory.replace(/_/g, ' ');
+    const correctCategory = result.correction.correctCategory.replace(/_/g, ' ');
+    result.logEntry.humanSummary =
+      `A support agent corrected the AI's classification from a ${wrongCategory} to a ${correctCategory}.`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -247,6 +274,10 @@ export function recordClassificationCorrectionAndLog(correction, options = {}) {
  */
 export function checkForSuggestedRuleAndLog(options = {}) {
   const result = checkForSuggestedRule(options);
+  if (result.suggested) {
+    result.logEntry.humanSummary =
+      'A repeated correction pattern was noticed, and a new classification rule is being suggested for human approval.';
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -271,6 +302,14 @@ export function checkForSuggestedRuleAndLog(options = {}) {
  */
 export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
   const result = reviewSuggestedRule(suggestion, decision);
+  if (result.outcome === 'approved') {
+    result.logEntry.humanSummary = 'A suggested classification rule was approved and is now active.';
+  } else if (result.outcome === 'rejected') {
+    const reasonText = result.reason ?? 'none provided';
+    const trailingPunctuation = /[.!?]$/.test(reasonText) ? '' : '.';
+    result.logEntry.humanSummary =
+      `A suggested classification rule was rejected. Reason: ${reasonText}${trailingPunctuation}`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   const requestId = suggestion && typeof suggestion === 'object' ? suggestion.requestId : undefined;
 
@@ -313,6 +352,11 @@ export function reviewSuggestedRuleAndLog(suggestion, decision, options = {}) {
  */
 export function revokeApprovedRuleAndLog(revocation, options = {}) {
   const result = revokeApprovedRule(revocation, options);
+  if (result.revoked) {
+    const category = result.rule.category.replace(/_/g, ' ');
+    result.logEntry.humanSummary =
+      `The approved rule mapping "${result.rule.keyword}" to a ${category} was revoked and no longer affects future classifications. Past classifications made under it are unchanged.`;
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -329,6 +373,10 @@ export function revokeApprovedRuleAndLog(revocation, options = {}) {
  */
 export function proposeKnowledgeBaseArticleAndLog(proposal, options = {}) {
   const result = proposeKnowledgeBaseArticle(proposal, options);
+  if (result.proposed) {
+    result.logEntry.humanSummary =
+      'A new knowledge base article was proposed from a solved ticket and is awaiting human approval.';
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
   return { ...result, auditResult };
 }
@@ -388,6 +436,11 @@ function buildKbProposalSummaryText({ article, sourceTicketId, proposedBy, revie
  */
 export function reviewKnowledgeBaseProposalAndLog(proposalId, decision, options = {}) {
   const result = reviewKnowledgeBaseProposal(proposalId, decision, options);
+  if (result.outcome === 'approved') {
+    result.logEntry.humanSummary = 'The proposed knowledge base article was approved and added to the knowledge base.';
+  } else if (result.outcome === 'rejected') {
+    result.logEntry.humanSummary = 'The proposed knowledge base article was rejected.';
+  }
   const auditResult = appendAuditEntry(result.logEntry, options);
 
   if (result.outcome !== 'approved' || !result.article) {

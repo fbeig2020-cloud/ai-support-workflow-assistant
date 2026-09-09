@@ -7,6 +7,9 @@ import {
   classifyAndLog,
   reviewAndLog,
   generateEscalationRecommendationAndLog,
+  reviewEscalationAndLog,
+  generateSupportSummaryAndLog,
+  saveSupportSummaryAndLog,
   recordClassificationCorrectionAndLog,
   checkForSuggestedRuleAndLog,
   reviewSuggestedRuleAndLog,
@@ -557,4 +560,317 @@ test('reviewKnowledgeBaseProposalAndLog on reject logs the decision and never to
   assert.equal(readFileSync(kbPath, 'utf8'), before);
   const lines = readLines(logPath);
   assert.equal(lines[lines.length - 1].entry.event, 'kb_proposal_rejected');
+});
+
+// --- humanSummary: remaining audit log entry points ------------------------
+// (classifyAndLog / reviewEscalationAndLog / generateSupportSummaryAndLog were
+// covered in the same round as reviewAndLog/generateEscalationRecommendationAndLog
+// above, but reviewEscalationAndLog was never given its own test — added here too,
+// so every function in this file that sets humanSummary now has coverage.)
+
+test('classifyAndLog adds a plain-English humanSummary naming the category and priority on success', () => {
+  const logPath = tempLogPath();
+  const result = classifyAndLog('Power BI dashboard is blank.', { logPath });
+
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /classified/);
+  assert.ok(result.logEntry.humanSummary.includes(result.category.replace(/_/g, ' ')));
+  assert.ok(result.logEntry.humanSummary.includes(result.priority));
+});
+
+test('classifyAndLog does NOT add humanSummary on a failed classification (empty input)', () => {
+  const logPath = tempLogPath();
+  const result = classifyAndLog('', { logPath });
+
+  assert.equal(result.logEntry.outcome, 'failure');
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('reviewEscalationAndLog adds a plain-English humanSummary on approve', () => {
+  const logPath = tempLogPath();
+  const recommendation = generateEscalationRecommendationAndLog(ESCALATION_CLASSIFICATION, NOT_FOUND_KB_RESULT, { logPath: tempLogPath() });
+  const result = reviewEscalationAndLog(recommendation, { action: 'approve', reviewer: 'agent.jane' }, { logPath });
+
+  assert.equal(result.outcome, 'approved');
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /approved/i);
+  assert.match(result.logEntry.humanSummary, /escalat/i);
+});
+
+test('reviewEscalationAndLog adds a plain-English humanSummary on reject, naming the real reason', () => {
+  const logPath = tempLogPath();
+  const recommendation = generateEscalationRecommendationAndLog(ESCALATION_CLASSIFICATION, NOT_FOUND_KB_RESULT, { logPath: tempLogPath() });
+  const decision = { action: 'reject', reviewer: 'agent.jane', reason: 'Agent will handle this one directly' };
+  const result = reviewEscalationAndLog(recommendation, decision, { logPath });
+
+  assert.equal(result.outcome, 'rejected');
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /rejected/i);
+  assert.ok(result.logEntry.humanSummary.includes('Agent will handle this one directly'));
+});
+
+test('reviewEscalationAndLog does NOT add humanSummary when the input is malformed (fails closed)', () => {
+  const logPath = tempLogPath();
+  const result = reviewEscalationAndLog({ recommended: false }, { action: 'approve', reviewer: 'agent.jane' }, { logPath });
+
+  assert.equal(result.outcome, 'error');
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+const VALID_DRAFT_RESPONSE = { generated: true };
+
+function validClassificationReview(reviewer = 'agent.jane') {
+  return { outcome: 'approved', logEntry: { context: { reviewer } } };
+}
+
+test('generateSupportSummaryAndLog adds a plain-English humanSummary stating a summary was generated, without escalation', () => {
+  const logPath = tempLogPath();
+  const workflow = {
+    ticketId: 'TICKET-2001',
+    requestText: 'Cannot log in.',
+    classification: { category: 'login_problem', priority: 'high' },
+    classificationReview: validClassificationReview(),
+    draftResponse: VALID_DRAFT_RESPONSE,
+  };
+  const result = generateSupportSummaryAndLog(workflow, { logPath });
+
+  assert.equal(result.generated, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /summary was generated/);
+  assert.match(result.logEntry.humanSummary, /without escalation/);
+});
+
+test('generateSupportSummaryAndLog\'s humanSummary mentions escalation when the ticket was escalated', () => {
+  const logPath = tempLogPath();
+  const escalationRecommendation = { recommended: true, explanation: 'No relevant knowledge base match was found.' };
+  const escalationReview = {
+    outcome: 'approved',
+    recommendation: escalationRecommendation,
+    logEntry: { context: { reviewer: 'agent.jane' } },
+  };
+  const workflow = {
+    ticketId: 'TICKET-2002',
+    requestText: 'Query is timing out.',
+    classification: { category: 'sql_database_issue', priority: 'high' },
+    classificationReview: validClassificationReview(),
+    draftResponse: VALID_DRAFT_RESPONSE,
+    escalationRecommendation,
+    escalationReview,
+  };
+  const result = generateSupportSummaryAndLog(workflow, { logPath });
+
+  assert.equal(result.generated, true);
+  assert.match(result.logEntry.humanSummary, /summary was generated/);
+  assert.match(result.logEntry.humanSummary, /escalated to a human specialist/);
+});
+
+test('generateSupportSummaryAndLog does NOT add humanSummary when the summary was not generated (invalid workflow)', () => {
+  const logPath = tempLogPath();
+  const result = generateSupportSummaryAndLog({ ticketId: '' }, { logPath });
+
+  assert.equal(result.generated, false);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('saveSupportSummaryAndLog adds a plain-English humanSummary on a successful save', () => {
+  const logPath = tempLogPath();
+  const summariesDir = join(TMP_DIR, `summaries-${randomUUID()}`);
+  const summary = { generated: true, ticketId: 'TICKET-3001', summaryText: 'Support Summary — Ticket TICKET-3001' };
+  const result = saveSupportSummaryAndLog(summary, { logPath, summariesDir });
+
+  assert.equal(result.saved, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /saved/);
+  assert.match(result.logEntry.humanSummary, /record-keeping/);
+});
+
+test('saveSupportSummaryAndLog does NOT add humanSummary when the summary is not savable (malformed)', () => {
+  const logPath = tempLogPath();
+  const summariesDir = join(TMP_DIR, `summaries-${randomUUID()}`);
+  const result = saveSupportSummaryAndLog({ generated: false }, { logPath, summariesDir });
+
+  assert.equal(result.saved, false);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('recordClassificationCorrectionAndLog adds a plain-English humanSummary naming both categories', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const result = recordClassificationCorrectionAndLog(VALID_CORRECTION, { logPath, correctionsPath });
+
+  assert.equal(result.recorded, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /corrected/);
+  assert.ok(result.logEntry.humanSummary.includes(VALID_CORRECTION.wrongCategory.replace(/_/g, ' ')));
+  assert.ok(result.logEntry.humanSummary.includes(VALID_CORRECTION.correctCategory.replace(/_/g, ' ')));
+});
+
+test('recordClassificationCorrectionAndLog does NOT add humanSummary on a duplicate (no-op) correction', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  recordClassificationCorrectionAndLog(VALID_CORRECTION, { logPath, correctionsPath });
+  const result = recordClassificationCorrectionAndLog(VALID_CORRECTION, { logPath, correctionsPath });
+
+  assert.equal(result.recorded, false);
+  assert.equal(result.duplicate, true);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('checkForSuggestedRuleAndLog adds a plain-English humanSummary when a suggestion is created', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+
+  for (let i = 0; i < SUGGESTION_THRESHOLD; i++) {
+    recordClassificationCorrectionAndLog({ ...VALID_CORRECTION, requestId: `REQ-${i}` }, { logPath, correctionsPath });
+  }
+  const result = checkForSuggestedRuleAndLog({ logPath, correctionsPath, queueDir });
+
+  assert.equal(result.suggested, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /repeated correction pattern/);
+  assert.match(result.logEntry.humanSummary, /human approval/);
+});
+
+test('checkForSuggestedRuleAndLog does NOT add humanSummary when no suggestion is created', () => {
+  const logPath = tempLogPath();
+  const correctionsPath = join(TMP_DIR, `corrections-${randomUUID()}.json`);
+  const queueDir = join(TMP_DIR, `queue-${randomUUID()}`);
+  const result = checkForSuggestedRuleAndLog({ logPath, correctionsPath, queueDir });
+
+  assert.equal(result.suggested, false);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('reviewSuggestedRuleAndLog adds a plain-English humanSummary on approve', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  const result = reviewSuggestedRuleAndLog(VALID_SUGGESTION, { action: 'approve', reviewer: 'agent.jane' }, { logPath, rulesPath });
+
+  assert.equal(result.outcome, 'approved');
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /approved/i);
+  assert.match(result.logEntry.humanSummary, /active/i);
+});
+
+test('reviewSuggestedRuleAndLog adds a plain-English humanSummary on reject, naming the real reason', () => {
+  const logPath = tempLogPath();
+  const decision = { action: 'reject', reviewer: 'agent.jane', reason: 'Too narrow a signal to generalize' };
+  const result = reviewSuggestedRuleAndLog(VALID_SUGGESTION, decision, { logPath });
+
+  assert.equal(result.outcome, 'rejected');
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /rejected/i);
+  assert.ok(result.logEntry.humanSummary.includes('Too narrow a signal to generalize'));
+});
+
+test('reviewSuggestedRuleAndLog does NOT add humanSummary when the suggestion is malformed (fails closed)', () => {
+  const logPath = tempLogPath();
+  const result = reviewSuggestedRuleAndLog({ type: 'not_a_suggestion' }, { action: 'approve', reviewer: 'agent.jane' }, { logPath });
+
+  assert.equal(result.outcome, 'error');
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('revokeApprovedRuleAndLog adds a plain-English humanSummary naming the keyword and category', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  applyApprovedClassificationRule({ keyword: 'gadget', category: 'sql_database_issue' }, { rulesPath });
+
+  const result = revokeApprovedRuleAndLog({ keyword: 'gadget', reason: 'Too broad.', reviewer: 'agent.jane' }, { logPath, rulesPath });
+
+  assert.equal(result.revoked, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.ok(result.logEntry.humanSummary.includes('gadget'));
+  assert.ok(result.logEntry.humanSummary.includes('sql database issue'));
+  assert.match(result.logEntry.humanSummary, /future classifications/);
+  assert.match(result.logEntry.humanSummary, /unchanged/);
+});
+
+test('revokeApprovedRuleAndLog does NOT add humanSummary when the rule was already revoked (no-op)', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  applyApprovedClassificationRule({ keyword: 'sprocket-2', category: 'data_issue' }, { rulesPath });
+  revokeApprovedRuleAndLog({ keyword: 'sprocket-2', reason: 'First revoke.', reviewer: 'agent.jane' }, { logPath, rulesPath });
+
+  const result = revokeApprovedRuleAndLog({ keyword: 'sprocket-2', reason: 'Second revoke.', reviewer: 'agent.jane' }, { logPath, rulesPath });
+
+  assert.equal(result.revoked, false);
+  assert.equal(result.alreadyRevoked, true);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('revokeApprovedRuleAndLog does NOT add humanSummary when the rule is not found (failure)', () => {
+  const logPath = tempLogPath();
+  const rulesPath = join(TMP_DIR, `rules-${randomUUID()}.json`);
+  const result = revokeApprovedRuleAndLog({ keyword: 'nonexistent-2', reason: 'irrelevant', reviewer: 'agent.jane' }, { logPath, rulesPath });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.notFound, true);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('proposeKnowledgeBaseArticleAndLog adds a plain-English humanSummary on a successful proposal', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const result = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  assert.equal(result.proposed, true);
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /proposed/);
+  assert.match(result.logEntry.humanSummary, /awaiting human approval/);
+});
+
+test('proposeKnowledgeBaseArticleAndLog does NOT add humanSummary on a duplicate (no-op) proposal', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  assert.equal(result.proposed, false);
+  assert.equal(result.duplicate, true);
+  assert.equal(result.logEntry.humanSummary, undefined);
+});
+
+test('reviewKnowledgeBaseProposalAndLog adds a plain-English humanSummary on approve', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const summariesDir = join(TMP_DIR, `summaries-${randomUUID()}`);
+  const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = reviewKnowledgeBaseProposalAndLog(
+    proposalId,
+    { action: 'approve', reviewer: 'agent.jane' },
+    { logPath, kbPath, queueDir, summariesDir },
+  );
+
+  assert.equal(result.outcome, 'approved');
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /approved/i);
+  assert.match(result.logEntry.humanSummary, /added to the knowledge base/);
+});
+
+test('reviewKnowledgeBaseProposalAndLog adds a plain-English humanSummary on reject', () => {
+  const logPath = tempLogPath();
+  const kbPath = tempKbPath();
+  const queueDir = join(TMP_DIR, `kb-queue-${randomUUID()}`);
+  const { proposalId } = proposeKnowledgeBaseArticleAndLog(VALID_KB_PROPOSAL, { logPath, kbPath, queueDir });
+
+  const result = reviewKnowledgeBaseProposalAndLog(proposalId, { action: 'reject', reviewer: 'agent.jane' }, { logPath, kbPath, queueDir });
+
+  assert.equal(result.outcome, 'rejected');
+  assert.equal(typeof result.logEntry.humanSummary, 'string');
+  assert.match(result.logEntry.humanSummary, /rejected/i);
+});
+
+test('reviewKnowledgeBaseProposalAndLog does NOT add humanSummary when the input is malformed (fails closed)', () => {
+  const logPath = tempLogPath();
+  const result = reviewKnowledgeBaseProposalAndLog('', { action: 'approve', reviewer: 'agent.jane' }, { logPath });
+
+  assert.equal(result.outcome, 'error');
+  assert.equal(result.logEntry.humanSummary, undefined);
 });
