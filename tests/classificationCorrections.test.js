@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { recordClassificationCorrection, checkForSuggestedRule, SUGGESTION_THRESHOLD } from '../src/classificationCorrections.js';
+import {
+  recordClassificationCorrection,
+  checkForSuggestedRule,
+  SUGGESTION_THRESHOLD,
+  FAST_REPEAT_THRESHOLD,
+  FAST_REPEAT_WINDOW_DAYS,
+} from '../src/classificationCorrections.js';
 import { listQueuedTickets } from '../src/ticketQueue.js';
 
 // Own subdirectory per file, same reason as the other tests/*.test.js files:
@@ -16,6 +22,25 @@ function tempCorrectionsPath(name) {
 
 function tempQueueDir(name) {
   return join(TMP_DIR, `${name}-queue-${randomUUID()}`);
+}
+
+function daysAgo(days) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+// Patches a stored correction's recordedAt directly on disk (or removes it
+// entirely), the same way the "corrupt file" tests write raw JSON — there is
+// no way to control recordedAt through recordClassificationCorrection() itself,
+// since it always stamps "now".
+function setRecordedAt(correctionsPath, requestId, recordedAt) {
+  const data = JSON.parse(readFileSync(correctionsPath, 'utf8'));
+  const entry = data.corrections.find((c) => c.requestId === requestId);
+  if (recordedAt === undefined) {
+    delete entry.recordedAt;
+  } else {
+    entry.recordedAt = recordedAt;
+  }
+  writeFileSync(correctionsPath, JSON.stringify(data, null, 2));
 }
 
 test.before(() => {
@@ -142,17 +167,97 @@ test('SUGGESTION_THRESHOLD is 3', () => {
   assert.equal(SUGGESTION_THRESHOLD, 3);
 });
 
-test('2 occurrences of the same pattern do NOT trigger a suggestion', () => {
-  const correctionsPath = tempCorrectionsPath('boundary-2');
-  const queueDir = tempQueueDir('boundary-2');
+test('2 occurrences of the same pattern, spaced more than 15 days apart, do NOT trigger a suggestion', () => {
+  const correctionsPath = tempCorrectionsPath('boundary-2-spaced-far');
+  const queueDir = tempQueueDir('boundary-2-spaced-far');
   recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-1' }, { correctionsPath });
   recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-2' }, { correctionsPath });
+  setRecordedAt(correctionsPath, 'REQ-1', daysAgo(FAST_REPEAT_WINDOW_DAYS + 5));
+  setRecordedAt(correctionsPath, 'REQ-2', daysAgo(0));
 
   const result = checkForSuggestedRule({ correctionsPath, queueDir });
   assert.equal(result.ok, true);
   assert.equal(result.suggested, false);
   assert.deepEqual(result.suggestions, []);
   assert.equal(listQueuedTickets({ queueDir }).length, 0);
+});
+
+// --- checkForSuggestedRule: fast-repeat trigger ---------------------------------
+
+test("2 occurrences of the same pattern within FAST_REPEAT_WINDOW_DAYS DO trigger a suggestion, with triggeredBy: 'fast_repeat'", () => {
+  const correctionsPath = tempCorrectionsPath('fast-repeat-within-window');
+  const queueDir = tempQueueDir('fast-repeat-within-window');
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-1' }, { correctionsPath });
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-2' }, { correctionsPath });
+  setRecordedAt(correctionsPath, 'REQ-1', daysAgo(FAST_REPEAT_WINDOW_DAYS - 1));
+  setRecordedAt(correctionsPath, 'REQ-2', daysAgo(0));
+
+  const result = checkForSuggestedRule({ correctionsPath, queueDir });
+  assert.equal(result.ok, true);
+  assert.equal(result.suggested, true);
+  assert.equal(result.suggestions.length, 1);
+  assert.equal(result.suggestions[0].timesSeen, FAST_REPEAT_THRESHOLD);
+  assert.equal(result.suggestions[0].triggeredBy, 'fast_repeat');
+  assert.equal(result.suggestions[0].queued, true);
+});
+
+test("3 occurrences spread far apart in time still trigger via the original threshold, with triggeredBy: 'threshold'", () => {
+  const correctionsPath = tempCorrectionsPath('threshold-spread-far');
+  const queueDir = tempQueueDir('threshold-spread-far');
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-1' }, { correctionsPath });
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-2' }, { correctionsPath });
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-3' }, { correctionsPath });
+  setRecordedAt(correctionsPath, 'REQ-1', daysAgo(200));
+  setRecordedAt(correctionsPath, 'REQ-2', daysAgo(100));
+  setRecordedAt(correctionsPath, 'REQ-3', daysAgo(0));
+
+  const result = checkForSuggestedRule({ correctionsPath, queueDir });
+  assert.equal(result.ok, true);
+  assert.equal(result.suggested, true);
+  assert.equal(result.suggestions.length, 1);
+  assert.equal(result.suggestions[0].timesSeen, 3);
+  assert.equal(result.suggestions[0].triggeredBy, 'threshold');
+});
+
+test('a correction with a missing/invalid recordedAt still counts toward the 3x-ever threshold, but is excluded from the fast-repeat window check', () => {
+  const correctionsPath = tempCorrectionsPath('invalid-recordedat');
+  const queueDir = tempQueueDir('invalid-recordedat');
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-1' }, { correctionsPath });
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-2' }, { correctionsPath });
+  setRecordedAt(correctionsPath, 'REQ-1', 'not-a-valid-date');
+  setRecordedAt(correctionsPath, 'REQ-2', daysAgo(0));
+
+  // Only one usable timestamp so far (REQ-1's is unparsable) — below both
+  // SUGGESTION_THRESHOLD (2 total) and FAST_REPEAT_THRESHOLD (1 valid timestamp).
+  const afterTwo = checkForSuggestedRule({ correctionsPath, queueDir });
+  assert.equal(afterTwo.suggested, false);
+
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-3' }, { correctionsPath });
+  setRecordedAt(correctionsPath, 'REQ-3', undefined);
+
+  // Now 3 total (REQ-1 invalid, REQ-2 valid, REQ-3 missing) — the invalid and
+  // missing entries still count toward the 3x-ever total, reaching SUGGESTION_THRESHOLD,
+  // even though only one of the three ever contributed a usable timestamp.
+  const afterThree = checkForSuggestedRule({ correctionsPath, queueDir });
+  assert.equal(afterThree.suggested, true);
+  assert.equal(afterThree.suggestions[0].timesSeen, 3);
+  assert.equal(afterThree.suggestions[0].triggeredBy, 'threshold');
+});
+
+test("a pattern satisfying both triggers at once reports triggeredBy: 'threshold'", () => {
+  const correctionsPath = tempCorrectionsPath('both-triggers-overlap');
+  const queueDir = tempQueueDir('both-triggers-overlap');
+  // Recorded back-to-back with no recordedAt patching, so all three timestamps
+  // land within milliseconds of each other — both SUGGESTION_THRESHOLD (3x-ever)
+  // and FAST_REPEAT_THRESHOLD (2 within FAST_REPEAT_WINDOW_DAYS) are satisfied at once.
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-1' }, { correctionsPath });
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-2' }, { correctionsPath });
+  recordClassificationCorrection({ ...VALID_CORRECTION, requestId: 'REQ-3' }, { correctionsPath });
+
+  const result = checkForSuggestedRule({ correctionsPath, queueDir });
+  assert.equal(result.suggested, true);
+  assert.equal(result.suggestions.length, 1);
+  assert.equal(result.suggestions[0].triggeredBy, 'threshold');
 });
 
 test('3 occurrences of the same pattern DO trigger a suggestion', () => {

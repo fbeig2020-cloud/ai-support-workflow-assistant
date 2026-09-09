@@ -2,12 +2,12 @@
   "schema_version": 2,
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
-    "stories_total": 11,
+    "stories_total": 12,
     "stories_verified": 8,
     "stories_submitted": 0,
     "stories_in_progress": 0,
-    "stories_not_started": 3,
-    "criteria_total": 37,
+    "stories_not_started": 4,
+    "criteria_total": 41,
     "criteria_passed": 26,
     "points_awarded": 800
   },
@@ -383,6 +383,41 @@
       "files_touched": [],
       "tests_added": [],
       "notes": "Implemented and covered by new tests in tests/classify.test.js and tests/auditedActions.test.js (npm test: 293/293 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008/009: no external grading/commit-verification pass has run for this story yet.",
+      "updated_at": null,
+      "verification": {
+        "state": "not_started",
+        "criteria_passed": 0,
+        "criteria_total": 4,
+        "outstanding": [
+          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
+        ]
+      }
+    },
+    {
+      "id": "STORY-011",
+      "release": null,
+      "acceptance_total": 4,
+      "criteria": [
+        {
+          "text": "Given the same keyword -> correct-category pattern recorded 2 separate times with recordedAt timestamps within FAST_REPEAT_WINDOW_DAYS of each other, when the corrections are checked, then a suggested_rule_change proposal is added to the existing ticket queue with triggeredBy: 'fast_repeat'.",
+          "passed": false
+        },
+        {
+          "text": "Given the same pattern recorded 2 times more than FAST_REPEAT_WINDOW_DAYS apart, when the corrections are checked, then no suggestion is created on that basis alone (the original 3-times-ever trigger from STORY-008 still applies independently).",
+          "passed": false
+        },
+        {
+          "text": "Given a pattern that satisfies both the original 3-times-ever trigger and the new fast-repeat trigger at once, when the corrections are checked, then the resulting suggestion reports triggeredBy: 'threshold'.",
+          "passed": false
+        },
+        {
+          "text": "Given a correction with a missing or unparsable recordedAt, when corrections are checked, then it still counts toward the original 3-times-ever trigger but can never contribute to the fast-repeat trigger.",
+          "passed": false
+        }
+      ],
+      "files_touched": [],
+      "tests_added": [],
+      "notes": "Implemented and covered by new tests in tests/classificationCorrections.test.js (npm test: 297/297 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008/009/010: no external grading/commit-verification pass has run for this story yet.",
       "updated_at": null,
       "verification": {
         "state": "not_started",

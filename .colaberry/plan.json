@@ -135,6 +135,17 @@
       "fulfilled_by": [
         "STORY-010"
       ]
+    },
+    {
+      "id": "REQ-014",
+      "kind": "FUNC",
+      "cluster": "Classification Learning",
+      "priority": "should",
+      "statement": "The assistant may also propose a classification rule change when the same correction pattern recurs a smaller number of times within a short time window, in addition to the original any-timing repeat count, but must still never apply a rule change automatically.",
+      "notes": "Added 2026-09-08 at the user's explicit request, as a faster-detection counterpart to REQ-011/STORY-008's original any-timing repeat trigger — same suggest-only, human-gated behavior, an additional condition that can also qualify a pattern for suggestion. Deliberately kept separate from REQ-011's requirement text rather than reworded into it, since it is new scope beyond what STORY-008 originally promised, per CLAUDE.md's scope-lock rule and the precedent REQ-013/STORY-010 set for the revoke capability. Not part of the original 10-REQ set.",
+      "fulfilled_by": [
+        "STORY-011"
+      ]
     }
   ],
   "releases": [
@@ -464,6 +475,33 @@
         "Audit trail not updated"
       ],
       "task_guidance": "Add a revoked flag (plus revokedAt/revokedBy/revokedReason) to an approved rule rather than deleting it; skip revoked rules in classify.js's override lookup so only future classifications are affected; wrap the revoke function in the same *AndLog audit pattern as every other action in this repo.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-011",
+      "title": "Fast-Repeat Trigger for Classification Rule Suggestions",
+      "release": null,
+      "fulfills": [
+        "REQ-014"
+      ],
+      "narrative": "As a support agent, when the same correction pattern happens twice in quick succession, I want the assistant to flag it for review sooner than waiting for a third occurrence that might not happen for months, so a likely-systemic misclassification doesn't linger just because it hasn't yet hit the original repeat count.",
+      "acceptance": [
+        "Given the same keyword -> correct-category pattern recorded 2 separate times with recordedAt timestamps within FAST_REPEAT_WINDOW_DAYS of each other, when the corrections are checked, then a suggested_rule_change proposal is added to the existing ticket queue with triggeredBy: 'fast_repeat'.",
+        "Given the same pattern recorded 2 times more than FAST_REPEAT_WINDOW_DAYS apart, when the corrections are checked, then no suggestion is created on that basis alone (the original 3-times-ever trigger from STORY-008 still applies independently).",
+        "Given a pattern that satisfies both the original 3-times-ever trigger and the new fast-repeat trigger at once, when the corrections are checked, then the resulting suggestion reports triggeredBy: 'threshold'.",
+        "Given a correction with a missing or unparsable recordedAt, when corrections are checked, then it still counts toward the original 3-times-ever trigger but can never contribute to the fast-repeat trigger."
+      ],
+      "blocked_by": [
+        "STORY-008"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "A correction's recordedAt is missing or unparsable and is wrongly counted toward the fast-repeat window instead of being excluded",
+        "A pattern satisfying both triggers reports an ambiguous or incorrect triggeredBy value",
+        "FAST_REPEAT_THRESHOLD/FAST_REPEAT_WINDOW_DAYS hardcoded inline instead of named, tunable constants"
+      ],
+      "task_guidance": "Extend checkForSuggestedRule()'s existing grouping loop to also track each group's valid recordedAt timestamps; add FAST_REPEAT_THRESHOLD and FAST_REPEAT_WINDOW_DAYS as named constants; a group qualifies if it meets the original SUGGESTION_THRESHOLD (any timing) OR its most recent FAST_REPEAT_THRESHOLD valid timestamps span at most FAST_REPEAT_WINDOW_DAYS; record which condition fired as triggeredBy on the suggestion.",
       "due_on": null,
       "due_baseline_on": null
     }

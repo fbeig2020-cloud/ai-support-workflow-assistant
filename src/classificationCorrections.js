@@ -79,6 +79,9 @@
  * @property {string} wrongCategory
  * @property {string} correctCategory
  * @property {number} timesSeen
+ * @property {'threshold'|'fast_repeat'} triggeredBy   Which condition fired: SUGGESTION_THRESHOLD
+ *                                       occurrences ever, or FAST_REPEAT_THRESHOLD occurrences within
+ *                                       FAST_REPEAT_WINDOW_DAYS of each other.
  * @property {string} requestId       Deterministic hash of the pattern, so re-checking upserts the
  *                                       same queue entry (via ticketQueue.js) instead of duplicating.
  * @property {string} createdAt
@@ -103,6 +106,24 @@ export const CORRECTIONS_PATH = new URL('./data/classificationCorrections.json',
 
 /** Same pattern must recur this many separate times before a rule is suggested. */
 export const SUGGESTION_THRESHOLD = 3;
+
+/**
+ * Same pattern recurring at least this many times within FAST_REPEAT_WINDOW_DAYS
+ * triggers a suggestion faster than waiting for SUGGESTION_THRESHOLD.
+ */
+export const FAST_REPEAT_THRESHOLD = 2;
+
+/**
+ * 15 days was chosen as a cautious, human-reviewed threshold: short enough that
+ * two occurrences within it are unlikely to be pure coincidence, and since this
+ * only ever produces a suggestion (never an automatic change), the cost of an
+ * occasional false trigger is low — a human simply reviews and can reject it.
+ * Not derived from usage data; isolated behind a named constant so it can be
+ * tuned later.
+ */
+export const FAST_REPEAT_WINDOW_DAYS = 15;
+
+const FAST_REPEAT_WINDOW_MS = FAST_REPEAT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 /**
  * @param {string|URL} path
@@ -289,11 +310,19 @@ function suggestionRequestId(keyword, wrongCategory, correctCategory) {
 }
 
 /**
- * Check the recorded corrections for a keyword -> correctCategory pattern
- * that has recurred at least SUGGESTION_THRESHOLD separate times, and — for
- * every such pattern found — queue a `suggested_rule_change` proposal
- * alongside the tickets a human already reviews (src/ticketQueue.js, reused).
- * Never applies anything. Never throws.
+ * Check the recorded corrections for a keyword -> correctCategory pattern that
+ * qualifies for a suggestion under either of two triggers, and — for every
+ * such pattern found — queue a `suggested_rule_change` proposal alongside the
+ * tickets a human already reviews (src/ticketQueue.js, reused). Never applies
+ * anything. Never throws.
+ *
+ * Triggers (either one qualifies; `triggeredBy` on the result records which):
+ *  - 'threshold': the pattern has recurred at least SUGGESTION_THRESHOLD times
+ *    ever, regardless of timing.
+ *  - 'fast_repeat': the pattern's most recent FAST_REPEAT_THRESHOLD occurrences
+ *    (by `recordedAt`) fall within FAST_REPEAT_WINDOW_DAYS of each other. A
+ *    correction with a missing or unparsable `recordedAt` still counts toward
+ *    'threshold' but can never contribute to 'fast_repeat' (fails closed).
  *
  * @param {{ correctionsPath?: string|URL, queueDir?: string }} [options]
  *   `correctionsPath` overrides the corrections file (tests only); `queueDir`
@@ -321,14 +350,25 @@ export function checkForSuggestedRule(options = {}) {
   const groups = new Map();
   for (const correction of loaded.corrections) {
     const key = `${correction.keyword.toLowerCase()}|${correction.wrongCategory}|${correction.correctCategory}`;
-    const group = groups.get(key) ?? { keyword: correction.keyword, wrongCategory: correction.wrongCategory, correctCategory: correction.correctCategory, count: 0 };
+    const group = groups.get(key) ?? { keyword: correction.keyword, wrongCategory: correction.wrongCategory, correctCategory: correction.correctCategory, count: 0, recordedAtMs: [] };
     group.count += 1;
+    const recordedAtMs = typeof correction.recordedAt === 'string' ? Date.parse(correction.recordedAt) : NaN;
+    if (Number.isFinite(recordedAtMs)) group.recordedAtMs.push(recordedAtMs);
     groups.set(key, group);
   }
 
   const suggestions = [];
   for (const group of groups.values()) {
-    if (group.count < SUGGESTION_THRESHOLD) continue;
+    const meetsThreshold = group.count >= SUGGESTION_THRESHOLD;
+
+    let meetsFastRepeat = false;
+    if (group.recordedAtMs.length >= FAST_REPEAT_THRESHOLD) {
+      const mostRecent = [...group.recordedAtMs].sort((a, b) => a - b).slice(-FAST_REPEAT_THRESHOLD);
+      const span = mostRecent[mostRecent.length - 1] - mostRecent[0];
+      meetsFastRepeat = span <= FAST_REPEAT_WINDOW_MS;
+    }
+
+    if (!meetsThreshold && !meetsFastRepeat) continue;
 
     const requestId = suggestionRequestId(group.keyword, group.wrongCategory, group.correctCategory);
     const suggestion = {
@@ -337,6 +377,7 @@ export function checkForSuggestedRule(options = {}) {
       wrongCategory: group.wrongCategory,
       correctCategory: group.correctCategory,
       timesSeen: group.count,
+      triggeredBy: meetsThreshold ? 'threshold' : 'fast_repeat',
       requestId,
       createdAt: new Date().toISOString(),
     };
@@ -352,7 +393,7 @@ export function checkForSuggestedRule(options = {}) {
     logEntry: buildLogEntry({
       event: suggestions.length > 0 ? 'rule_suggestion_created' : 'rule_suggestion_check_completed',
       outcome: 'success',
-      context: { suggestionCount: suggestions.length, patterns: suggestions.map((s) => ({ keyword: s.keyword, correctCategory: s.correctCategory, timesSeen: s.timesSeen })) },
+      context: { suggestionCount: suggestions.length, patterns: suggestions.map((s) => ({ keyword: s.keyword, correctCategory: s.correctCategory, timesSeen: s.timesSeen, triggeredBy: s.triggeredBy })) },
     }),
   };
 }
