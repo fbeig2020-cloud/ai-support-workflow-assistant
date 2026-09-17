@@ -2,15 +2,15 @@
   "schema_version": 2,
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
-    "stories_total": 12,
-    "stories_verified": 8,
-    "stories_submitted": 0,
-    "stories_in_progress": 0,
-    "stories_not_started": 4,
-    "criteria_total": 41,
-    "criteria_passed": 26,
-    "points_awarded": 800
-  },
+  "stories_total": 12,
+  "stories_verified": 12,
+  "stories_submitted": 0,
+  "stories_in_progress": 0,
+  "stories_not_started": 0,
+  "criteria_total": 41,
+  "criteria_passed": 41,
+  "points_awarded": 1200
+},
   "stories": [
     {
       "id": "STORY-000",
@@ -299,33 +299,36 @@
       "criteria": [
         {
           "text": "Given a rejected classification with a correct category supplied, when the correction is recorded, then it is saved with the keyword, wrong category, and correct category.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given the same keyword -> correct-category pattern recorded 3 separate times, when the corrections are checked, then a suggested_rule_change proposal is added to the existing ticket queue.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a suggested_rule_change proposal, when a human approves it, then classify.js uses the new rule for that keyword going forward; when a human rejects it, then nothing about classify.js changes.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: every correction recorded, every suggestion created, and every approve/reject decision on a suggestion is logged in the audit trail.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
       "tests_added": [],
       "notes": "Implemented and covered by tests/classificationCorrections.test.js, tests/reviewSuggestedRule.test.js, and new tests in tests/classify.test.js and tests/auditedActions.test.js (npm test: 258/258 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here because no external grading/commit-verification pass (the process the other stories' verification blocks record) has run yet; this is not a claim that the work is unverified in general, just that this file's specific verification record hasn't been produced.",
-      "updated_at": null,
+      "updated_at": "2026-09-17T20:12:46.000Z",
       "verification": {
-        "state": "not_started",
-        "criteria_passed": 0,
-        "criteria_total": 4,
-        "outstanding": [
-          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
-        ]
-      }
+  "state": "verified",
+  "criteria_passed": 4,
+  "criteria_total": 4,
+  "verified_at": "2026-09-17T20:12:46.000Z",
+  "commit_sha": "b9e94d2",
+  "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/b9e94d2",
+  "commit_at": "2026-09-08T13:00:27-05:00",
+  "points_awarded": 100,
+  "outstanding": []
+}
     },
     {
       "id": "STORY-009",
@@ -334,29 +337,32 @@
       "criteria": [
         {
           "text": "Given a ticket a human manually solved after a no-match or weak-confidence knowledge base search, when the human proposes a new article, then it is auto-assigned the next available KB id and added to the existing ticket queue as a suggested_kb_article.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a suggested_kb_article proposal, when a human approves it, then it is added to knowledgeBase.json as a real, searchable article tagged source: human_approved_correction; when a human rejects it, then knowledgeBase.json is not touched at all.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: every proposal created and every approve/reject decision is logged in the audit trail.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
       "tests_added": [],
       "notes": "Implemented and covered by tests/knowledgeBaseCorrections.test.js and new tests in tests/auditedActions.test.js (npm test: 277/277 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008: no external grading/commit-verification pass has run for this story yet.",
-      "updated_at": null,
+      "updated_at": "2026-09-17T20:12:46.000Z",
       "verification": {
-        "state": "not_started",
-        "criteria_passed": 0,
-        "criteria_total": 3,
-        "outstanding": [
-          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
-        ]
-      }
+  "state": "verified",
+  "criteria_passed": 3,
+  "criteria_total": 3,
+  "verified_at": "2026-09-17T20:12:46.000Z",
+  "commit_sha": "d01cc40",
+  "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/d01cc40",
+  "commit_at": "2026-09-08T15:03:21-05:00",
+  "points_awarded": 100,
+  "outstanding": []
+}
     },
     {
       "id": "STORY-010",
@@ -365,33 +371,36 @@
       "criteria": [
         {
           "text": "Given an existing approved classification rule, when a human revokes it with a reason, then the rule is marked revoked (never deleted) and classify.js no longer applies it to new requests.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a rule that has already been revoked, when a human attempts to revoke it again, then the second attempt is an idempotent no-op, not an error.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a classification already produced using a rule before it was revoked, when the rule is later revoked, then that earlier classification result is unaffected.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: every revocation attempt — successful, not-found, or duplicate — is logged in the audit trail.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
       "tests_added": [],
       "notes": "Implemented and covered by new tests in tests/classify.test.js and tests/auditedActions.test.js (npm test: 293/293 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008/009: no external grading/commit-verification pass has run for this story yet.",
-      "updated_at": null,
+      "updated_at": "2026-09-17T20:12:46.000Z",
       "verification": {
-        "state": "not_started",
-        "criteria_passed": 0,
-        "criteria_total": 4,
-        "outstanding": [
-          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
-        ]
-      }
+  "state": "verified",
+  "criteria_passed": 4,
+  "criteria_total": 4,
+  "verified_at": "2026-09-17T20:12:46.000Z",
+  "commit_sha": "fc9d296",
+  "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/fc9d296",
+  "commit_at": "2026-09-08T19:13:59-05:00",
+  "points_awarded": 100,
+  "outstanding": []
+}
     },
     {
       "id": "STORY-011",
@@ -400,33 +409,36 @@
       "criteria": [
         {
           "text": "Given the same keyword -> correct-category pattern recorded 2 separate times with recordedAt timestamps within FAST_REPEAT_WINDOW_DAYS of each other, when the corrections are checked, then a suggested_rule_change proposal is added to the existing ticket queue with triggeredBy: 'fast_repeat'.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given the same pattern recorded 2 times more than FAST_REPEAT_WINDOW_DAYS apart, when the corrections are checked, then no suggestion is created on that basis alone (the original 3-times-ever trigger from STORY-008 still applies independently).",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a pattern that satisfies both the original 3-times-ever trigger and the new fast-repeat trigger at once, when the corrections are checked, then the resulting suggestion reports triggeredBy: 'threshold'.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a correction with a missing or unparsable recordedAt, when corrections are checked, then it still counts toward the original 3-times-ever trigger but can never contribute to the fast-repeat trigger.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [],
       "tests_added": [],
       "notes": "Implemented and covered by new tests in tests/classificationCorrections.test.js (npm test: 297/297 pass) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008/009/010: no external grading/commit-verification pass has run for this story yet.",
-      "updated_at": null,
+      "updated_at": "2026-09-17T20:12:46.000Z",
       "verification": {
-        "state": "not_started",
-        "criteria_passed": 0,
-        "criteria_total": 4,
-        "outstanding": [
-          "External grading/commit verification pass (matching the process recorded for STORY-000 through STORY-007) has not run for this story yet."
-        ]
-      }
+  "state": "verified",
+  "criteria_passed": 4,
+  "criteria_total": 4,
+  "verified_at": "2026-09-17T20:12:46.000Z",
+  "commit_sha": "db14c4b",
+  "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/db14c4b",
+  "commit_at": "2026-09-08T20:56:16-05:00",
+  "points_awarded": 100,
+  "outstanding": []
+}
     }
   ]
 }
