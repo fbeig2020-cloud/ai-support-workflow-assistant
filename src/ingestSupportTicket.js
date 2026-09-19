@@ -3,12 +3,14 @@
  * with student contact info attached.
  *
  * Builds the classifier-facing ticket (requestId, requestText, status,
- * priority, createdAt, source) and saves it via ticketQueue.js's
- * addTicketToQueue() — the queue write logic itself is not duplicated here.
- * Student contact info (studentEmail, studentName) is persisted separately,
- * to queue/<ticketId>.student.json, and is never included in a logEntry or
- * passed to any AI-facing function (classify.js, knowledgeBaseSearch.js,
- * generateDraftResponse.js) — those only ever see the ticket record.
+ * priority, createdAt, source), classifies it automatically via classify.js's
+ * classifySupportRequest() (STORY-012 — no separate manual classify step),
+ * and saves it via ticketQueue.js's addTicketToQueue() — the queue write
+ * logic itself is not duplicated here. Student contact info (studentEmail,
+ * studentName) is persisted separately, to queue/<ticketId>.student.json,
+ * and is never included in a logEntry or passed to any AI-facing function
+ * (classify.js, knowledgeBaseSearch.js, generateDraftResponse.js) — those
+ * only ever see the ticket record.
  *
  * `ticketId` is validated against the same safe filename character set
  * ticketQueue.js uses (SAFE_TICKET_ID) before anything is built from it,
@@ -19,8 +21,15 @@
  *  - Invalid input (missing/blank ticketId, unsafe ticketId, missing/blank
  *    requestText, missing/blank studentEmail, or a non-string
  *    studentName/source) -> fails closed, ValidationError.
+ *  - classifySupportRequest() unexpectedly throws or returns a malformed
+ *    result (requestText is always non-blank here, so this is not the
+ *    "missing text" case classify.js itself fails closed on) -> the ticket
+ *    is still saved: status stays 'unclassified', classificationError is
+ *    set to true, and classificationErrorMessage carries the real reason.
+ *    Recoverable later via classifyQueuedTicket().
  *  - addTicketToQueue() failure (unwritable queue dir, etc.) -> its result
- *    is returned as-is; no student file is written.
+ *    is returned as-is (with classificationAuditResult attached); no student
+ *    file is written.
  *  - Ticket saved but the student-info write fails -> the code attempts to
  *    re-save the ticket with contactInfoMissing: true added, so a human
  *    reviewing the queue can see the gap directly on the ticket. If that
@@ -39,11 +48,18 @@
  * @property {Object} [logEntry]     Structured, stdout-log-shaped record (Observability
  *                                     Framework shape). Never contains studentEmail or
  *                                     studentName.
+ * @property {import('./auditLog.js').AuditAppendResult} [classificationAuditResult]
+ *   Result of persisting the combined ingest+classify audit entry. Present
+ *   whenever classification was attempted (i.e. whenever input validation
+ *   passed), regardless of whether classification or the later queue/student
+ *   writes succeeded.
  */
 
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { addTicketToQueue, QUEUE_DIR } from './ticketQueue.js';
+import { classifySupportRequest } from './classify.js';
+import { appendAuditEntry } from './auditLog.js';
 
 /** Ticket ids must be safe to use directly as a filename — mirrors ticketQueue.js's SAFE_TICKET_ID. */
 const SAFE_TICKET_ID = /^[A-Za-z0-9_-]+$/;
@@ -62,6 +78,36 @@ function buildLogEntry({ event, outcome, ticketId, errorClass, reason }) {
     outcome,
     context: { requestId: ticketId },
   };
+  if (errorClass) entry.error_class = errorClass;
+  if (reason) entry.context.reason = reason;
+  return entry;
+}
+
+/**
+ * Combined ingest+classify audit entry. Classification now happens
+ * automatically as part of ingestion, so this is one audit event, not two
+ * — it is NOT built via classify.js's own classifyAndLog() wrapper (that
+ * would persist a second, separate 'support_request_classified' row for
+ * what is, from the caller's point of view, a single action).
+ *
+ * @param {{ ticketId: string, outcome: 'success'|'failure', category?: string,
+ *   priority?: string, summary?: string, matchedSignals?: string[],
+ *   errorClass?: string, reason?: string }} fields
+ * @returns {Object}
+ */
+function buildClassificationLogEntry({ ticketId, outcome, category, priority, summary, matchedSignals, errorClass, reason }) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level: outcome === 'success' ? 'info' : 'warn',
+    service: 'ingestSupportTicket',
+    event: 'support_ticket_ingested_and_classified',
+    outcome,
+    context: { requestId: ticketId, category, priority, summary, matchedSignals },
+  };
+  if (outcome === 'success') {
+    const categoryText = category.replace(/_/g, ' ');
+    entry.humanSummary = `This ticket was automatically classified as a ${categoryText} with ${priority} priority upon ingestion.`;
+  }
   if (errorClass) entry.error_class = errorClass;
   if (reason) entry.context.reason = reason;
   return entry;
@@ -119,13 +165,26 @@ function validateInput(input) {
 }
 
 /**
- * Ingest a new support ticket: validate, queue it for classification, and
+ * Ingest a new support ticket: validate, classify it, queue it, and
  * separately persist the student contact info it arrived with. Never throws
  * — every branch returns a result object.
  *
+ * Classification happens automatically, right after the ticket is built and
+ * before it is ever written to the queue, so the common case is a single
+ * queue write with the real category/priority already on it (never a
+ * write-then-requeue). If classification itself unexpectedly fails
+ * (classifySupportRequest() throws, or returns a malformed result), the
+ * ticket is still saved — status stays 'unclassified', classificationError
+ * is set to true, and classificationErrorMessage carries the real reason, so
+ * a human (or classifyQueuedTicket()) can follow up. Either way, exactly one
+ * combined audit trail entry is written for the classification step — see
+ * buildClassificationLogEntry() above for why this isn't classify.js's own
+ * classifyAndLog() wrapper.
+ *
  * @param {unknown} input   Must have ticketId, requestText, studentEmail (all
  *   non-empty strings); studentName and source are optional strings.
- * @param {{ queueDir?: string }} [options]   Override the queue directory (tests only).
+ * @param {{ queueDir?: string, logPath?: string }} [options]   Override the queue
+ *   directory / audit log path (tests only).
  * @returns {IngestTicketResult}
  */
 export function ingestSupportTicket(input, options = {}) {
@@ -145,9 +204,45 @@ export function ingestSupportTicket(input, options = {}) {
     source: source ?? null,
   };
 
+  let classification;
+  let classificationFailure;
+  try {
+    classification = classifySupportRequest(requestText, options);
+    if (typeof classification?.category !== 'string' || typeof classification?.priority !== 'string') {
+      throw new Error('classifySupportRequest returned a malformed result');
+    }
+  } catch (error) {
+    classificationFailure = error instanceof Error ? error.message : String(error);
+  }
+
+  let classificationAuditResult;
+  if (classificationFailure) {
+    ticket.classificationError = true;
+    ticket.classificationErrorMessage = classificationFailure;
+    classificationAuditResult = appendAuditEntry(
+      buildClassificationLogEntry({ ticketId, outcome: 'failure', errorClass: 'ClassificationError', reason: classificationFailure }),
+      options,
+    );
+  } else {
+    ticket.status = 'classified';
+    ticket.category = classification.category;
+    ticket.priority = classification.priority;
+    classificationAuditResult = appendAuditEntry(
+      buildClassificationLogEntry({
+        ticketId,
+        outcome: 'success',
+        category: classification.category,
+        priority: classification.priority,
+        summary: classification.summary,
+        matchedSignals: classification.matchedSignals,
+      }),
+      options,
+    );
+  }
+
   const queueResult = addTicketToQueue(ticket, options);
   if (!queueResult.ok || !queueResult.saved) {
-    return queueResult;
+    return { ...queueResult, classificationAuditResult };
   }
 
   const queueDir = options.queueDir ?? QUEUE_DIR;
@@ -172,6 +267,7 @@ export function ingestSupportTicket(input, options = {}) {
         path: queueResult.path,
         message: 'Ticket queued and flagged — student contact info was not saved.',
         logEntry: buildLogEntry({ event: 'support_ticket_student_info_save_failed', outcome: 'failure', ticketId }),
+        classificationAuditResult,
       };
     }
 
@@ -181,6 +277,7 @@ export function ingestSupportTicket(input, options = {}) {
       path: queueResult.path,
       message: 'Ticket queued, but contact info was lost and the ticket could not be flagged. Manual review required.',
       logEntry: buildLogEntry({ event: 'support_ticket_flag_failed', outcome: 'failure', ticketId, errorClass: 'CriticalWriteFailure' }),
+      classificationAuditResult,
     };
   }
 
@@ -190,5 +287,6 @@ export function ingestSupportTicket(input, options = {}) {
     path: queueResult.path,
     studentPath,
     logEntry: buildLogEntry({ event: 'support_ticket_ingested', outcome: 'success', ticketId }),
+    classificationAuditResult,
   };
 }

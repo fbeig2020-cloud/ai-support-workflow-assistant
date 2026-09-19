@@ -16,6 +16,7 @@ import { generateDraftResponse } from "./src/generateDraftResponse.js";
 import { listQueuedTickets, addTicketToQueue, removeTicketFromQueue } from "./src/ticketQueue.js";
 import { generateSupportSummaryAndLog, saveSupportSummaryAndLog } from "./src/auditedActions.js";
 import { ingestSupportTicket } from "./src/ingestSupportTicket.js";
+import { classifyQueuedTicket } from "./src/classifyQueuedTicket.js";
 import { reviewClassification } from "./src/reviewClassification.js";
 import { appendAuditEntry } from "./src/auditLog.js";
 import {
@@ -160,7 +161,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "ingestSupportTicket",
       description:
-        "Call this when a brand-new support ticket arrives, before any classification has happened. Creates the ticket in the queue with status 'unclassified', ready for the classify tool to pick up later. Requires studentEmail for internal contact tracking — that email (and studentName, if given) is stored separately and is never shown back to you, never logged, and never used in classification or drafting.",
+        "Call this when a brand-new support ticket arrives. Creates the ticket in the queue AND classifies it automatically as part of the same call — no separate classify step needed. Normally returns status 'classified' with a real category and priority already set. If automatic classification unexpectedly fails, the ticket is still saved with status 'unclassified' and classificationError: true so it isn't lost; use classifyQueuedTicket to retry it later. Requires studentEmail for internal contact tracking — that email (and studentName, if given) is stored separately and is never shown back to you, never logged, and never used in classification or drafting.",
       inputSchema: {
         type: "object",
         properties: {
@@ -171,6 +172,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           source: { type: "string" },
         },
         required: ["ticketId", "requestText", "studentEmail"],
+      },
+    },
+    {
+      name: "classifyQueuedTicket",
+      description:
+        "Recovery tool for a queued ticket that has no working classification — either one ingestSupportTicket saved with classificationError: true after automatic classification failed, or an older ticket that predates automatic classification and is still sitting at status 'unclassified'. Classifies it and saves the result back onto the ticket. If the ticket is already classified, this quietly does nothing and says so — it never overwrites a category that's already there. If the ticket has no requestText to classify from, it fails with a clear message instead of guessing.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          requestId: { type: "string", minLength: 1 },
+        },
+        required: ["requestId"],
       },
     },
   ],
@@ -223,9 +236,17 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
   }
 
   if (name === "ingestSupportTicket") {
-    const result = ingestSupportTicket(args);
+    const result = ingestSupportTicket(args, options);
     if (result.logEntry?.error_class) {
       await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
+    }
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+
+  if (name === "classifyQueuedTicket") {
+    const result = classifyQueuedTicket(args?.requestId, options);
+    if (!result.ok && result.errorClass) {
+      await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.errorClass }));
     }
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
