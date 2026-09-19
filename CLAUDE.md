@@ -493,6 +493,16 @@ After every completed implementation change, before marking the change "done" in
 
 If PROGRESS.md does not exist, create it before doing any work.
 
+## Command Center tracking-file freshness (`.colaberry/`)
+
+`.colaberry/plan.json` and `.colaberry/progress.json` feed the Command Center dashboard (`command-center/`) at runtime via `fetch()` — nothing there is hard-coded from a build step. Two things around that dashboard go stale silently if they aren't updated deliberately, the same way PROGRESS.md does above:
+
+After completing any story that adds or changes real functionality:
+
+1. **Update `.colaberry/manifest.json`** — refresh `generated_at` to the current timestamp and recompute the `sha256` for both `plan.json` and `progress.json` (and any other listed file that changed), so the Command Center's data-freshness banner stays accurate instead of reporting a stale age.
+2. **Check `command-center/app.js` for stale hard-coded counts or text** — e.g. the Overview tab caption "All 10 requirements from the plan" needs updating whenever `plan.json`'s `requirements[]` array grows or shrinks. Grep for hard-coded numbers near anything that mirrors a `plan.json`/`progress.json` count before considering the story done.
+3. **Both land in the same commit as the story's `plan.json`/`progress.json` tracking-file update** — never a separate afterthought commit.
+
 ## Catch-up rule
 
 If a session has done implementation work without updating PROGRESS.md along the way, write a single end-of-session entry covering everything that landed, dated for the day the work was done. Better to log late than not at all.
