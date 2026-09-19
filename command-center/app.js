@@ -402,7 +402,7 @@
 
         <div class="cc-card cc-span-2" data-card="overview-requirements">
           <h3>What's live, requirement by requirement</h3>
-          <p class="cc-sub">All 10 requirements from the plan. "Built" means code in this repo enforces or delivers it today — not that a story is scheduled.</p>
+          <p class="cc-sub">All ${real.requirements.length} requirements from the plan. "Built" means code in this repo enforces or delivers it today — not that a story is scheduled.</p>
           <ul class="cc-req-list">${reqRows}</ul>
         </div>
 
