@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -15,6 +16,7 @@ import { generateDraftResponse } from "./src/generateDraftResponse.js";
 import { listQueuedTickets, addTicketToQueue, removeTicketFromQueue } from "./src/ticketQueue.js";
 import { generateSupportSummaryAndLog, saveSupportSummaryAndLog } from "./src/auditedActions.js";
 import { ingestSupportTicket } from "./src/ingestSupportTicket.js";
+import { reviewClassification } from "./src/reviewClassification.js";
 import { appendAuditEntry } from "./src/auditLog.js";
 import {
   toolInvocationStarted,
@@ -208,8 +210,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  * @param {string} name
  * @param {Record<string, unknown>} args
  * @param {string} correlationId
+ * @param {{ queueDir?: string, logPath?: string }} [options]   Override the queue directory /
+ *   audit log path (tests only).
  */
-async function dispatchTool(name, args, correlationId) {
+export async function dispatchTool(name, args, correlationId, options = {}) {
   if (name === "classify") {
     const result = classifySupportRequest(args.requestText);
     if (result.logEntry?.error_class) {
@@ -250,7 +254,7 @@ async function dispatchTool(name, args, correlationId) {
     try {
       const { requestId, decision } = args;
 
-      const queued = listQueuedTickets();
+      const queued = listQueuedTickets(options);
       const ticket = queued.find((t) => t.requestId === requestId);
       if (!ticket) {
         await emitLog(requestRejected({ correlationId, tool: name, reason: "ticket_not_found" }));
@@ -271,6 +275,48 @@ async function dispatchTool(name, args, correlationId) {
       if (decision.action === "reject") {
         const rejectionReason = decision.reason ?? null;
 
+        const reviewResult = reviewClassification({ category: ticket.category, priority: ticket.priority }, decision);
+        if (!reviewResult.ok) {
+          await emitLog(
+            toolInvocationError({
+              correlationId,
+              tool: name,
+              errorClass: reviewResult.logEntry?.error_class ?? "ValidationError",
+            })
+          );
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    ok: false,
+                    error: `Rejection could not be processed: ${reviewResult.reason}.`,
+                    reviewResult,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        // Re-run classification on the original request text, per
+        // reviewClassification.js's documented contract that the caller (not
+        // that module) closes the reclassification loop on reject. Falls
+        // back to the ticket's existing category/priority if the ticket
+        // never had requestText to reclassify from, rather than silently
+        // overwriting a real classification with classifySupportRequest's
+        // fail-closed defaults.
+        const freshClassification = classifySupportRequest(ticket.requestText);
+        const reclassificationFailed = Boolean(freshClassification.logEntry?.error_class);
+        if (reclassificationFailed) {
+          await emitLog(
+            toolInvocationError({ correlationId, tool: name, errorClass: freshClassification.logEntry.error_class })
+          );
+        }
+
         const logEntry = {
           timestamp: new Date().toISOString(),
           level: "info",
@@ -283,16 +329,22 @@ async function dispatchTool(name, args, correlationId) {
             reason: rejectionReason,
           },
         };
-        const auditResult = appendAuditEntry(logEntry);
+        const auditResult = appendAuditEntry(logEntry, options);
 
         const rejectionCount = ticket.previouslyRejected === true ? (ticket.rejectionCount ?? 1) + 1 : 1;
 
-        const requeueResult = addTicketToQueue({
-          ...ticket,
-          previouslyRejected: true,
-          rejectionReason,
-          rejectionCount,
-        });
+        const requeueResult = addTicketToQueue(
+          {
+            ...ticket,
+            ...(reclassificationFailed
+              ? { reclassificationSkipped: true }
+              : { category: freshClassification.category, priority: freshClassification.priority }),
+            previouslyRejected: true,
+            rejectionReason,
+            rejectionCount,
+          },
+          options
+        );
 
         if (!requeueResult.ok) {
           await emitLog(
@@ -380,7 +432,7 @@ async function dispatchTool(name, args, correlationId) {
         };
       }
 
-      removeTicketFromQueue(requestId);
+      removeTicketFromQueue(requestId, options);
 
       return { content: [{ type: "text", text: JSON.stringify(summaryResult, null, 2) }] };
     } catch (error) {
@@ -411,5 +463,10 @@ async function dispatchTool(name, args, correlationId) {
   throw unknownToolError;
 }
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+// Only connect to real stdio when this file is run directly (`node mcp-server.js`),
+// not when it's imported as a module (e.g. by tests importing dispatchTool) — otherwise
+// the import itself hangs waiting on a real MCP client that will never arrive.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
