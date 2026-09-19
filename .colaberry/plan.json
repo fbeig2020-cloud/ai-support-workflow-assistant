@@ -146,6 +146,17 @@
       "fulfilled_by": [
         "STORY-011"
       ]
+    },
+    {
+      "id": "REQ-015",
+      "kind": "FUNC",
+      "cluster": "Classification",
+      "priority": "should",
+      "statement": "The assistant must classify a new support ticket automatically as part of ingestion, and must provide a way to classify or reclassify a queued ticket that has no working classification, without ever silently overwriting a classification a human may already have reviewed.",
+      "notes": "Added 2026-09-19 at the user's explicit request, extending REQ-001/REQ-002's original classification requirement so classification happens automatically at ingest instead of requiring a separate manual step, plus a standalone recovery path for tickets that end up without one. Not part of the original 10-REQ set.",
+      "fulfilled_by": [
+        "STORY-012"
+      ]
     }
   ],
   "releases": [
@@ -502,6 +513,35 @@
         "FAST_REPEAT_THRESHOLD/FAST_REPEAT_WINDOW_DAYS hardcoded inline instead of named, tunable constants"
       ],
       "task_guidance": "Extend checkForSuggestedRule()'s existing grouping loop to also track each group's valid recordedAt timestamps; add FAST_REPEAT_THRESHOLD and FAST_REPEAT_WINDOW_DAYS as named constants; a group qualifies if it meets the original SUGGESTION_THRESHOLD (any timing) OR its most recent FAST_REPEAT_THRESHOLD valid timestamps span at most FAST_REPEAT_WINDOW_DAYS; record which condition fired as triggeredBy on the suggestion.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-012",
+      "title": "Automatic Classification on Ingest and a Recovery Tool for Unclassified Tickets",
+      "release": null,
+      "fulfills": [
+        "REQ-015"
+      ],
+      "narrative": "As a support agent, I want every new ticket to already be classified when it lands in the queue instead of sitting unclassified until someone manually classifies it, and I want a safe way to classify or retry classification for any ticket that ends up without one, so tickets are never silently lost and a human's existing review is never silently overwritten.",
+      "acceptance": [
+        "Given a brand-new support ticket being ingested via ingestSupportTicket(), when it is created, then it is classified automatically in the same call and saved with status 'classified' and a real category and priority — no separate manual classify step required.",
+        "Given classification unexpectedly fails during ingestion, when the ticket is saved, then it is still saved with status 'unclassified' and classificationError: true set, rather than being lost.",
+        "Given a queued ticket with status 'unclassified' or classificationError: true, when classifyQueuedTicket is called on it, then it is classified and updated in place with a real category and priority, with classificationError cleared; given a ticket that is already classified, when classifyQueuedTicket is called on it, then it is left unchanged.",
+        "Trust: the classification performed automatically at ingest, and every classification performed by classifyQueuedTicket, is logged in the audit trail."
+      ],
+      "blocked_by": [
+        "STORY-001",
+        "STORY-003"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Classification fails during ingest and the ticket is lost instead of being saved with classificationError: true",
+        "classifyQueuedTicket overwrites a category a human has already reviewed",
+        "classifyQueuedTicket guesses a category for a ticket with no requestText instead of failing closed",
+        "Audit trail not updated for the auto-classify-on-ingest step or for classifyQueuedTicket"
+      ],
+      "task_guidance": "Call classifySupportRequest() synchronously inside ingestSupportTicket(), right after building the ticket and before the first queue write, so the common case is a single write with the real category/priority already set; on failure, keep status 'unclassified' and set classificationError: true so the ticket is never lost; persist exactly one combined audit entry for the classification step. Add a standalone classifyQueuedTicket(requestId) tool that only acts on a ticket with status 'unclassified' or classificationError: true, reusing auditedActions.js's classifyAndLog() for its audit entry, and fails closed rather than guessing when the ticket has no requestText.",
       "due_on": null,
       "due_baseline_on": null
     }

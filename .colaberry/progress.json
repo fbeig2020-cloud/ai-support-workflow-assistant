@@ -2,14 +2,14 @@
   "schema_version": 2,
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
-  "stories_total": 12,
-  "stories_verified": 12,
+  "stories_total": 13,
+  "stories_verified": 13,
   "stories_submitted": 0,
   "stories_in_progress": 0,
   "stories_not_started": 0,
-  "criteria_total": 41,
-  "criteria_passed": 41,
-  "points_awarded": 1200
+  "criteria_total": 45,
+  "criteria_passed": 45,
+  "points_awarded": 1300
 },
   "stories": [
     {
@@ -436,6 +436,53 @@
   "commit_sha": "db14c4b",
   "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/db14c4b",
   "commit_at": "2026-09-08T20:56:16-05:00",
+  "points_awarded": 100,
+  "outstanding": []
+}
+    },
+    {
+      "id": "STORY-012",
+      "release": null,
+      "acceptance_total": 4,
+      "criteria": [
+        {
+          "text": "Given a brand-new support ticket being ingested via ingestSupportTicket(), when it is created, then it is classified automatically in the same call and saved with status 'classified' and a real category and priority — no separate manual classify step required.",
+          "passed": true
+        },
+        {
+          "text": "Given classification unexpectedly fails during ingestion, when the ticket is saved, then it is still saved with status 'unclassified' and classificationError: true set, rather than being lost.",
+          "passed": true
+        },
+        {
+          "text": "Given a queued ticket with status 'unclassified' or classificationError: true, when classifyQueuedTicket is called on it, then it is classified and updated in place with a real category and priority, with classificationError cleared; given a ticket that is already classified, when classifyQueuedTicket is called on it, then it is left unchanged.",
+          "passed": true
+        },
+        {
+          "text": "Trust: the classification performed automatically at ingest, and every classification performed by classifyQueuedTicket, is logged in the audit trail.",
+          "passed": true
+        }
+      ],
+      "files_touched": [
+        "mcp-server.js",
+        "src/classifyQueuedTicket.js",
+        "src/ingestSupportTicket.js",
+        "tests/classifyQueuedTicket.test.js",
+        "tests/ingestSupportTicket.test.js"
+      ],
+      "tests_added": [
+        "tests/classifyQueuedTicket.test.js",
+        "tests/ingestSupportTicket.test.js"
+      ],
+      "notes": "Implemented and covered by tests/classifyQueuedTicket.test.js (new) and updated tests in tests/ingestSupportTicket.test.js (npm test: 344/344 pass) — see PROGRESS.md for the full account.",
+      "updated_at": "2026-09-19T18:16:05.000Z",
+      "verification": {
+  "state": "verified",
+  "criteria_passed": 4,
+  "criteria_total": 4,
+  "verified_at": "2026-09-19T18:16:05.000Z",
+  "commit_sha": "6602b59",
+  "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/6602b59",
+  "commit_at": "2026-09-19T13:15:59-05:00",
   "points_awarded": 100,
   "outstanding": []
 }
