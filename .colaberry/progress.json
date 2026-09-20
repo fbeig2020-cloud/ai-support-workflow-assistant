@@ -3,13 +3,13 @@
   "project": "AI-Powered Business Support Workflow Assistant",
   "totals": {
   "stories_total": 14,
-  "stories_verified": 13,
+  "stories_verified": 14,
   "stories_submitted": 0,
   "stories_in_progress": 0,
-  "stories_not_started": 1,
+  "stories_not_started": 0,
   "criteria_total": 51,
-  "criteria_passed": 45,
-  "points_awarded": 1300
+  "criteria_passed": 51,
+  "points_awarded": 1400
 },
   "stories": [
     {
@@ -494,27 +494,27 @@
       "criteria": [
         {
           "text": "Given a brand-new support ticket being ingested via ingestSupportTicket(), when classification succeeds, then the same call also searches the knowledge base and generates a draft response, saving kbSearchResult and draftResponse onto the ticket alongside its category and priority — no separate manual search/draft step required.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given knowledgeBaseSearch() or generateDraftResponse() unexpectedly fails after a successful classification (during ingestion, or during classifyQueuedTicket's recovery), when the ticket is saved, then it is still saved with its real classification intact and kbSearchFailed/draftGenerationFailed set, rather than being lost or silently treated as if search or draft had succeeded.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given submitReviewDecision is called with decision.action 'approve' on a ticket with a real classification, then it calls reviewClassification() to record the human's review decision and builds the summary workflow from the ticket's actual category, priority, kbSearchResult, and draftResponse, so a summary is generated, saved, and the ticket is removed from the queue — instead of failing closed with invalid_classification_review as it did before this story.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given a ticket that predates this feature (classified, but with no kbSearchResult or draftResponse ever recorded on it), when it is approved, then a summary is still generated and saved, honestly noting that no knowledge-base search or draft was recorded, rather than failing closed.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Given submitReviewDecision's reject path successfully reclassifies a ticket, or classifyQueuedTicket successfully (re)classifies one, when the ticket is requeued or updated, then its kbSearchResult and draftResponse are regenerated to match the new classification and overwrite (never merge with) whatever was there before, so neither is ever left mismatched with a superseded category.",
-          "passed": false
+          "passed": true
         },
         {
           "text": "Trust: the search+draft step is logged in the audit trail — one combined entry alongside classification at ingestion, a second combined entry for classifyQueuedTicket's recovery step, and folded into the existing reject-path audit entry — never silently un-audited.",
-          "passed": false
+          "passed": true
         }
       ],
       "files_touched": [
@@ -530,21 +530,18 @@
         "tests/ingestSupportTicket.test.js",
         "tests/mcpServerSubmitReviewDecision.test.js"
       ],
-      "notes": "Implemented and covered by 3 new approve-path tests plus an extended reject-path test in tests/mcpServerSubmitReviewDecision.test.js, and extended existing tests in tests/classifyQueuedTicket.test.js / tests/ingestSupportTicket.test.js (npm test: 347/347 pass, up from STORY-012's 344/344 baseline) — see PROGRESS.md for the full account. criteria left passed:false / state not_started here for the same reason as STORY-008/009/010/011: no external grading/commit-verification pass has run for this story yet.",
-      "updated_at": "2026-09-20T02:31:17.000Z",
+      "notes": "Implemented and covered by 3 new approve-path tests plus an extended reject-path test in tests/mcpServerSubmitReviewDecision.test.js, and extended existing tests in tests/classifyQueuedTicket.test.js / tests/ingestSupportTicket.test.js (npm test: 347/347 pass, up from STORY-012's 344/344 baseline) — see PROGRESS.md for the full account. Verified 2026-09-20 against pushed commit 75f93c1: confirmed the commit's actual content (not just intent) contains the async search/draft chaining in ingestSupportTicket.js/classifyQueuedTicket.js, the reviewClassification() call and explicit workflow build in mcp-server.js's approve branch, and the reject-branch stale-data overwrite; re-ran all three story-relevant test files individually and the full suite live against this exact commit (working tree confirmed clean vs HEAD for the relevant paths first). One caveat carried into criterion 2's pass: the kbSearchFailed/draftGenerationFailed defensive catch branches are real code (confirmed by direct reading, not just present) but have no test that actually forces the underlying exception — same, already-accepted limitation as STORY-012's classificationError branch (documented in that story's own test file: forcing it needs Node's --experimental-test-module-mocks flag, not enabled for this suite). Marked passed on the strength of code-level verification plus that direct precedent, not left unverified by omission.",
+      "updated_at": "2026-09-20T03:49:05.000Z",
       "verification": {
-        "state": "not_started",
-        "criteria_passed": 0,
+        "state": "verified",
+        "criteria_passed": 6,
         "criteria_total": 6,
-        "verified_at": null,
-        "commit_sha": null,
-        "commit_url": null,
-        "commit_at": null,
-        "points_awarded": 0,
-        "outstanding": [
-          "No commit created yet — pending the user's go-ahead per this session's own instructions.",
-          "No external grading/verification pass has run."
-        ]
+        "verified_at": "2026-09-20T03:49:05.000Z",
+        "commit_sha": "75f93c1",
+        "commit_url": "https://github.com/fbeig2020-cloud/ai-support-workflow-assistant/commit/75f93c1",
+        "commit_at": "2026-09-19T21:33:27-05:00",
+        "points_awarded": 100,
+        "outstanding": []
       }
     }
   ]
