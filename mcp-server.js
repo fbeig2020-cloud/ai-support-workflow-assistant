@@ -161,7 +161,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "ingestSupportTicket",
       description:
-        "Call this when a brand-new support ticket arrives. Creates the ticket in the queue AND classifies it automatically as part of the same call — no separate classify step needed. Normally returns status 'classified' with a real category and priority already set. If automatic classification unexpectedly fails, the ticket is still saved with status 'unclassified' and classificationError: true so it isn't lost; use classifyQueuedTicket to retry it later. Requires studentEmail for internal contact tracking — that email (and studentName, if given) is stored separately and is never shown back to you, never logged, and never used in classification or drafting.",
+        "Call this when a brand-new support ticket arrives. Creates the ticket in the queue and classifies it, searches the knowledge base, and drafts a response, all automatically as part of the same call — no separate classify/search/draft steps needed. Normally returns status 'classified' with a real category, priority, kbSearchResult, and draftResponse already set, ready for a human to approve or reject via submitReviewDecision. If automatic classification unexpectedly fails, the ticket is still saved with status 'unclassified' and classificationError: true so it isn't lost; use classifyQueuedTicket to retry it later. If the knowledge-base search or draft-response step unexpectedly fails after a successful classification, the ticket is still saved with kbSearchFailed/draftGenerationFailed set instead, rather than losing the ticket or its real classification. Requires studentEmail for internal contact tracking — that email (and studentName, if given) is stored separately and is never shown back to you, never logged, and never used in classification or drafting.",
       inputSchema: {
         type: "object",
         properties: {
@@ -177,7 +177,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "classifyQueuedTicket",
       description:
-        "Recovery tool for a queued ticket that has no working classification — either one ingestSupportTicket saved with classificationError: true after automatic classification failed, or an older ticket that predates automatic classification and is still sitting at status 'unclassified'. Classifies it and saves the result back onto the ticket. If the ticket is already classified, this quietly does nothing and says so — it never overwrites a category that's already there. If the ticket has no requestText to classify from, it fails with a clear message instead of guessing.",
+        "Recovery tool for a queued ticket that has no working classification — either one ingestSupportTicket saved with classificationError: true after automatic classification failed, or an older ticket that predates automatic classification and is still sitting at status 'unclassified'. Classifies it, searches the knowledge base, and drafts a response, then saves all of it back onto the ticket — so a recovered ticket ends up as complete as a freshly-ingested one. If the ticket is already classified, this quietly does nothing and says so — it never overwrites a category that's already there. If the ticket has no requestText to classify from, it fails with a clear message instead of guessing.",
       inputSchema: {
         type: "object",
         properties: {
@@ -236,7 +236,7 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
   }
 
   if (name === "ingestSupportTicket") {
-    const result = ingestSupportTicket(args, options);
+    const result = await ingestSupportTicket(args, options);
     if (result.logEntry?.error_class) {
       await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.logEntry.error_class }));
     }
@@ -244,7 +244,7 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
   }
 
   if (name === "classifyQueuedTicket") {
-    const result = classifyQueuedTicket(args?.requestId, options);
+    const result = await classifyQueuedTicket(args?.requestId, options);
     if (!result.ok && result.errorClass) {
       await emitLog(toolInvocationError({ correlationId, tool: name, errorClass: result.errorClass }));
     }
@@ -338,6 +338,36 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
           );
         }
 
+        // STORY-013: once reclassification actually succeeded, any
+        // kbSearchResult/draftResponse already on the ticket are tied to the
+        // now-superseded category — regenerate both against the fresh
+        // classification so nothing stale survives next to the new one.
+        // Skipped entirely when reclassificationFailed (nothing changed to
+        // regenerate against — same case that already sets
+        // reclassificationSkipped below). Neither call is expected to
+        // throw (both are documented "never throws" contracts), but this is
+        // guarded defensively anyway, same as ingestSupportTicket.js.
+        let kbSearchResult;
+        let kbSearchFailed;
+        let kbSearchFailedMessage;
+        let draftResponse;
+        let draftGenerationFailed;
+        let draftGenerationFailedMessage;
+        if (!reclassificationFailed) {
+          try {
+            kbSearchResult = await searchKnowledgeBase(freshClassification, options);
+          } catch (error) {
+            kbSearchFailed = true;
+            kbSearchFailedMessage = error instanceof Error ? error.message : String(error);
+          }
+          try {
+            draftResponse = await generateDraftResponse(freshClassification, kbSearchResult, options);
+          } catch (error) {
+            draftGenerationFailed = true;
+            draftGenerationFailedMessage = error instanceof Error ? error.message : String(error);
+          }
+        }
+
         const logEntry = {
           timestamp: new Date().toISOString(),
           level: "info",
@@ -348,6 +378,11 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
             requestId,
             reviewer: decision.reviewer,
             reason: rejectionReason,
+            kbSearchFound: kbSearchResult?.found,
+            kbSearchConfidence: kbSearchResult?.confidence,
+            kbSearchFailed,
+            draftGenerated: draftResponse?.generated,
+            draftGenerationFailed,
           },
         };
         const auditResult = appendAuditEntry(logEntry, options);
@@ -359,7 +394,20 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
             ...ticket,
             ...(reclassificationFailed
               ? { reclassificationSkipped: true }
-              : { category: freshClassification.category, priority: freshClassification.priority }),
+              : {
+                  category: freshClassification.category,
+                  priority: freshClassification.priority,
+                  // Explicitly overwritten (not merged) with the fresh
+                  // search/draft output, same as ingestSupportTicket.js /
+                  // classifyQueuedTicket.js — never left mismatched with the
+                  // new category.
+                  kbSearchResult,
+                  kbSearchFailed,
+                  kbSearchFailedMessage,
+                  draftResponse,
+                  draftGenerationFailed,
+                  draftGenerationFailedMessage,
+                }),
             previouslyRejected: true,
             rejectionReason,
             rejectionCount,
@@ -414,8 +462,68 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
       }
 
       // decision.action === "approve"
-      const workflow = { ticketId: ticket.requestId, ...ticket };
-      const summaryResult = generateSupportSummaryAndLog(workflow);
+      //
+      // STORY-013: this call was missing entirely before — approve never
+      // recorded a real human review decision, which is one of the reasons
+      // generateSupportSummary() below always failed closed on
+      // invalid_classification_review for every real ticket. Its "approved"
+      // output shape already satisfies generateSupportSummary.js's
+      // isValidReview() as-is.
+      const classificationReviewResult = reviewClassification(
+        { category: ticket.category, priority: ticket.priority },
+        decision
+      );
+      if (!classificationReviewResult.ok) {
+        await emitLog(
+          toolInvocationError({
+            correlationId,
+            tool: name,
+            errorClass: classificationReviewResult.logEntry?.error_class ?? "ValidationError",
+          })
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  ok: false,
+                  error: `Approval could not be processed: ${classificationReviewResult.reason}.`,
+                  classificationReviewResult,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      // Built explicitly (not a blind `...ticket` spread) since
+      // generateSupportSummary() needs classification nested as
+      // { category, priority }, not the ticket's flat fields. kbSearchResult
+      // is genuinely optional there and passed through as-is (undefined if
+      // the ticket predates this feature — already handled gracefully).
+      // draftResponse is NOT optional there, but tolerant of a
+      // generated: false result — ticket.draftResponse is passed through
+      // as-is when present (whether it found a good draft or not; either
+      // way it's the real, honest result generateDraftResponse() produced),
+      // and only synthesized as an honest "not generated" stub when the
+      // ticket has no draftResponse at all (a pre-STORY-013 ticket).
+      const workflow = {
+        ticketId: ticket.requestId,
+        requestText: ticket.requestText,
+        classification: { category: ticket.category, priority: ticket.priority },
+        classificationReview: classificationReviewResult,
+        kbSearchResult: ticket.kbSearchResult,
+        draftResponse: ticket.draftResponse ?? {
+          generated: false,
+          editable: true,
+          draftText: "",
+          message: "This ticket predates automatic draft-response generation.",
+        },
+      };
+      const summaryResult = generateSupportSummaryAndLog(workflow, options);
       if (!summaryResult.generated) {
         await emitLog(
           toolInvocationError({
@@ -434,7 +542,7 @@ export async function dispatchTool(name, args, correlationId, options = {}) {
         };
       }
 
-      const saveResult = saveSupportSummaryAndLog(summaryResult);
+      const saveResult = saveSupportSummaryAndLog(summaryResult, options);
       if (!saveResult.saved) {
         await emitLog(
           toolInvocationError({

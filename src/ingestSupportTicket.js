@@ -5,12 +5,19 @@
  * Builds the classifier-facing ticket (requestId, requestText, status,
  * priority, createdAt, source), classifies it automatically via classify.js's
  * classifySupportRequest() (STORY-012 — no separate manual classify step),
- * and saves it via ticketQueue.js's addTicketToQueue() — the queue write
- * logic itself is not duplicated here. Student contact info (studentEmail,
- * studentName) is persisted separately, to queue/<ticketId>.student.json,
- * and is never included in a logEntry or passed to any AI-facing function
- * (classify.js, knowledgeBaseSearch.js, generateDraftResponse.js) — those
- * only ever see the ticket record.
+ * then — STORY-013 — chains knowledgeBaseSearch.js's searchKnowledgeBase()
+ * and generateDraftResponse.js's generateDraftResponse() on that same
+ * classification before the ticket is ever written, so a ticket lands in
+ * the queue already classified, searched, and drafted: a complete package
+ * for a human to review via submitReviewDecision, not three separate manual
+ * steps. Saves the result via ticketQueue.js's addTicketToQueue() — the
+ * queue write logic itself is not duplicated here. This function is async
+ * (searchKnowledgeBase/generateDraftResponse both do file I/O), unlike
+ * classifySupportRequest(), which is synchronous. Student contact info
+ * (studentEmail, studentName) is persisted separately, to
+ * queue/<ticketId>.student.json, and is never included in a logEntry or
+ * passed to any AI-facing function (classify.js, knowledgeBaseSearch.js,
+ * generateDraftResponse.js) — those only ever see the ticket record.
  *
  * `ticketId` is validated against the same safe filename character set
  * ticketQueue.js uses (SAFE_TICKET_ID) before anything is built from it,
@@ -27,6 +34,19 @@
  *    is still saved: status stays 'unclassified', classificationError is
  *    set to true, and classificationErrorMessage carries the real reason.
  *    Recoverable later via classifyQueuedTicket().
+ *  - searchKnowledgeBase()/generateDraftResponse() unexpectedly throw, once
+ *    classification has already succeeded (neither is documented to throw —
+ *    both are "never throws, always returns a result object" contracts —
+ *    but this is guarded defensively anyway, same as the classify guard
+ *    above) -> the ticket is still saved with its real classification
+ *    intact; kbSearchFailed/kbSearchFailedMessage or
+ *    draftGenerationFailed/draftGenerationFailedMessage is set instead of
+ *    kbSearchResult/draftResponse, so a human reviewing the ticket sees the
+ *    gap honestly rather than a silently-missing field. A *found: false* or
+ *    *generated: false* result from either function (no exception, just an
+ *    honest "nothing relevant" / "no template" outcome) is NOT a failure —
+ *    it's saved as the real kbSearchResult/draftResponse as-is; that is
+ *    those functions' normal, self-describing degrade path, not an error.
  *  - addTicketToQueue() failure (unwritable queue dir, etc.) -> its result
  *    is returned as-is (with classificationAuditResult attached); no student
  *    file is written.
@@ -59,6 +79,8 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { addTicketToQueue, QUEUE_DIR } from './ticketQueue.js';
 import { classifySupportRequest } from './classify.js';
+import { searchKnowledgeBase } from './knowledgeBaseSearch.js';
+import { generateDraftResponse } from './generateDraftResponse.js';
 import { appendAuditEntry } from './auditLog.js';
 
 /** Ticket ids must be safe to use directly as a filename — mirrors ticketQueue.js's SAFE_TICKET_ID. */
@@ -95,14 +117,39 @@ function buildLogEntry({ event, outcome, ticketId, errorClass, reason }) {
  *   errorClass?: string, reason?: string }} fields
  * @returns {Object}
  */
-function buildClassificationLogEntry({ ticketId, outcome, category, priority, summary, matchedSignals, errorClass, reason }) {
+function buildClassificationLogEntry({
+  ticketId,
+  outcome,
+  category,
+  priority,
+  summary,
+  matchedSignals,
+  kbSearchFound,
+  kbSearchConfidence,
+  kbSearchFailed,
+  draftGenerated,
+  draftGenerationFailed,
+  errorClass,
+  reason,
+}) {
   const entry = {
     timestamp: new Date().toISOString(),
     level: outcome === 'success' ? 'info' : 'warn',
     service: 'ingestSupportTicket',
-    event: 'support_ticket_ingested_and_classified',
+    event: 'support_ticket_ingested_classified_and_prepared',
     outcome,
-    context: { requestId: ticketId, category, priority, summary, matchedSignals },
+    context: {
+      requestId: ticketId,
+      category,
+      priority,
+      summary,
+      matchedSignals,
+      kbSearchFound,
+      kbSearchConfidence,
+      kbSearchFailed,
+      draftGenerated,
+      draftGenerationFailed,
+    },
   };
   if (outcome === 'success') {
     const categoryText = category.replace(/_/g, ' ');
@@ -187,7 +234,7 @@ function validateInput(input) {
  *   directory / audit log path (tests only).
  * @returns {IngestTicketResult}
  */
-export function ingestSupportTicket(input, options = {}) {
+export async function ingestSupportTicket(input, options = {}) {
   const validation = validateInput(input);
   if (!validation.ok) {
     return notIngested(validation.reason, input);
@@ -227,6 +274,25 @@ export function ingestSupportTicket(input, options = {}) {
     ticket.status = 'classified';
     ticket.category = classification.category;
     ticket.priority = classification.priority;
+
+    let kbSearchResult;
+    try {
+      kbSearchResult = await searchKnowledgeBase(classification, options);
+      ticket.kbSearchResult = kbSearchResult;
+    } catch (error) {
+      ticket.kbSearchFailed = true;
+      ticket.kbSearchFailedMessage = error instanceof Error ? error.message : String(error);
+    }
+
+    let draftResponse;
+    try {
+      draftResponse = await generateDraftResponse(classification, kbSearchResult, options);
+      ticket.draftResponse = draftResponse;
+    } catch (error) {
+      ticket.draftGenerationFailed = true;
+      ticket.draftGenerationFailedMessage = error instanceof Error ? error.message : String(error);
+    }
+
     classificationAuditResult = appendAuditEntry(
       buildClassificationLogEntry({
         ticketId,
@@ -235,6 +301,11 @@ export function ingestSupportTicket(input, options = {}) {
         priority: classification.priority,
         summary: classification.summary,
         matchedSignals: classification.matchedSignals,
+        kbSearchFound: kbSearchResult?.found,
+        kbSearchConfidence: kbSearchResult?.confidence,
+        kbSearchFailed: ticket.kbSearchFailed,
+        draftGenerated: draftResponse?.generated,
+        draftGenerationFailed: ticket.draftGenerationFailed,
       }),
       options,
     );

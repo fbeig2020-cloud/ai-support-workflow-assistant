@@ -157,6 +157,17 @@
       "fulfilled_by": [
         "STORY-012"
       ]
+    },
+    {
+      "id": "REQ-016",
+      "kind": "FUNC",
+      "cluster": "Classification",
+      "priority": "must",
+      "statement": "A ticket must be searched against the knowledge base and given a draft response automatically as part of the same classification step (at ingestion, or when recovered via the unclassified-ticket recovery tool), and a human's approval of a ticket must produce and save a final support summary built from the ticket's real classification, review decision, search result, and draft response — never failing closed for a ticket that was never manually pre-searched or pre-drafted, and never leaving a recovered or reclassified ticket's search/draft data mismatched with a superseded category.",
+      "notes": "Added 2026-09-19 at the user's explicit request, closing a gap discovered by tracing submitReviewDecision's approve path: it required classificationReview/kbSearchResult/draftResponse fields that nothing in the codebase ever populated, so approve failed closed (invalid_classification_review) for every real ticket and never reached saveSupportSummary()/removeTicketFromQueue(). Extends REQ-015/STORY-012's auto-classify-on-ingest work to also cover search and draft, and fixes the approve path itself. Not part of the original 10-REQ set.",
+      "fulfilled_by": [
+        "STORY-013"
+      ]
     }
   ],
   "releases": [
@@ -542,6 +553,41 @@
         "Audit trail not updated for the auto-classify-on-ingest step or for classifyQueuedTicket"
       ],
       "task_guidance": "Call classifySupportRequest() synchronously inside ingestSupportTicket(), right after building the ticket and before the first queue write, so the common case is a single write with the real category/priority already set; on failure, keep status 'unclassified' and set classificationError: true so the ticket is never lost; persist exactly one combined audit entry for the classification step. Add a standalone classifyQueuedTicket(requestId) tool that only acts on a ticket with status 'unclassified' or classificationError: true, reusing auditedActions.js's classifyAndLog() for its audit entry, and fails closed rather than guessing when the ticket has no requestText.",
+      "due_on": null,
+      "due_baseline_on": null
+    },
+    {
+      "id": "STORY-013",
+      "title": "Complete the Ticket Workflow: Auto-Search + Auto-Draft at Ingestion/Recovery, and Fix the Approve Path",
+      "release": null,
+      "fulfills": [
+        "REQ-016"
+      ],
+      "narrative": "As a support agent, I want a ticket to already have a knowledge-base search result and a draft response by the time I review it, and I want approving a ticket to actually produce and save a final summary instead of silently failing, so that reviewing and approving a ticket is one real, working workflow instead of three disconnected demo tools.",
+      "acceptance": [
+        "Given a brand-new support ticket being ingested via ingestSupportTicket(), when classification succeeds, then the same call also searches the knowledge base and generates a draft response, saving kbSearchResult and draftResponse onto the ticket alongside its category and priority — no separate manual search/draft step required.",
+        "Given knowledgeBaseSearch() or generateDraftResponse() unexpectedly fails after a successful classification (during ingestion, or during classifyQueuedTicket's recovery), when the ticket is saved, then it is still saved with its real classification intact and kbSearchFailed/draftGenerationFailed set, rather than being lost or silently treated as if search or draft had succeeded.",
+        "Given submitReviewDecision is called with decision.action 'approve' on a ticket with a real classification, then it calls reviewClassification() to record the human's review decision and builds the summary workflow from the ticket's actual category, priority, kbSearchResult, and draftResponse, so a summary is generated, saved, and the ticket is removed from the queue — instead of failing closed with invalid_classification_review as it did before this story.",
+        "Given a ticket that predates this feature (classified, but with no kbSearchResult or draftResponse ever recorded on it), when it is approved, then a summary is still generated and saved, honestly noting that no knowledge-base search or draft was recorded, rather than failing closed.",
+        "Given submitReviewDecision's reject path successfully reclassifies a ticket, or classifyQueuedTicket successfully (re)classifies one, when the ticket is requeued or updated, then its kbSearchResult and draftResponse are regenerated to match the new classification and overwrite (never merge with) whatever was there before, so neither is ever left mismatched with a superseded category.",
+        "Trust: the search+draft step is logged in the audit trail — one combined entry alongside classification at ingestion, a second combined entry for classifyQueuedTicket's recovery step, and folded into the existing reject-path audit entry — never silently un-audited."
+      ],
+      "blocked_by": [
+        "STORY-003",
+        "STORY-004",
+        "STORY-005",
+        "STORY-007",
+        "STORY-012"
+      ],
+      "owner_agent": "Support Agent",
+      "failure_paths": [
+        "Search or draft generation fails during ingestion or recovery and the ticket is lost instead of being saved with its classification intact and an honest failure flag",
+        "Approve still fails closed for a real ticket because classificationReview/kbSearchResult/draftResponse aren't actually wired to generateSupportSummary()",
+        "Approve fails closed for a legitimate legacy ticket that predates this feature instead of degrading gracefully",
+        "Reject or classifyQueuedTicket leaves a ticket's kbSearchResult/draftResponse mismatched with its newly changed category",
+        "The search+draft step runs but is never recorded in the audit trail"
+      ],
+      "task_guidance": "Chain searchKnowledgeBase()/generateDraftResponse() after a successful classification in both ingestSupportTicket() and classifyQueuedTicket() (both become async as a result), defensively try/catching each even though neither is documented to throw, and saving a kbSearchFailed/draftGenerationFailed flag instead of the result on the rare unexpected exception. In submitReviewDecision's approve branch, call reviewClassification({category, priority}, decision) — currently missing entirely — and build the workflow object explicitly (nested classification, the real classificationReview, kbSearchResult passed through as-is, draftResponse passed through as-is or a synthesized generated:false stub when entirely absent) rather than blindly spreading the ticket. Thread `options` through generateSupportSummaryAndLog()/saveSupportSummaryAndLog() (previously omitted, so they always wrote to the real audit log/summaries dir regardless of test overrides). In the reject branch, regenerate search/draft against the fresh classification only when reclassification itself succeeded, explicitly overwriting the ticket's prior kbSearchResult/draftResponse fields.",
       "due_on": null,
       "due_baseline_on": null
     }

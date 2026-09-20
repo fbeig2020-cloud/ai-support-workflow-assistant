@@ -48,16 +48,20 @@ test.after(() => {
 
 // --- Happy path -----------------------------------------------------------
 
-test('valid input creates both the ticket file and the student-info file, already classified', () => {
+test('valid input creates both the ticket file and the student-info file, already classified, searched, and drafted', async () => {
   const queueDir = tempQueueDir();
   const logPath = tempLogPath();
   const id = 'TICKET-1001';
 
-  const result = ingestSupportTicket(
+  const result = await ingestSupportTicket(
     {
       ticketId: id,
       // Matches none of classify.js's category/priority signal tables, so
-      // this deterministically lands on the documented defaults.
+      // this deterministically lands on the documented defaults — and
+      // general_support_request has neither a knowledge-base article nor a
+      // dedicated response template, so this also deterministically
+      // exercises the "not found" / "default template" branches of
+      // knowledgeBaseSearch.js / generateDraftResponse.js.
       requestText: 'My financial aid disbursement has not arrived.',
       studentEmail: 'student@example.edu',
     },
@@ -79,28 +83,44 @@ test('valid input creates both the ticket file and the student-info file, alread
   assert.equal('studentEmail' in onDisk, false);
   assert.equal('studentName' in onDisk, false);
 
+  // STORY-013: search and draft ran automatically as part of ingestion and
+  // landed on the ticket alongside its classification.
+  assert.equal('kbSearchFailed' in onDisk, false);
+  assert.equal('draftGenerationFailed' in onDisk, false);
+  assert.equal(onDisk.kbSearchResult.found, false);
+  assert.equal(onDisk.kbSearchResult.confidence, 'none');
+  assert.equal(onDisk.draftResponse.generated, true);
+  assert.equal(onDisk.draftResponse.templateUsed, 'default');
+  assert.equal(typeof onDisk.draftResponse.draftText, 'string');
+  assert.notEqual(onDisk.draftResponse.draftText, '');
+
   assertLogEntryHasNoStudentInfo(result.logEntry);
 
-  // Exactly one combined audit entry for the auto-classify-on-ingest step —
-  // not a separate classify-only row plus an ingest-only row.
+  // Exactly one combined audit entry for the auto-classify-search-draft
+  // step — not three separate rows for classify/search/draft.
   assert.equal(result.classificationAuditResult.ok, true);
   const auditLines = readAuditLines(logPath);
   assert.equal(auditLines.length, 1);
-  assert.equal(auditLines[0].entry.event, 'support_ticket_ingested_and_classified');
+  assert.equal(auditLines[0].entry.event, 'support_ticket_ingested_classified_and_prepared');
   assert.equal(auditLines[0].entry.outcome, 'success');
   assert.equal(auditLines[0].entry.context.requestId, id);
   assert.equal(auditLines[0].entry.context.category, 'general_support_request');
   assert.equal(auditLines[0].entry.context.priority, 'medium');
+  assert.equal(auditLines[0].entry.context.kbSearchFound, false);
+  assert.equal(auditLines[0].entry.context.kbSearchConfidence, 'none');
+  assert.equal(auditLines[0].entry.context.draftGenerated, true);
+  assert.equal('kbSearchFailed' in auditLines[0].entry.context, false);
+  assert.equal('draftGenerationFailed' in auditLines[0].entry.context, false);
   assert.match(auditLines[0].entry.humanSummary, /automatically classified/);
   assertLogEntryHasNoStudentInfo(auditLines[0].entry);
 });
 
 // --- Failure paths (fails closed) ------------------------------------------
 
-test('fails closed when ticketId is missing or blank', () => {
+test('fails closed when ticketId is missing or blank', async () => {
   const queueDir = tempQueueDir();
   for (const ticketId of [undefined, '', '   ']) {
-    const result = ingestSupportTicket(
+    const result = await ingestSupportTicket(
       {
         ticketId,
         requestText: 'Some request text.',
@@ -114,10 +134,10 @@ test('fails closed when ticketId is missing or blank', () => {
   }
 });
 
-test('fails closed when ticketId is unsafe (path separators or ..)', () => {
+test('fails closed when ticketId is unsafe (path separators or ..)', async () => {
   const queueDir = tempQueueDir();
   for (const ticketId of ['../../etc/passwd', 'a/b', 'a\\b', '..']) {
-    const result = ingestSupportTicket(
+    const result = await ingestSupportTicket(
       {
         ticketId,
         requestText: 'Some request text.',
@@ -131,30 +151,30 @@ test('fails closed when ticketId is unsafe (path separators or ..)', () => {
   }
 });
 
-test('fails closed when requestText is missing or blank', () => {
+test('fails closed when requestText is missing or blank', async () => {
   const queueDir = tempQueueDir();
   for (const requestText of [undefined, '', '   ']) {
-    const result = ingestSupportTicket({ ticketId: 'TICKET-1001', requestText, studentEmail: 'student@example.edu' }, { queueDir });
+    const result = await ingestSupportTicket({ ticketId: 'TICKET-1001', requestText, studentEmail: 'student@example.edu' }, { queueDir });
     assert.equal(result.ok, false);
     assert.equal(result.saved, false);
     assertLogEntryHasNoStudentInfo(result.logEntry);
   }
 });
 
-test('fails closed when studentEmail is missing or blank', () => {
+test('fails closed when studentEmail is missing or blank', async () => {
   const queueDir = tempQueueDir();
   for (const studentEmail of [undefined, '', '   ']) {
-    const result = ingestSupportTicket({ ticketId: 'TICKET-1001', requestText: 'Some request text.', studentEmail }, { queueDir });
+    const result = await ingestSupportTicket({ ticketId: 'TICKET-1001', requestText: 'Some request text.', studentEmail }, { queueDir });
     assert.equal(result.ok, false);
     assert.equal(result.saved, false);
     assertLogEntryHasNoStudentInfo(result.logEntry);
   }
 });
 
-test('fails closed when studentName or source is not a string', () => {
+test('fails closed when studentName or source is not a string', async () => {
   const queueDir = tempQueueDir();
 
-  const nameResult = ingestSupportTicket(
+  const nameResult = await ingestSupportTicket(
     {
       ticketId: 'TICKET-1001',
       requestText: 'Some request text.',
@@ -167,7 +187,7 @@ test('fails closed when studentName or source is not a string', () => {
   assert.equal(nameResult.saved, false);
   assertLogEntryHasNoStudentInfo(nameResult.logEntry);
 
-  const sourceResult = ingestSupportTicket(
+  const sourceResult = await ingestSupportTicket(
     {
       ticketId: 'TICKET-1002',
       requestText: 'Some request text.',
@@ -183,7 +203,7 @@ test('fails closed when studentName or source is not a string', () => {
 
 // --- addTicketToQueue failure passes through --------------------------------
 
-test('an addTicketToQueue failure passes through as-is, without writing student info', () => {
+test('an addTicketToQueue failure passes through as-is, without writing student info', async () => {
   const queueDir = tempQueueDir();
   const logPath = tempLogPath();
   const id = 'TICKET-1001';
@@ -191,7 +211,7 @@ test('an addTicketToQueue failure passes through as-is, without writing student 
   // addTicketToQueue's writeFileSync fails.
   mkdirSync(ticketPath(queueDir, id), { recursive: true });
 
-  const result = ingestSupportTicket(
+  const result = await ingestSupportTicket(
     {
       ticketId: id,
       requestText: 'Some request text.',
